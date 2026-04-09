@@ -20,14 +20,15 @@ const formatDate = (ts: string) => {
 
 interface QRScansTableProps {
   onViewScan: (scan: QRScan) => void;
+  scans?: QRScan[];
 }
 
-const QRScansTable = ({ onViewScan }: QRScansTableProps) => (
+const QRScansTable = ({ onViewScan, scans = mockScans }: QRScansTableProps) => (
   <Card>
     <CardHeader>
       <CardTitle className="text-base">QR Code Scans</CardTitle>
       <CardDescription>
-        {mockScans.length} total scans • Includes device &amp; location details
+        {scans.length} total scans • Includes device &amp; location details
       </CardDescription>
     </CardHeader>
     <CardContent>
@@ -44,7 +45,7 @@ const QRScansTable = ({ onViewScan }: QRScansTableProps) => (
           </TableRow>
         </TableHeader>
         <TableBody>
-          {mockScans.map((s) => (
+          {scans.map((s) => (
             <TableRow key={s.id}>
               <TableCell className="text-xs whitespace-nowrap">
                 {formatDate(s.timestamp)}

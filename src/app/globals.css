@@ -1,7 +1,36 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
 @import "tailwindcss";
-@import "tw-animate-css";
+@import "react-international-phone/style.css";
+
+/* Phone Input Custom Styling */
+.react-international-phone-input-container {
+  width: 100%;
+}
+
+.react-international-phone-input {
+  width: 100% !important;
+  height: 40px !important;
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+  border-color: var(--border) !important;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  font-family: inherit !important;
+  font-size: 0.875rem !important;
+}
+
+.react-international-phone-country-selector-button {
+  height: 40px !important;
+  border-radius: 0.5rem 0 0 0.5rem !important;
+  border-color: var(--border) !important;
+  background-color: var(--muted) !important;
+  padding: 0 8px !important;
+}
+
+.react-international-phone-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 @custom-variant dark (&:is(.dark *));
 
@@ -133,5 +162,8 @@
     background-color: var(--background);
     color: var(--foreground);
     font-family: 'DM Sans', sans-serif;
+  }
+  button {
+    cursor: pointer;
   }
 }

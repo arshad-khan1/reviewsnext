@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import {
   QrCode,
   Star,
   MessageSquare,
   TrendingUp,
-  ArrowLeft,
   ThumbsDown,
   ExternalLink,
+  Settings,
+  Eye,
+  AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
-import { companyConfig } from "@/config/companyConfig";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,14 +23,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { stats } from "@/data/mockDashboardData";
+import { mockBusinesses } from "@/data/mockBusinesses";
 import type { QRScan, ReviewEntry } from "@/data/mockDashboardData";
 
 import StatCard from "./components/StatCard";
 import DetailRow from "./components/DetailRow";
 import ScansOverTimeChart from "./components/ScansOverTimeChart";
 import RatingDistributionChart from "./components/RatingDistributionChart";
-import DeviceBreakdownChart from "./components/DeviceBreakdownChart";
-import BrowserBreakdownChart from "./components/BrowserBreakdownChart";
 import ReviewsTable from "./components/ReviewsTable";
 import QRScansTable from "./components/QRScansTable";
 import Image from "next/image";
@@ -44,11 +45,35 @@ const formatDate = (ts: string) => {
 };
 
 const BusinessDashboard = () => {
+  const params = useParams();
+  const router = useRouter();
+  const businessSlug = params.business as string;
+  
+  const business = mockBusinesses.find(b => b.slug === businessSlug);
+  
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
   const [selectedScan, setSelectedScan] = useState<QRScan | null>(null);
   const [selectedReview, setSelectedReview] = useState<ReviewEntry | null>(
     null,
   );
+
+  if (!business) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center text-destructive mb-4">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold mb-2">Business Not Found</h2>
+        <p className="text-muted-foreground mb-6 text-center max-w-xs">
+          The business you&apos;re looking for doesn&apos;t exist.
+        </p>
+        <Button onClick={() => router.push("/businesses")} variant="outline" className="gap-2">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Businesses
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -56,28 +81,40 @@ const BusinessDashboard = () => {
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Image
-              src={companyConfig.logo}
-              alt="Logo"
-              width={32}
-              height={32}
-              className="w-14 h-14 rounded-lg object-contain bg-secondary p-1"
-              onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-secondary flex items-center justify-center p-2 border shadow-sm overflow-hidden relative">
+              <Image
+                src={business.logo}
+                alt={`${business.name} logo`}
+                fill
+                className="object-contain p-3"
+                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">
-                {companyConfig.name}
+                {business.name}
               </h1>
               <p className="text-xs text-muted-foreground">
                 Dashboard & Analytics
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="text-xs">
-            Mock Data
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Link href={`/${businessSlug}/review`} target="_blank">
+              <Button variant="outline" size="sm" className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all">
+                <Eye className="w-4 h-4" />
+                View Review Page
+              </Button>
+            </Link>
+            <Link href={`/${businessSlug}/settings`}>
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Settings className="w-4 h-4" />
+                Settings
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -127,34 +164,41 @@ const BusinessDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ScansOverTimeChart />
           <RatingDistributionChart />
-          <DeviceBreakdownChart />
-          <BrowserBreakdownChart />
         </div>
 
         {/* Data Tables */}
         <div className="space-y-4">
           {/* Toggle Buttons */}
-          <div className="inline-flex rounded-lg border border-border bg-muted p-1 gap-1">
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
-                activeTab === "reviews"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Reviews &amp; Feedback
-            </button>
-            <button
-              onClick={() => setActiveTab("scans")}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
-                activeTab === "scans"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              QR Scans
-            </button>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="inline-flex rounded-lg border border-border bg-muted p-1 gap-1">
+              <button
+                onClick={() => setActiveTab("reviews")}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
+                  activeTab === "reviews"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Reviews &amp; Feedback
+              </button>
+              <button
+                onClick={() => setActiveTab("scans")}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
+                  activeTab === "scans"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                QR Scans
+              </button>
+            </div>
+            
+            <Link href={`/${businessSlug}/dashboard/${activeTab}`}>
+              <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/5 font-semibold gap-1">
+                View All {activeTab === "reviews" ? "Reviews" : "Scans"}
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
           </div>
 
           {activeTab === "reviews" && (
@@ -166,6 +210,7 @@ const BusinessDashboard = () => {
         </div>
       </main>
 
+      {/* Detail Dialogs remain the same... */}
       {/* Scan Detail Dialog */}
       <Dialog open={!!selectedScan} onOpenChange={() => setSelectedScan(null)}>
         <DialogContent>

@@ -20,13 +20,14 @@ const formatDate = (ts: string) => {
 
 interface ReviewsTableProps {
   onViewReview: (review: ReviewEntry) => void;
+  reviews?: ReviewEntry[];
 }
 
-const ReviewsTable = ({ onViewReview }: ReviewsTableProps) => (
+const ReviewsTable = ({ onViewReview, reviews = mockReviews }: ReviewsTableProps) => (
   <Card>
     <CardHeader>
       <CardTitle className="text-base">All Reviews &amp; Feedback</CardTitle>
-      <CardDescription>{mockReviews.length} total entries</CardDescription>
+      <CardDescription>{reviews.length} total entries</CardDescription>
     </CardHeader>
     <CardContent>
       <Table>
@@ -42,7 +43,7 @@ const ReviewsTable = ({ onViewReview }: ReviewsTableProps) => (
           </TableRow>
         </TableHeader>
         <TableBody>
-          {mockReviews.map((r) => (
+          {reviews.map((r) => (
             <TableRow key={r.id}>
               <TableCell className="text-xs whitespace-nowrap">
                 {formatDate(r.timestamp)}
