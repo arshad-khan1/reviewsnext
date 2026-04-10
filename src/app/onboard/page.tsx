@@ -68,12 +68,13 @@ export default function OnboardingPage() {
   const [formData, setFormData] = useState({
     name: "",
     industry: "",
-    phone: "",
+    phone: "+91",
     logo: null as string | null,
     minRatingToExternal: "4",
     googleMapsUrl: "",
     aiPrompt: "",
     commentStyle: "Professional & Polite",
+    location: "",
   });
 
   const [otpSent, setOtpSent] = useState(false);
@@ -102,7 +103,7 @@ export default function OnboardingPage() {
   const isStepValid = () => {
     if (step === 1)
       return (
-        formData.name && formData.industry && formData.phone && isPhoneVerified
+        formData.name && formData.industry && formData.phone && formData.location && isPhoneVerified
       );
     if (step === 2) return true; // Threshold always has default
     if (step === 3) return formData.googleMapsUrl && formData.aiPrompt;
@@ -180,6 +181,19 @@ export default function OnboardingPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  <Label htmlFor="location">Location</Label>
+                </div>
+                <Input
+                  id="location"
+                  placeholder="e.g. New York, NY"
+                  value={formData.location}
+                  onChange={(e) => updateFormData({ location: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
                   <LayoutGrid className="w-4 h-4 text-primary" />
                   <Label htmlFor="industry">Industry</Label>
                 </div>
@@ -216,6 +230,7 @@ export default function OnboardingPage() {
                         onChange={(phone) => updateFormData({ phone })}
                         disabled={isPhoneVerified}
                         inputClassName="flex-1"
+                        forceDialCode={true}
                       />
                     </div>
                     {!isPhoneVerified && (

@@ -1,5 +1,6 @@
 export interface QRScan {
   id: string;
+  qrId: string;
   timestamp: string;
   device: string;
   browser: string;
@@ -23,11 +24,13 @@ export interface ReviewEntry {
   browser: string;
   os: string;
   submittedToGoogle: boolean;
+  qrId?: string;
 }
 
 export const mockScans: QRScan[] = [
   {
     id: "s1",
+    qrId: "qr-1",
     timestamp: "2026-03-14T09:12:00",
     device: "iPhone 15 Pro",
     browser: "Safari 18",
@@ -40,6 +43,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s2",
+    qrId: "qr-1",
     timestamp: "2026-03-14T08:45:00",
     device: "Samsung Galaxy S25",
     browser: "Chrome 122",
@@ -52,6 +56,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s3",
+    qrId: "qr-2",
     timestamp: "2026-03-13T17:30:00",
     device: "Google Pixel 9",
     browser: "Chrome 122",
@@ -63,6 +68,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s4",
+    qrId: "qr-2",
     timestamp: "2026-03-13T14:20:00",
     device: "iPhone 14",
     browser: "Safari 18",
@@ -75,6 +81,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s5",
+    qrId: "qr-3",
     timestamp: "2026-03-13T11:05:00",
     device: "OnePlus 12",
     browser: "Chrome 122",
@@ -87,6 +94,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s6",
+    qrId: "qr-3",
     timestamp: "2026-03-12T19:50:00",
     device: "iPad Pro",
     browser: "Safari 18",
@@ -98,6 +106,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s7",
+    qrId: "qr-1",
     timestamp: "2026-03-12T16:15:00",
     device: "Samsung Galaxy A55",
     browser: "Samsung Internet",
@@ -110,6 +119,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s8",
+    qrId: "qr-2",
     timestamp: "2026-03-12T10:00:00",
     device: "iPhone 15",
     browser: "Safari 18",
@@ -122,6 +132,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s9",
+    qrId: "qr-3",
     timestamp: "2026-03-11T15:30:00",
     device: "Google Pixel 8a",
     browser: "Chrome 121",
@@ -134,6 +145,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s10",
+    qrId: "qr-1",
     timestamp: "2026-03-11T12:10:00",
     device: "iPhone 13",
     browser: "Safari 17",
@@ -145,6 +157,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s11",
+    qrId: "qr-2",
     timestamp: "2026-03-10T20:45:00",
     device: "Samsung Galaxy S24",
     browser: "Chrome 121",
@@ -157,6 +170,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s12",
+    qrId: "qr-3",
     timestamp: "2026-03-10T09:30:00",
     device: "iPhone 15 Pro Max",
     browser: "Safari 18",
@@ -169,6 +183,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s13",
+    qrId: "qr-1",
     timestamp: "2026-03-09T14:00:00",
     device: "Xiaomi 14",
     browser: "Chrome 121",
@@ -180,6 +195,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s14",
+    qrId: "qr-2",
     timestamp: "2026-03-09T11:20:00",
     device: "iPhone 14 Pro",
     browser: "Safari 17",
@@ -192,6 +208,7 @@ export const mockScans: QRScan[] = [
   },
   {
     id: "s15",
+    qrId: "qr-1",
     timestamp: "2026-03-08T18:00:00",
     device: "Samsung Galaxy Z Flip 6",
     browser: "Samsung Internet",
@@ -215,6 +232,7 @@ export const mockReviews: ReviewEntry[] = [
     browser: "Safari 18",
     os: "iOS 19",
     submittedToGoogle: true,
+    qrId: "qr-1",
   },
   {
     id: "r2",
@@ -226,6 +244,7 @@ export const mockReviews: ReviewEntry[] = [
     browser: "Chrome 122",
     os: "Android 16",
     submittedToGoogle: true,
+    qrId: "qr-1",
   },
   {
     id: "r3",
@@ -238,6 +257,7 @@ export const mockReviews: ReviewEntry[] = [
     browser: "Safari 18",
     os: "iOS 18",
     submittedToGoogle: false,
+    qrId: "qr-2",
   },
   {
     id: "r4",
@@ -249,6 +269,7 @@ export const mockReviews: ReviewEntry[] = [
     browser: "Chrome 122",
     os: "Android 15",
     submittedToGoogle: true,
+    qrId: "qr-3",
   },
   {
     id: "r5",
@@ -260,6 +281,7 @@ export const mockReviews: ReviewEntry[] = [
     browser: "Samsung Internet",
     os: "Android 15",
     submittedToGoogle: false,
+    qrId: "qr-1",
   },
   {
     id: "r6",
@@ -373,6 +395,28 @@ export function getBrowserBreakdown() {
     map[browser] = (map[browser] || 0) + 1;
   });
   return Object.entries(map).map(([name, value]) => ({ name, value }));
+}
+
+export function getStatsForQR(qrId: string) {
+  const scans = mockScans.filter((s) => s.qrId === qrId);
+  const completedReviews = scans.filter((s) => s.resultedInReview);
+  const reviews = mockReviews.filter((r) => scans.some((s) => s.timestamp.split("T")[0] === r.timestamp.split("T")[0])); // This is a rough match for mock
+  
+  const totalScans = scans.length;
+  const totalReviews = completedReviews.length;
+  const conversionRate = totalScans > 0 ? Math.round((totalReviews / totalScans) * 100) : 0;
+  
+  const avgRating = totalReviews > 0 
+    ? +(completedReviews.reduce((sum, s) => sum + (s.rating || 0), 0) / totalReviews).toFixed(1)
+    : 0;
+
+  return {
+    totalScans,
+    totalReviews,
+    conversionRate,
+    avgRating,
+    scans
+  };
 }
 
 export const stats = {

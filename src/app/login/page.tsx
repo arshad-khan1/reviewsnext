@@ -3,16 +3,31 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, ArrowRight, Building2, Terminal, ArrowLeft, ShieldCheck, CheckCircle2 } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  Terminal,
+  ArrowLeft,
+  ShieldCheck,
+  CheckCircle2,
+} from "lucide-react";
+import { PhoneInput } from "react-international-phone";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState("+91");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState(1); // 1: Phone, 2: OTP
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +37,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (!phone) return;
     setIsLoading(true);
-    
+
     // Simulate sending OTP
     setTimeout(() => {
       setIsLoading(false);
@@ -34,7 +49,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (!otp) return;
     setIsVerifying(true);
-    
+
     // Simulate verification
     setTimeout(() => {
       setIsVerifying(false);
@@ -57,7 +72,10 @@ export default function LoginPage() {
         className="w-full max-w-md"
       >
         <div className="mb-6">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+          >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Back to Home
           </Link>
@@ -67,14 +85,16 @@ export default function LoginPage() {
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
             <Building2 className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">ReviewFunnel</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            ReviewFunnel
+          </h1>
         </div>
 
         <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm relative overflow-hidden">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl">Business Login</CardTitle>
             <CardDescription>
-              {step === 1 
+              {step === 1
                 ? "Enter your phone number to receive an access code"
                 : "Enter the code sent to your phone number"}
             </CardDescription>
@@ -90,24 +110,21 @@ export default function LoginPage() {
                   onSubmit={handleSendOtp}
                   className="space-y-4"
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <Label htmlFor="phone">Phone Number</Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="+1 (555) 000-0000"
-                        required
+                      <PhoneInput
+                        defaultCountry="in"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="pl-10"
+                        onChange={(phone) => setPhone(phone)}
+                        className="w-full"
+                        forceDialCode={true}
                       />
                     </div>
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full h-11 transition-all" 
+                  <Button
+                    type="submit"
+                    className="w-full h-11 transition-all"
                     disabled={isLoading || !phone}
                   >
                     {isLoading ? (
@@ -148,12 +165,19 @@ export default function LoginPage() {
                       />
                     </div>
                     <p className="text-[10px] text-muted-foreground text-center">
-                      Code sent to {phone}. <button type="button" onClick={() => setStep(1)} className="text-primary hover:underline">Change number</button>
+                      Code sent to {phone}.{" "}
+                      <button
+                        type="button"
+                        onClick={() => setStep(1)}
+                        className="text-primary hover:underline"
+                      >
+                        Change number
+                      </button>
                     </p>
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full h-11 transition-all bg-primary hover:bg-primary/90" 
+                  <Button
+                    type="submit"
+                    className="w-full h-11 transition-all bg-primary hover:bg-primary/90"
                     disabled={isVerifying || otp.length < 4}
                   >
                     {isVerifying ? (

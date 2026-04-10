@@ -4,16 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  QrCode,
   Star,
   MessageSquare,
   TrendingUp,
   ThumbsDown,
   ExternalLink,
-  Settings,
-  Eye,
   AlertCircle,
   ArrowLeft,
+  QrCode,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { stats } from "@/data/mockDashboardData";
 import { mockBusinesses } from "@/data/mockBusinesses";
+import { mockQRCodes } from "@/data/mockQRCodes";
 import type { QRScan, ReviewEntry } from "@/data/mockDashboardData";
 
 import StatCard from "./components/StatCard";
@@ -32,7 +32,8 @@ import ScansOverTimeChart from "./components/ScansOverTimeChart";
 import RatingDistributionChart from "./components/RatingDistributionChart";
 import ReviewsTable from "./components/ReviewsTable";
 import QRScansTable from "./components/QRScansTable";
-import Image from "next/image";
+import UsageCard from "./components/UsageCard";
+import { Card, CardContent } from "@/components/ui/card";
 
 const formatDate = (ts: string) => {
   const d = new Date(ts);
@@ -48,9 +49,9 @@ const BusinessDashboard = () => {
   const params = useParams();
   const router = useRouter();
   const businessSlug = params.business as string;
-  
-  const business = mockBusinesses.find(b => b.slug === businessSlug);
-  
+
+  const business = mockBusinesses.find((b) => b.slug === businessSlug);
+
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
   const [selectedScan, setSelectedScan] = useState<QRScan | null>(null);
   const [selectedReview, setSelectedReview] = useState<ReviewEntry | null>(
@@ -67,7 +68,11 @@ const BusinessDashboard = () => {
         <p className="text-muted-foreground mb-6 text-center max-w-xs">
           The business you&apos;re looking for doesn&apos;t exist.
         </p>
-        <Button onClick={() => router.push("/businesses")} variant="outline" className="gap-2">
+        <Button
+          onClick={() => router.push("/businesses")}
+          variant="outline"
+          className="gap-2"
+        >
           <ArrowLeft className="w-4 h-4" />
           Back to Businesses
         </Button>
@@ -77,87 +82,57 @@ const BusinessDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-20 h-20 mx-auto rounded-2xl bg-secondary flex items-center justify-center p-2 border shadow-sm overflow-hidden relative">
-              <Image
-                src={business.logo}
-                alt={`${business.name} logo`}
-                fill
-                className="object-contain p-3"
-                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
+      <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-6 space-y-10">
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <StatCard
+                title="QR Scans"
+                value={stats.totalScans}
+                icon={QrCode}
+                color="hsl(25, 95%, 53%)"
+              />
+              <StatCard
+                title="Reviews"
+                value={stats.totalReviews}
+                icon={MessageSquare}
+                color="hsl(220, 70%, 55%)"
+              />
+              <StatCard
+                title="Conversion"
+                value={`${stats.conversionRate}%`}
+                subtitle="Scans → Reviews"
+                icon={TrendingUp}
+                color="hsl(152, 60%, 45%)"
+              />
+              <StatCard
+                title="Avg Rating"
+                value={stats.averageRating}
+                icon={Star}
+                color="hsl(45, 97%, 54%)"
+              />
+              <StatCard
+                title="Google Reviews"
+                value={stats.googleSubmissions}
+                icon={ExternalLink}
+                color="hsl(25, 95%, 53%)"
+              />
+              <StatCard
+                title="Complaints"
+                value={stats.negativeFeedbacks}
+                icon={ThumbsDown}
+                color="hsl(0, 84%, 60%)"
               />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">
-                {business.name}
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                Dashboard & Analytics
-              </p>
-            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href={`/${businessSlug}/review`} target="_blank">
-              <Button variant="outline" size="sm" className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all">
-                <Eye className="w-4 h-4" />
-                View Review Page
-              </Button>
-            </Link>
-            <Link href={`/${businessSlug}/settings`}>
-              <Button variant="ghost" size="sm" className="gap-2">
-                <Settings className="w-4 h-4" />
-                Settings
-              </Button>
-            </Link>
+          <div className="lg:col-span-1">
+            <UsageCard
+              used={business.usage.used}
+              total={business.usage.total}
+              className="h-full"
+            />
           </div>
-        </div>
-      </header>
-
-      <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <StatCard
-            title="QR Scans"
-            value={stats.totalScans}
-            icon={QrCode}
-            color="hsl(25, 95%, 53%)"
-          />
-          <StatCard
-            title="Reviews"
-            value={stats.totalReviews}
-            icon={MessageSquare}
-            color="hsl(220, 70%, 55%)"
-          />
-          <StatCard
-            title="Conversion"
-            value={`${stats.conversionRate}%`}
-            subtitle="Scans → Reviews"
-            icon={TrendingUp}
-            color="hsl(152, 60%, 45%)"
-          />
-          <StatCard
-            title="Avg Rating"
-            value={stats.averageRating}
-            icon={Star}
-            color="hsl(45, 97%, 54%)"
-          />
-          <StatCard
-            title="Google Reviews"
-            value={stats.googleSubmissions}
-            icon={ExternalLink}
-            color="hsl(25, 95%, 53%)"
-          />
-          <StatCard
-            title="Complaints"
-            value={stats.negativeFeedbacks}
-            icon={ThumbsDown}
-            color="hsl(0, 84%, 60%)"
-          />
         </div>
 
         {/* Charts */}
@@ -165,6 +140,59 @@ const BusinessDashboard = () => {
           <ScansOverTimeChart />
           <RatingDistributionChart />
         </div>
+
+        {/* Active QR Codes List */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+              <QrCode className="w-5 h-5 text-indigo-600" />
+              Active QR Codes
+            </h2>
+            <Link href={`/${businessSlug}/dashboard/qr-codes`}>
+              <Button
+                variant="ghost"
+                className="text-indigo-600 hover:text-indigo-700 font-bold gap-1"
+              >
+                Manage All
+                <ArrowUpRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {mockQRCodes.map((qr) => (
+              <Link
+                key={qr.id}
+                href={`/${businessSlug}/dashboard/qr-codes/${qr.id}`}
+              >
+                <Card className="hover:shadow-md hover:border-indigo-200 transition-all group cursor-pointer border-none shadow-sm">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 transition-colors">
+                        <QrCode className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900 mb-0.5">
+                          {qr.name}
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                          {qr.source}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-black text-indigo-600">
+                        {qr.scans}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                        Scans
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         {/* Data Tables */}
         <div className="space-y-4">
@@ -192,9 +220,13 @@ const BusinessDashboard = () => {
                 QR Scans
               </button>
             </div>
-            
+
             <Link href={`/${businessSlug}/dashboard/${activeTab}`}>
-              <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/5 font-semibold gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary hover:text-primary hover:bg-primary/5 font-semibold gap-1"
+              >
                 View All {activeTab === "reviews" ? "Reviews" : "Scans"}
                 <ExternalLink className="w-3.5 h-3.5" />
               </Button>

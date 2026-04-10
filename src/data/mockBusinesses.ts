@@ -12,6 +12,11 @@ export interface Business {
   industry: string;
   location: string;
   lastActive: string;
+  plan: "Starter" | "Growth" | "Pro";
+  usage: {
+    used: number;
+    total: number;
+  };
 }
 
 export const mockBusinesses: Business[] = [
@@ -29,6 +34,11 @@ export const mockBusinesses: Business[] = [
     industry: "Restaurants & Cafes",
     location: "New York, NY",
     lastActive: "2026-03-23T10:30:00",
+    plan: "Growth",
+    usage: {
+      used: 720,
+      total: 800,
+    },
   },
   {
     id: "b2",
@@ -44,6 +54,11 @@ export const mockBusinesses: Business[] = [
     industry: "Technology & Software",
     location: "San Francisco, CA",
     lastActive: "2026-03-23T09:15:00",
+    plan: "Pro",
+    usage: {
+      used: 1250,
+      total: 5000,
+    },
   },
   {
     id: "b3",
@@ -59,6 +74,11 @@ export const mockBusinesses: Business[] = [
     industry: "Beauty & Personal Care",
     location: "Miami, FL",
     lastActive: "2026-03-22T16:45:00",
+    plan: "Starter",
+    usage: {
+      used: 45,
+      total: 100,
+    },
   },
   {
     id: "b4",
@@ -74,6 +94,11 @@ export const mockBusinesses: Business[] = [
     industry: "Health & Wellness",
     location: "Chicago, IL",
     lastActive: "2026-03-23T08:20:00",
+    plan: "Growth",
+    usage: {
+      used: 120,
+      total: 800,
+    },
   },
   {
     id: "b5",
@@ -89,6 +114,11 @@ export const mockBusinesses: Business[] = [
     industry: "E-commerce & Retail",
     location: "Portland, OR",
     lastActive: "2026-03-21T14:10:00",
+    plan: "Starter",
+    usage: {
+      used: 80,
+      total: 100,
+    },
   },
   {
     id: "b6",
@@ -104,6 +134,11 @@ export const mockBusinesses: Business[] = [
     industry: "E-commerce & Retail",
     location: "Austin, TX",
     lastActive: "2026-03-23T11:05:00",
+    plan: "Starter",
+    usage: {
+      used: 12,
+      total: 100,
+    },
   },
   {
     id: "b7",
@@ -119,6 +154,11 @@ export const mockBusinesses: Business[] = [
     industry: "Automotive Services",
     location: "Detroit, MI",
     lastActive: "2026-03-22T13:40:00",
+    plan: "Growth",
+    usage: {
+      used: 300,
+      total: 800,
+    },
   },
   {
     id: "b8",
@@ -134,6 +174,11 @@ export const mockBusinesses: Business[] = [
     industry: "Professional Services",
     location: "Los Angeles, CA",
     lastActive: "2026-03-23T12:30:00",
+    plan: "Pro",
+    usage: {
+      used: 50,
+      total: 5000,
+    },
   },
   {
     id: "b9",
@@ -149,6 +194,11 @@ export const mockBusinesses: Business[] = [
     industry: "Food & Beverage",
     location: "Santa Monica, CA",
     lastActive: "2026-03-23T14:45:00",
+    plan: "Pro",
+    usage: {
+      used: 4500,
+      total: 5000,
+    },
   },
   {
     id: "b10",
@@ -164,6 +214,11 @@ export const mockBusinesses: Business[] = [
     industry: "E-commerce & Retail",
     location: "Denver, CO",
     lastActive: "2026-03-23T16:10:00",
+    plan: "Growth",
+    usage: {
+      used: 200,
+      total: 800,
+    },
   },
   {
     id: "b11",
@@ -179,6 +234,11 @@ export const mockBusinesses: Business[] = [
     industry: "Entertainment & Events",
     location: "Orlando, FL",
     lastActive: "2026-03-23T20:30:00",
+    plan: "Pro",
+    usage: {
+      used: 800,
+      total: 5000,
+    },
   },
   {
     id: "b12",
@@ -194,6 +254,11 @@ export const mockBusinesses: Business[] = [
     industry: "Food & Beverage",
     location: "Napa Valley, CA",
     lastActive: "2026-03-22T19:20:00",
+    plan: "Growth",
+    usage: {
+      used: 400,
+      total: 800,
+    },
   },
   {
     id: "b13",
@@ -209,6 +274,11 @@ export const mockBusinesses: Business[] = [
     industry: "Real Estate",
     location: "Brooklyn, NY",
     lastActive: "2026-03-21T11:00:00",
+    plan: "Starter",
+    usage: {
+      used: 95,
+      total: 100,
+    },
   },
   {
     id: "b14",
@@ -224,6 +294,11 @@ export const mockBusinesses: Business[] = [
     industry: "Other",
     location: "Memphis, TN",
     lastActive: "2026-03-23T10:00:00",
+    plan: "Pro",
+    usage: {
+      used: 2300,
+      total: 5000,
+    },
   },
   {
     id: "b15",
@@ -239,6 +314,11 @@ export const mockBusinesses: Business[] = [
     industry: "Education & Training",
     location: "Boston, MA",
     lastActive: "2026-03-23T15:20:00",
+    plan: "Starter",
+    usage: {
+      used: 10,
+      total: 100,
+    },
   },
   {
     id: "b16",
@@ -254,6 +334,11 @@ export const mockBusinesses: Business[] = [
     industry: "Technology & Software",
     location: "Seattle, WA",
     lastActive: "2026-03-23T17:40:00",
+    plan: "Growth",
+    usage: {
+      used: 350,
+      total: 800,
+    },
   },
   {
     id: "b17",
@@ -269,6 +354,11 @@ export const mockBusinesses: Business[] = [
     industry: "Other",
     location: "Boulder, CO",
     lastActive: "2026-03-23T09:00:00",
+    plan: "Starter",
+    usage: {
+      used: 5,
+      total: 100,
+    },
   },
   {
     id: "b18",
@@ -284,5 +374,10 @@ export const mockBusinesses: Business[] = [
     industry: "Hospitality & Tourism",
     location: "Savannah, GA",
     lastActive: "2026-03-22T22:15:00",
+    plan: "Growth",
+    usage: {
+      used: 600,
+      total: 800,
+    },
   },
 ];

@@ -10,6 +10,13 @@ export default function CreateBusinessPage() {
 
   const handleSubmit = (data: BusinessFormData) => {
     console.log("Creating new business", data);
+    // Simulate generating default QR code
+    console.log("Generating default QR code with settings:", {
+      aiPrompt: data.aiPrompt,
+      commentStyle: data.commentStyle,
+      googleMapsLink: data.googleMapsLink
+    });
+    
     // In a real app, you'd call an API here
     // Redirect back to businesses list
     router.push("/businesses");
