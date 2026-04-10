@@ -86,37 +86,13 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // A User can own multiple Businesses
-  businesses     Business[]
-  otpSessions    OtpSession[]
+   businesses     Business[]
   refreshTokens  RefreshToken[]
 
   @@index([phone])
 }
 
-// ============================================================
-// OtpSession
-// Tracks OTP requests for phone-based login/signup.
-// Each record represents one send attempt; verified=true once
-// the user submits the correct code before expiry.
-// ============================================================
 
-model OtpSession {
-  id          String    @id @default(cuid())
-  phone       String    /// The phone number the OTP was sent to
-  otpHash     String    /// bcrypt/sha256 hash of the OTP code (never store plain)
-  expiresAt   DateTime  /// Typically now + 10 minutes
-  verified    Boolean   @default(false)
-  attempts    Int       @default(0) /// Failed attempt counter (lock after N)
-  createdAt   DateTime  @default(now())
-
-  // Link to user if they already exist; null for new sign-ups until verified
-  userId      String?
-  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([phone])
-  @@index([expiresAt])
-}
 
 // ============================================================
 // RefreshToken

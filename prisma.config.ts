@@ -1,5 +1,9 @@
 import path from "node:path";
+import dotenv from "dotenv";
 import { defineConfig } from "prisma/config";
+
+// Load .env file
+dotenv.config();
 
 /**
  * Prisma v7 configuration file.
