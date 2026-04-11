@@ -37,11 +37,14 @@ export interface DashboardReview {
   reviewText: string | null;
   submittedToGoogle: boolean;
   submittedAt: string;
+  formattedAt: string;
 }
 
 export interface DashboardScan {
+  review: any;
   id: string;
   scannedAt: string;
+  formattedAt: string;
   device: string | null;
   browser: string | null;
   os: string | null;
@@ -69,7 +72,9 @@ export function useDashboardData(slug: string, period: string = "30d") {
   return useQuery({
     queryKey: ["dashboard", slug, period],
     queryFn: async () => {
-      const response = await apiClient.get(`/api/businesses/${slug}/dashboard?period=${period}`);
+      const response = await apiClient.get(
+        `/api/businesses/${slug}/dashboard?period=${period}`,
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch dashboard data");
       }

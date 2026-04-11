@@ -31,12 +31,17 @@ export const GET = withAuth(async (req, payload, context: { params: Promise<{ sl
     const subToGoogleStr = searchParams.get("submittedToGoogle");
     const submittedToGoogle = subToGoogleStr === "true" ? true : subToGoogleStr === "false" ? false : undefined;
 
+    const from = searchParams.get("from") ? new Date(searchParams.get("from")!) : undefined;
+    const to = searchParams.get("to") ? new Date(searchParams.get("to")!) : undefined;
+
     const result = await getReviews(slug, page, limit, {
       type,
       rating,
       qrCodeId,
       search,
-      submittedToGoogle
+      submittedToGoogle,
+      from,
+      to,
     });
 
     return NextResponse.json(result);

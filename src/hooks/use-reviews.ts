@@ -3,9 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { ReviewType } from "@prisma/client";
 import { apiClient } from "@/lib/api-client";
+import { DashboardReview } from "./use-dashboard-data";
 
 export interface ReviewsResponse {
-  data: any[];
+  data: DashboardReview[];
   pagination: {
     page: number;
     limit: number;
@@ -21,13 +22,38 @@ interface useReviewsOptions {
   rating?: number | null;
   search?: string;
   submittedToGoogle?: boolean | null;
+  from?: Date | null;
+  to?: Date | null;
 }
 
-export function useReviews(businessSlug: string, options: useReviewsOptions = {}) {
-  const { page = 1, limit = 8, type, rating, search, submittedToGoogle } = options;
+export function useReviews(
+  businessSlug: string,
+  options: useReviewsOptions = {},
+) {
+  const {
+    page = 1,
+    limit = 8,
+    type,
+    rating,
+    search,
+    submittedToGoogle,
+    from,
+    to,
+  } = options;
 
   return useQuery<ReviewsResponse>({
-    queryKey: ["reviews", businessSlug, page, limit, type, rating, search, submittedToGoogle],
+    queryKey: [
+      "reviews",
+      businessSlug,
+      page,
+      limit,
+      type,
+      rating,
+      search,
+      submittedToGoogle,
+      from,
+      to,
+    ],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -40,8 +66,12 @@ export function useReviews(businessSlug: string, options: useReviewsOptions = {}
       if (submittedToGoogle !== null && submittedToGoogle !== undefined) {
         params.append("submittedToGoogle", submittedToGoogle.toString());
       }
+      if (from) params.append("from", from.toISOString());
+      if (to) params.append("to", to.toISOString());
 
-      const res = await apiClient.get(`/api/businesses/${businessSlug}/reviews?${params.toString()}`);
+      const res = await apiClient.get(
+        `/api/businesses/${businessSlug}/reviews?${params.toString()}`,
+      );
       if (!res.ok) throw new Error("Failed to fetch reviews");
       return res.json();
     },

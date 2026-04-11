@@ -69,10 +69,11 @@ export async function getReviews(
   limit: number = 8,
   filters: {
     type?: ReviewType;
-    rating?: number;
     qrCodeId?: string;
     search?: string;
     submittedToGoogle?: boolean;
+    from?: Date;
+    to?: Date;
   } = {},
 ) {
   const skip = (page - 1) * limit;
@@ -94,6 +95,12 @@ export async function getReviews(
         { reviewText: { contains: filters.search, mode: "insensitive" } },
         { whatWentWrong: { contains: filters.search, mode: "insensitive" } },
       ],
+    }),
+    ...((filters.from || filters.to) && {
+      submittedAt: {
+        ...(filters.from && { gte: filters.from }),
+        ...(filters.to && { lte: filters.to }),
+      },
     }),
   };
 
