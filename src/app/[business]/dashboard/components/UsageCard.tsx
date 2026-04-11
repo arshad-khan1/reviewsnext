@@ -16,15 +16,20 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 interface UsageCardProps {
-  used: number;
-  total: number;
+  monthlyUsed: number;
+  monthlyTotal: number;
+  topupUsed: number;
+  topupTotal: number;
   className?: string;
 }
 
-const UsageCard = ({ used, total, className }: UsageCardProps) => {
+const UsageCard = ({ monthlyUsed, monthlyTotal, topupUsed, topupTotal, className }: UsageCardProps) => {
   const params = useParams();
   const businessSlug = params.business as string;
-  const percentage = Math.min(Math.round((used / total) * 100), 100);
+  
+  const used = monthlyUsed + topupUsed;
+  const total = monthlyTotal + topupTotal;
+  const percentage = total > 0 ? Math.min(Math.round((used / total) * 100), 100) : 0;
 
   const getProgressColor = () => {
     if (percentage > 85) return "bg-destructive";
@@ -90,6 +95,18 @@ const UsageCard = ({ used, total, className }: UsageCardProps) => {
                 Usage limit reached. Upgrade to keep generating reviews.
               </p>
             )}
+          </div>
+
+          <div className="flex bg-slate-50/50 rounded-lg border border-slate-100 p-3 justify-between items-center text-xs">
+            <div className="flex flex-col gap-0.5">
+              <span className="font-semibold text-slate-500 uppercase tracking-wider text-[9px]">Monthly</span>
+              <span className="font-bold text-slate-700">{monthlyUsed} <span className="font-normal text-slate-400">/ {monthlyTotal}</span></span>
+            </div>
+            <div className="w-px h-8 bg-slate-200"></div>
+            <div className="flex flex-col gap-0.5 text-right">
+              <span className="font-semibold text-indigo-500 uppercase tracking-wider text-[9px]">Top-up</span>
+              <span className="font-bold text-slate-700">{topupUsed} <span className="font-normal text-slate-400">/ {topupTotal}</span></span>
+            </div>
           </div>
         </div>
 

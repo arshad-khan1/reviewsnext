@@ -145,7 +145,7 @@ export default function TopupPage() {
               </span>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-black text-slate-900">
-                  {business.usage.total - business.usage.used}
+                  {business.usage.monthlyAllocation + business.usage.topupAllocation - business.usage.monthlyUsed - business.usage.topupUsed}
                 </span>
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Credits

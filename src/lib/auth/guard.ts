@@ -20,7 +20,7 @@ export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
       user: null,
       error: NextResponse.json(
         { code: "TOKEN_MISSING", message: "Authorization header is missing" },
-        { status: 401 }
+        { status: 401 },
       ),
     };
   }
@@ -33,7 +33,7 @@ export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
       user: null,
       error: NextResponse.json(
         { code: "TOKEN_INVALID", message: "Token is invalid or expired" },
-        { status: 401 }
+        { status: 401 },
       ),
     };
   }
@@ -44,12 +44,16 @@ export async function getAuthUser(req: NextRequest): Promise<AuthResult> {
 /**
  * Higher-order function to protect API routes
  */
-export function withAuth(
-  handler: (req: NextRequest, user: TokenPayload) => Promise<NextResponse>
+export function withAuth<T = any>(
+  handler: (
+    req: NextRequest,
+    user: TokenPayload,
+    context: T,
+  ) => Promise<NextResponse>,
 ) {
-  return async (req: NextRequest) => {
+  return async (req: NextRequest, context: T) => {
     const { user, error } = await getAuthUser(req);
     if (error) return error;
-    return handler(req, user!);
+    return handler(req, user!, context);
   };
 }

@@ -49,7 +49,7 @@ export const PATCH = withAuth(async (req, payload) => {
 
     if (!result.success) {
       return NextResponse.json(
-        { code: "VALIDATION_ERROR", message: "Invalid input", errors: result.error.errors },
+        { code: "VALIDATION_ERROR", message: "Invalid input", errors: result.error.issues },
         { status: 400 }
       );
     }

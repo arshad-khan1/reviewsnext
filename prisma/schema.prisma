@@ -64,9 +64,15 @@ enum PaymentStatus {
 
 /// Categories for the AI credit topup topup packages
 enum TopupPackageId {
-  BOOSTER         // Small Booster   — 200 credits
-  ACCELERATOR     // Growth Booster  — 450 credits
-  MEGA            // Power Bundle    — 1000 credits
+  BOOSTER // Small Booster   — 200 credits
+  ACCELERATOR // Growth Booster  — 450 credits
+  MEGA // Power Bundle    — 1000 credits
+}
+
+enum BusinessStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
 }
 
 // ============================================================
@@ -76,23 +82,23 @@ enum TopupPackageId {
 // ============================================================
 
 model User {
-  id          String    @id @default(cuid())
-  phone       String    @unique /// E.164 format — primary auth identifier
-  name        String?
-  email       String?   @unique /// Optional — for receipts / notifications
-  avatarUrl   String?
-  isVerified  Boolean   @default(false) /// true after first successful OTP verification
-  isAdmin     Boolean   @default(false) /// Platform-level admin flag. Grants access to /api/admin/* routes.
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String   @id @default(cuid())
+  phone      String   @unique /// E.164 format — primary auth identifier
+  name       String?
+  email      String?  @unique /// Optional — for receipts / notifications
+  avatarUrl  String?
+  isVerified Boolean  @default(false) /// true after first successful OTP verification
+  isAdmin    Boolean  @default(false) /// Platform-level admin flag. Grants access to /api/admin/* routes.
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-   businesses     Business[]
-  refreshTokens  RefreshToken[]
+  businesses    Business[]
+  refreshTokens RefreshToken[]
+
+  isDeleted Boolean @default(false)
 
   @@index([phone])
 }
-
-
 
 // ============================================================
 // RefreshToken
@@ -105,18 +111,20 @@ model User {
 // ============================================================
 
 model RefreshToken {
-  id          String    @id @default(cuid())
-  tokenHash   String    @unique /// SHA-256 hash of the raw refresh token
-  expiresAt   DateTime  /// 30 days from issuance
-  revokedAt   DateTime? /// Set when explicitly revoked (logout)
-  createdAt   DateTime  @default(now())
+  id        String    @id @default(cuid())
+  tokenHash String    @unique /// SHA-256 hash of the raw refresh token
+  expiresAt DateTime /// 30 days from issuance
+  revokedAt DateTime? /// Set when explicitly revoked (logout)
+  createdAt DateTime  @default(now())
 
   /// Device/client info for displaying active sessions to the user
-  deviceLabel String?   /// e.g. "iPhone 15 • Safari", "Chrome on Windows"
+  deviceLabel String? /// e.g. "iPhone 15 • Safari", "Chrome on Windows"
   ipAddress   String?
 
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  isDeleted Boolean @default(false)
 
   @@index([userId])
   @@index([expiresAt])
@@ -130,20 +138,21 @@ model RefreshToken {
 // ============================================================
 
 model Business {
-  id           String   @id @default(cuid())
-  slug         String   @unique /// URL-safe identifier used in routes: /[business]/...
+  id           String         @id @default(cuid())
+  slug         String         @unique /// URL-safe identifier used in routes: /[business]/...
   name         String
   logoUrl      String?
   industry     String
-  contactEmail String?  /// Optional business contact email
+  contactEmail String? /// Optional business contact email
   description  String?
-  city         String   /// City where the business is headquartered (e.g. "Mumbai")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  city         String /// City where the business is headquartered (e.g. "Mumbai")
+  status       BusinessStatus @default(ACTIVE)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   // ── Ownership ──────────────────────────────────────────────
-  ownerId      String
-  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   // ── Review Routing Config ──────────────────────────────────
   /// Ratings >= this threshold go to Google. Ratings below are caught internally.
@@ -151,11 +160,11 @@ model Business {
 
   // ── Default QR Config ─────────────────────────────────────
   /// Default Google Maps review URL (overridable per QR Code)
-  defaultGoogleMapsLink  String?
+  defaultGoogleMapsLink String?
   /// Default AI guiding prompt for all new QR codes
-  defaultAiPrompt        String?
+  defaultAiPrompt       String?
   /// Default comment style for AI-generated review suggestions
-  defaultCommentStyle    CommentStyle @default(PROFESSIONAL_POLITE)
+  defaultCommentStyle   CommentStyle @default(PROFESSIONAL_POLITE)
 
   // ── Branding Config (GROWTH + PRO) ────────────────────────
   /// Null = STARTER plan → ReviewFunnel default UI + "Powered by ReviewFunnel" watermark.
@@ -169,14 +178,16 @@ model Business {
   ///   buttonStyle: "rounded" | "sharp" | "pill",
   ///   fontFamily: string         // e.g. "Inter", "Playfair Display"
   /// }
-  brandingConfig  Json?
+  brandingConfig Json?
 
   // ── Relations ─────────────────────────────────────────────
   qrCodes      QRCode[]
-  locations    Location[]   /// PRO plan only — physical branch locations
+  locations    Location[] /// PRO plan only — physical branch locations
   subscription Subscription?
   aiCredits    AiCredits?
   payments     Payment[]
+
+  isDeleted Boolean @default(false)
 
   @@index([slug])
   @@index([ownerId])
@@ -192,9 +203,9 @@ model Business {
 
 model Location {
   id        String   @id @default(cuid())
-  name      String   /// e.g. "Bandra Branch", "Andheri Outlet", "Floor 2"
-  address   String?  /// Full street address of this branch
-  city      String?  /// City of this branch (may differ from business HQ city)
+  name      String /// e.g. "Bandra Branch", "Andheri Outlet", "Floor 2"
+  address   String? /// Full street address of this branch
+  city      String? /// City of this branch (may differ from business HQ city)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -204,7 +215,9 @@ model Location {
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   // ── Relations ─────────────────────────────────────────────
-  qrCodes    QRCode[]
+  qrCodes QRCode[]
+
+  isDeleted Boolean @default(false)
 
   @@index([businessId])
 }
@@ -219,26 +232,27 @@ model Location {
 // ============================================================
 
 model QRCode {
-  id           String       @id @default(cuid())
-  name         String       /// Human-readable label e.g. "Table 5", "Main Entrance"
-  sourceTag    String       /// Slug-safe unique identifier for tracking source: e.g. "table-5"
-  isActive     Boolean      @default(true)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id        String   @id @default(cuid())
+  name      String /// Human-readable label e.g. "Table 5", "Main Entrance"
+  sourceTag String /// Slug-safe unique identifier for tracking source: e.g. "table-5"
+  isActive  Boolean  @default(true)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // ── Per-QR Override Settings ───────────────────────────────
-  googleMapsLink  String?       /// If set, overrides the business default
-  aiGuidingPrompt String?       /// If set, overrides the business default
+  googleMapsLink  String? /// If set, overrides the business default
+  aiGuidingPrompt String? /// If set, overrides the business default
   commentStyle    CommentStyle? /// If set, overrides the business default
 
   // ── Ownership ──────────────────────────────────────────────
-  businessId  String
-  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   // ── Location (PRO only) ────────────────────────────────────
   /// Optional. Assign to a Location for per-branch analytics. Null = unassigned.
-  locationId  String?
-  location    Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
 
   // ── Branding Override (PRO only) ──────────────────────────
   /// Partial override of business.brandingConfig for this QR code.
@@ -248,8 +262,10 @@ model QRCode {
   brandingOverride Json?
 
   // ── Relations ─────────────────────────────────────────────
-  scans       Scan[]
-  reviews     Review[]
+  scans   Scan[]
+  reviews Review[]
+
+  isDeleted Boolean @default(false)
 
   @@unique([businessId, sourceTag]) /// Source tags must be unique within a business
   @@index([businessId])
@@ -263,28 +279,30 @@ model QRCode {
 // ============================================================
 
 model Scan {
-  id                String   @id @default(cuid())
-  scannedAt         DateTime @default(now())
+  id        String   @id @default(cuid())
+  scannedAt DateTime @default(now())
 
   // ── Device & Browser Info ─────────────────────────────────
-  device            String?  /// e.g. "iPhone 15 Pro"
-  browser           String?  /// e.g. "Safari 18"
-  os                String?  /// e.g. "iOS 19"
-  ipAddress         String?
+  device    String? /// e.g. "iPhone 15 Pro"
+  browser   String? /// e.g. "Safari 18"
+  os        String? /// e.g. "iOS 19"
+  ipAddress String?
 
   // ── Geo Info ────────────────────────────────────────────
-  city              String?
-  country           String?
+  city    String?
+  country String?
 
   // ── Outcome ───────────────────────────────────────────────
-  resultedInReview  Boolean  @default(false)
+  resultedInReview Boolean @default(false)
 
   // ── Relations ─────────────────────────────────────────────
-  qrCodeId          String
-  qrCode            QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  qrCodeId String
+  qrCode   QRCode @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
 
   /// If this scan resulted in a review, the review is linked here
-  review            Review?
+  review Review?
+
+  isDeleted Boolean @default(false)
 
   @@index([qrCodeId])
   @@index([scannedAt])
@@ -299,38 +317,40 @@ model Scan {
 // ============================================================
 
 model Review {
-  id                String     @id @default(cuid())
-  type              ReviewType
+  id   String     @id @default(cuid())
+  type ReviewType
 
   // ── Rating ────────────────────────────────────────────────
-  rating            Int        /// 1–5
+  rating Int /// 1–5
 
   // ── Positive Review Fields ────────────────────────────────
-  reviewText        String?    /// Final review text (edited by user or from AI suggestion)
-  reviewWasAiDraft  Boolean    @default(false) /// Whether the review started as an AI draft
-  submittedToGoogle Boolean    @default(false)
+  reviewText        String? /// Final review text (edited by user or from AI suggestion)
+  reviewWasAiDraft  Boolean @default(false) /// Whether the review started as an AI draft
+  submittedToGoogle Boolean @default(false)
 
   // ── Negative Feedback Fields ──────────────────────────────
-  whatWentWrong     String?
-  howToImprove      String?
+  whatWentWrong String?
+  howToImprove  String?
 
   // ── Device Metadata (captured at review time) ─────────────
-  device            String?
-  browser           String?
-  os                String?
+  device  String?
+  browser String?
+  os      String?
 
-  submittedAt       DateTime   @default(now())
+  submittedAt DateTime @default(now())
 
   // ── Relations ─────────────────────────────────────────────
-  qrCodeId          String
-  qrCode            QRCode     @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  qrCodeId String
+  qrCode   QRCode @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
 
   /// One-to-one link back to the originating scan
-  scanId            String?    @unique
-  scan              Scan?      @relation(fields: [scanId], references: [id], onDelete: SetNull)
+  scanId String? @unique
+  scan   Scan?   @relation(fields: [scanId], references: [id], onDelete: SetNull)
 
   /// If AI generated a draft for this review, track the usage
-  aiUsageLog        AiUsageLog?
+  aiUsageLog AiUsageLog?
+
+  isDeleted Boolean @default(false)
 
   @@index([qrCodeId])
   @@index([submittedAt])
@@ -345,33 +365,35 @@ model Review {
 // ============================================================
 
 model Subscription {
-  id                   String             @id @default(cuid())
-  plan                 PlanType           @default(STARTER)
-  status               SubscriptionStatus @default(TRIALING)
-  billingInterval      BillingInterval    @default(YEARLY)
+  id              String             @id @default(cuid())
+  plan            PlanType           @default(STARTER)
+  status          SubscriptionStatus @default(TRIALING)
+  billingInterval BillingInterval    @default(YEARLY)
 
   // ── Trial ──────────────────────────────────────────────────
-  trialStartsAt        DateTime?
-  trialEndsAt          DateTime?
+  trialStartsAt DateTime?
+  trialEndsAt   DateTime?
 
   // ── Billing Period ────────────────────────────────────────
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
 
   // ── Plan Limits (denormalized for fast access) ─────────────
   /// AI credits included in this subscription period
-  monthlyAiCredits     Int                @default(100)
+  monthlyAiCredits Int @default(100)
 
   // ── External Payment Gateway IDs ─────────────────────────
-  razorpaySubId        String?            @unique /// Razorpay subscription ID
-  razorpayCustomerId   String?            /// Razorpay customer ID
+  razorpaySubId      String? @unique /// Razorpay subscription ID
+  razorpayCustomerId String? /// Razorpay customer ID
 
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // ── Ownership ──────────────────────────────────────────────
-  businessId           String             @unique
-  business             Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId String   @unique
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  isDeleted Boolean @default(false)
 
   @@index([businessId])
   @@index([status])
@@ -384,19 +406,30 @@ model Subscription {
 // ============================================================
 
 model AiCredits {
-  id          String   @id @default(cuid())
-  /// Credits consumed in the current billing/tracking period
-  usedCredits Int      @default(0)
-  /// Current total credits available (subscription allotment + topup credits)
-  totalCredits Int     @default(100)
-  updatedAt   DateTime @updatedAt
+  id String @id @default(cuid())
+
+  // -- Monthly Subscription Credits --
+  /// The monthly allowance from the subscription plan
+  monthlyAllocation Int @default(100)
+  /// How many monthly credits have been used this billing period
+  monthlyUsed       Int @default(0)
+
+  // -- Topup Credits --
+  /// Accumulation of all top-up credits ever purchased
+  topupAllocation Int @default(0)
+  /// How many top-up credits have been used overall
+  topupUsed       Int @default(0)
+
+  updatedAt DateTime @updatedAt
 
   // ── Ownership ──────────────────────────────────────────────
-  businessId  String   @unique
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId String   @unique
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   // ── Relations ─────────────────────────────────────────────
-  usageLogs   AiUsageLog[]
+  usageLogs AiUsageLog[]
+
+  isDeleted Boolean @default(false)
 }
 
 // ============================================================
@@ -406,18 +439,20 @@ model AiCredits {
 // ============================================================
 
 model AiUsageLog {
-  id           String    @id @default(cuid())
-  creditsUsed  Int       /// How many credits this operation consumed
-  operation    String    /// e.g. "REVIEW_DRAFT", "REVIEW_ENHANCE"
-  usedAt       DateTime  @default(now())
+  id          String   @id @default(cuid())
+  creditsUsed Int /// How many credits this operation consumed
+  operation   String /// e.g. "REVIEW_DRAFT", "REVIEW_ENHANCE"
+  usedAt      DateTime @default(now())
 
   // ── Relations ─────────────────────────────────────────────
-  aiCreditsId  String
-  aiCredits    AiCredits @relation(fields: [aiCreditsId], references: [id], onDelete: Cascade)
+  aiCreditsId String
+  aiCredits   AiCredits @relation(fields: [aiCreditsId], references: [id], onDelete: Cascade)
 
   /// If this usage was for generating a review draft, link to the review
-  reviewId     String?   @unique
-  review       Review?   @relation(fields: [reviewId], references: [id], onDelete: SetNull)
+  reviewId String? @unique
+  review   Review? @relation(fields: [reviewId], references: [id], onDelete: SetNull)
+
+  isDeleted Boolean @default(false)
 
   @@index([aiCreditsId])
   @@index([usedAt])
@@ -429,28 +464,30 @@ model AiUsageLog {
 // ============================================================
 
 model Payment {
-  id                 String        @id @default(cuid())
-  status             PaymentStatus @default(PENDING)
-  amountInPaise      Int           /// Amount in smallest currency unit (paise for INR)
-  currency           String        @default("INR")
+  id            String        @id @default(cuid())
+  status        PaymentStatus @default(PENDING)
+  amountInPaise Int /// Amount in smallest currency unit (paise for INR)
+  currency      String        @default("INR")
 
   // ── Topup Metadata ────────────────────────────────────────
-  isTopup            Boolean       @default(false)
-  topupPackageId     TopupPackageId?
-  creditsAdded       Int?          /// Credits granted from this topup payment
+  isTopup        Boolean         @default(false)
+  topupPackageId TopupPackageId?
+  creditsAdded   Int? /// Credits granted from this topup payment
 
   // ── External Gateway IDs ──────────────────────────────────
-  razorpayOrderId    String?       @unique
-  razorpayPaymentId  String?       @unique
-  razorpaySignature  String?
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String? @unique
+  razorpaySignature String?
 
   // ── Timestamps ────────────────────────────────────────────
-  initiatedAt        DateTime      @default(now())
-  completedAt        DateTime?
+  initiatedAt DateTime  @default(now())
+  completedAt DateTime?
 
   // ── Ownership ──────────────────────────────────────────────
-  businessId         String
-  business           Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  isDeleted Boolean @default(false)
 
   @@index([businessId])
   @@index([status])

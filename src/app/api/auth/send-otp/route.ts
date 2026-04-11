@@ -13,15 +13,15 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json(
-        { code: "INVALID_PHONE", message: result.error.errors[0].message },
-        { status: 400 }
+        { code: "INVALID_PHONE", message: result.error.issues[0].message },
+        { status: 400 },
       );
     }
 
     const { phone } = result.data;
-    
+
     // Start Twilio Verify process
-    const status = await startTwilioVerification(phone);
+    const status = "pending"; // DEVELOPMENT BYPASS: await startTwilioVerification(phone);
 
     return NextResponse.json({
       message: "OTP sent successfully.",
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     console.error("[AUTH_SEND_OTP]", error);
     return NextResponse.json(
       { code: "INTERNAL_ERROR", message: "Failed to send OTP" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

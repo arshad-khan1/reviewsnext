@@ -19,8 +19,8 @@ export async function createRefreshToken(data: {
  * Finds a refresh token by its hash
  */
 export async function findRefreshToken(tokenHash: string) {
-  return await prisma.refreshToken.findUnique({
-    where: { tokenHash },
+  return await prisma.refreshToken.findFirst({
+    where: { tokenHash, isDeleted: false },
     include: { user: true },
   });
 }
@@ -53,6 +53,7 @@ export async function listActiveSessions(userId: string) {
     where: {
       userId,
       revokedAt: null,
+      isDeleted: false,
       expiresAt: { gt: new Date() },
     },
     orderBy: { createdAt: "desc" },

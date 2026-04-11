@@ -128,8 +128,10 @@ const BusinessDashboard = () => {
           </div>
           <div className="lg:col-span-1">
             <UsageCard
-              used={business.usage.used}
-              total={business.usage.total}
+              monthlyUsed={business.usage.monthlyUsed}
+              monthlyTotal={business.usage.monthlyAllocation}
+              topupUsed={business.usage.topupUsed}
+              topupTotal={business.usage.topupAllocation}
               className="h-full"
             />
           </div>

@@ -4,8 +4,8 @@ import { prisma } from "../prisma";
  * Finds a user by their phone number
  */
 export async function findUserByPhone(phone: string) {
-  return await prisma.user.findUnique({
-    where: { phone },
+  return await prisma.user.findFirst({
+    where: { phone, isDeleted: false },
   });
 }
 
@@ -13,8 +13,8 @@ export async function findUserByPhone(phone: string) {
  * Finds a user by ID
  */
 export async function findUserById(id: string) {
-  return await prisma.user.findUnique({
-    where: { id },
+  return await prisma.user.findFirst({
+    where: { id, isDeleted: false },
   });
 }
 
@@ -24,7 +24,7 @@ export async function findUserById(id: string) {
 export async function upsertUser(phone: string) {
   return await prisma.user.upsert({
     where: { phone },
-    update: {}, // No updates needed if user exists
+    update: { isDeleted: false }, // Reactivate if they were soft deleted
     create: {
       phone,
       isVerified: true, // Mark as verified since they passed OTP
@@ -53,8 +53,8 @@ export async function updateUserProfile(
  * Checks if an email is already taken by another user
  */
 export async function isEmailTaken(email: string, excludeUserId?: string) {
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const user = await prisma.user.findFirst({
+    where: { email, isDeleted: false },
   });
 
   if (!user) return false;

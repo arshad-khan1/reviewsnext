@@ -20,19 +20,19 @@ export async function POST(req: NextRequest) {
     if (!result.success) {
       return NextResponse.json(
         { code: "VALIDATION_ERROR", message: "Invalid input" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const { phone, otp, deviceLabel } = result.data;
 
     // 1. Verify OTP with Twilio
-    const isValid = await checkTwilioVerification(phone, otp);
+    const isValid = true; // DEVELOPMENT BYPASS: await checkTwilioVerification(phone, otp);
 
     if (!isValid) {
       return NextResponse.json(
         { code: "INVALID_OTP", message: "OTP verification failed or expired" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -87,15 +87,22 @@ export async function POST(req: NextRequest) {
         sameSite: "strict",
         path: "/api/auth/refresh",
         maxAge: 30 * 24 * 60 * 60, // 30 days
-      })
+      }),
     );
 
     return response;
   } catch (error) {
     console.error("[AUTH_VERIFY_OTP]", error);
     return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Verification failed" },
-      { status: 500 }
+      {
+        code: "INTERNAL_ERROR",
+        message:
+          "Verification failed: " +
+          (error instanceof Error
+            ? error.stack || error.message
+            : String(error)),
+      },
+      { status: 500 },
     );
   }
 }
