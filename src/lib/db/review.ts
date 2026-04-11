@@ -1,5 +1,6 @@
 import { prisma } from "../prisma";
 import { Prisma, ReviewType } from "@prisma/client";
+import { formatDate } from "../utils/format";
 
 /**
  * Creates a new review.
@@ -126,6 +127,7 @@ export async function getReviews(
       whatWentWrong: r.whatWentWrong,
       howToImprove: r.howToImprove,
       submittedAt: r.submittedAt,
+      formattedAt: formatDate(r.submittedAt),
       qrCode: r.qrCode,
     })),
     pagination: {
@@ -141,7 +143,7 @@ export async function getReviews(
  * Fetches a single review detail for a business owner.
  */
 export async function getReviewDetails(id: string, businessSlug: string) {
-  return await prisma.review.findFirst({
+  const review = await prisma.review.findFirst({
     where: {
       id,
       qrCode: {
@@ -172,4 +174,15 @@ export async function getReviewDetails(id: string, businessSlug: string) {
       },
     },
   });
+
+  if (!review) return null;
+
+  return {
+    ...review,
+    formattedAt: formatDate(review.submittedAt),
+    scan: review.scan ? {
+      ...review.scan,
+      formattedAt: formatDate(review.scan.scannedAt),
+    } : null,
+  };
 }

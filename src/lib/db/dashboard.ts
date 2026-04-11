@@ -1,5 +1,6 @@
 import { prisma } from "../prisma";
 import { Prisma } from "@prisma/client";
+import { formatDate } from "../utils/format";
 
 /**
  * Aggregates all analytics data for the business dashboard.
@@ -226,10 +227,12 @@ export async function getDashboardData(
       reviewText: r.reviewText,
       submittedToGoogle: r.submittedToGoogle,
       submittedAt: r.submittedAt,
+      formattedAt: formatDate(r.submittedAt),
     })),
     recentScans: recentScans.map((s) => ({
       id: s.id,
       scannedAt: s.scannedAt,
+      formattedAt: formatDate(s.scannedAt),
       device: s.device,
       browser: s.browser,
       os: s.os,

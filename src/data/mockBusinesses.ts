@@ -12,6 +12,7 @@ export interface Business {
   industry: string;
   location: string;
   lastActive: string;
+  formattedLastActive: string;
   plan: "Starter" | "Growth" | "Pro";
   usage: {
     monthlyAllocation: number;

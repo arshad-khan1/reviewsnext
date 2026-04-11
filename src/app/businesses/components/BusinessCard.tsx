@@ -31,18 +31,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
     highRatings,
     industry,
     location,
-    lastActive,
   } = business;
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   return (
     <Card className="group relative overflow-hidden flex flex-col hover:shadow-md transition-all duration-300 border-border">
@@ -147,7 +136,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
           </Button>
           <div className="mt-3 flex items-center justify-center text-[11px] text-muted-foreground">
             <Activity className="w-3 h-3 mr-1" />
-            Active {formatDate(lastActive)}
+            Active {business.formattedLastActive}
           </div>
         </div>
       </CardContent>

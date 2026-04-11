@@ -1,6 +1,7 @@
 import { prisma } from "../prisma";
 import { Prisma } from "@prisma/client";
 import { mergeBranding } from "./branding";
+import { formatDate } from "../utils/format";
 
 /**
  * Creates a new scan record.
@@ -138,7 +139,14 @@ export async function getScans(
   ]);
 
   return {
-    data: scans,
+    data: scans.map((s) => ({
+      ...s,
+      formattedAt: formatDate(s.scannedAt),
+      review: s.review ? {
+        ...s.review,
+        formattedAt: s.review.submittedAt ? formatDate(s.review.submittedAt) : null,
+      } : null,
+    })),
     pagination: {
       page,
       limit,
@@ -152,7 +160,7 @@ export async function getScans(
  * Fetches a single scan detail for a business owner.
  */
 export async function getScanDetails(id: string, businessSlug: string) {
-  return await prisma.scan.findFirst({
+  const scan = await prisma.scan.findFirst({
     where: {
       id,
       qrCode: {
@@ -184,4 +192,15 @@ export async function getScanDetails(id: string, businessSlug: string) {
       },
     },
   });
+
+  if (!scan) return null;
+
+  return {
+    ...scan,
+    formattedAt: formatDate(scan.scannedAt),
+    review: scan.review ? {
+      ...scan.review,
+      formattedAt: formatDate(scan.review.submittedAt),
+    } : null,
+  };
 }

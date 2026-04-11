@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
 
 export interface ScansResponse {
   data: any[];
@@ -41,7 +42,7 @@ export function useScans(businessSlug: string, options: useScansOptions = {}) {
       if (from) params.append("from", from);
       if (to) params.append("to", to);
 
-      const res = await fetch(`/api/businesses/${businessSlug}/scans?${params.toString()}`);
+      const res = await apiClient.get(`/api/businesses/${businessSlug}/scans?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch scans");
       return res.json();
     },

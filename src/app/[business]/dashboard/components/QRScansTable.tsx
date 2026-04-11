@@ -1,22 +1,23 @@
 "use client";
 
 import { Star, Smartphone, Globe, Hash, Eye } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { mockScans } from "@/data/mockDashboardData";
-import type { QRScan } from "@/data/mockDashboardData";
-
-const formatDate = (ts: string) => {
-  const d = new Date(ts);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
 
 import type { DashboardScan } from "@/hooks/use-dashboard-data";
 
@@ -50,7 +51,11 @@ const QRScansTable = ({ onViewScan, scans }: QRScansTableProps) => (
           {scans.map((s) => (
             <TableRow key={s.id}>
               <TableCell className="text-xs whitespace-nowrap">
-                {formatDate(s.scannedAt)}
+                <div className="flex flex-col">
+                  <p className="text-sm font-bold text-slate-700">
+                    {s.formattedAt}
+                  </p>
+                </div>
               </TableCell>
               <TableCell className="text-sm font-medium">
                 <div className="flex items-center gap-1.5">
@@ -75,7 +80,10 @@ const QRScansTable = ({ onViewScan, scans }: QRScansTableProps) => (
               </TableCell>
               <TableCell>
                 {s.resultedInReview ? (
-                  <Badge variant="outline" className="text-success border-success/30 text-xs">
+                  <Badge
+                    variant="outline"
+                    className="text-success border-success/30 text-xs"
+                  >
                     {s.rating && (
                       <>
                         <Star className="h-3 w-3 fill-star text-star mr-1" />

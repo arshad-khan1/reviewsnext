@@ -20,16 +20,6 @@ import DetailRow from "../components/DetailRow";
 
 const ITEMS_PER_PAGE = 8;
 
-const formatDate = (ts: string) => {
-  const d = new Date(ts);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
 export default function ScansPage() {
   const params = useParams();
   const businessSlug = params.business as string;
@@ -165,7 +155,7 @@ export default function ScansPage() {
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Date & Time</span>
-                    <p className="text-sm font-semibold">{formatDate(selectedScan.timestamp)}</p>
+                    <p className="text-sm font-semibold">{selectedScan.formattedAt}</p>
                  </div>
                  <div className="space-y-1">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Result</span>

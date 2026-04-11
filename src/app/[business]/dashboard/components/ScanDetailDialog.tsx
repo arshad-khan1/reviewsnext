@@ -8,7 +8,15 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Smartphone, Globe, Shield, MapPin, MessageSquare, Star, Clock } from "lucide-react";
+import {
+  Search,
+  Smartphone,
+  Globe,
+  Shield,
+  MapPin,
+  Star,
+  Clock,
+} from "lucide-react";
 import DetailRow from "./DetailRow";
 import { useScanDetails } from "@/hooks/use-details";
 
@@ -18,18 +26,11 @@ interface ScanDetailDialogProps {
   onClose: () => void;
 }
 
-const formatDate = (ts: string) => {
-  const d = new Date(ts);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-export default function ScanDetailDialog({ scanId, businessSlug, onClose }: ScanDetailDialogProps) {
+export default function ScanDetailDialog({
+  scanId,
+  businessSlug,
+  onClose,
+}: ScanDetailDialogProps) {
   const { data: scan, isLoading } = useScanDetails(businessSlug, scanId);
 
   return (
@@ -49,7 +50,9 @@ export default function ScanDetailDialog({ scanId, businessSlug, onClose }: Scan
         {isLoading ? (
           <div className="p-12 flex flex-col items-center justify-center gap-4">
             <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
-            <p className="text-sm font-bold text-muted-foreground animate-pulse">Loading scan context...</p>
+            <p className="text-sm font-bold text-muted-foreground animate-pulse">
+              Loading scan context...
+            </p>
           </div>
         ) : scan ? (
           <div className="p-6 space-y-8 overflow-y-auto max-h-[80vh]">
@@ -60,7 +63,7 @@ export default function ScanDetailDialog({ scanId, businessSlug, onClose }: Scan
                   Scanned At
                 </span>
                 <p className="text-sm font-bold text-slate-700">
-                  {formatDate(scan.scannedAt)}
+                  {scan.formattedAt}
                 </p>
               </div>
 
@@ -74,7 +77,10 @@ export default function ScanDetailDialog({ scanId, businessSlug, onClose }: Scan
                       Converted ✅
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-slate-400 border-slate-200 font-bold px-3 py-1">
+                    <Badge
+                      variant="outline"
+                      className="text-slate-400 border-slate-200 font-bold px-3 py-1"
+                    >
                       Scan Only
                     </Badge>
                   )}
@@ -102,28 +108,44 @@ export default function ScanDetailDialog({ scanId, businessSlug, onClose }: Scan
                   <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
                     <Smartphone className="w-4.5 h-4.5" />
                   </div>
-                  <DetailRow label="Device" value={scan.device || "Unknown Hardware"} />
+                  <DetailRow
+                    label="Device"
+                    value={scan.device || "Unknown Hardware"}
+                  />
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
                     <Globe className="w-4.5 h-4.5" />
                   </div>
-                  <DetailRow label="Browser/OS" value={`${scan.browser || "Unknown"} on ${scan.os || "N/A"}`} />
+                  <DetailRow
+                    label="Browser/OS"
+                    value={`${scan.browser || "Unknown"} on ${scan.os || "N/A"}`}
+                  />
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
                     <Shield className="w-4.5 h-4.5" />
                   </div>
-                  <DetailRow label="IP Address" value={scan.ipAddress || "Private IP"} />
+                  <DetailRow
+                    label="IP Address"
+                    value={scan.ipAddress || "Private IP"}
+                  />
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
                     <MapPin className="w-4.5 h-4.5" />
                   </div>
-                  <DetailRow label="Location" value={scan.city ? `${scan.city}, ${scan.country || ""}` : "Location Hidden"} />
+                  <DetailRow
+                    label="Location"
+                    value={
+                      scan.city
+                        ? `${scan.city}, ${scan.country || ""}`
+                        : "Location Hidden"
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -144,7 +166,10 @@ export default function ScanDetailDialog({ scanId, businessSlug, onClose }: Scan
                         />
                       ))}
                     </div>
-                    <Badge variant="outline" className="bg-white border-indigo-100 text-indigo-600 text-[9px] font-black">
+                    <Badge
+                      variant="outline"
+                      className="bg-white border-indigo-100 text-indigo-600 text-[9px] font-black"
+                    >
                       ID: {scan.review.id.slice(-6).toUpperCase()}
                     </Badge>
                   </div>
@@ -159,18 +184,31 @@ export default function ScanDetailDialog({ scanId, businessSlug, onClose }: Scan
 
                   {(scan.review.whatWentWrong || scan.review.howToImprove) && (
                     <div className="grid grid-cols-1 gap-3 pt-2">
-                       {scan.review.whatWentWrong && (
-                         <div className="space-y-1">
-                           <span className="text-[8px] font-black text-red-400 uppercase tracking-widest">Pain Point</span>
-                           <p className="text-xs font-bold text-slate-700">{scan.review.whatWentWrong}</p>
-                         </div>
-                       )}
-                       {scan.review.howToImprove && (
-                         <div className="space-y-1">
-                           <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Suggestion</span>
-                           <p className="text-xs font-bold text-slate-700">{scan.review.howToImprove}</p>
-                         </div>
-                       )}
+                      {scan.review.whatWentWrong && (
+                        <div className="space-y-1">
+                          <span className="text-[8px] font-black text-red-400 uppercase tracking-widest">
+                            Pain Point
+                          </span>
+                          <p className="text-xs font-bold text-slate-700">
+                            {scan.review.whatWentWrong}
+                          </p>
+                        </div>
+                      )}
+                      {scan.review.howToImprove && (
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">
+                              Suggestion
+                            </span>
+                            <p className="text-xs font-bold text-slate-700">
+                              {scan.review.howToImprove}
+                            </p>
+                          </div>
+                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                            {scan.review.formattedAt}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

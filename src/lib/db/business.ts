@@ -1,5 +1,6 @@
 import { prisma } from "../prisma";
 import { Prisma } from "@prisma/client";
+import { formatDate } from "../utils/format";
 
 /**
  * Checks if a user is the owner of a business by slug
@@ -97,7 +98,15 @@ export async function getBusinessesByUser(
     prisma.business.count({ where }),
   ]);
 
-  return { businesses, total };
+  return { 
+    businesses: businesses.map(b => ({
+      ...b,
+      formattedAt: formatDate(b.createdAt),
+      // For lastActive, we could use the updatedAt or the latest scan date
+      formattedUpdatedAt: formatDate(b.updatedAt),
+    })), 
+    total 
+  };
 }
 
 export type CreateBusinessInput = {

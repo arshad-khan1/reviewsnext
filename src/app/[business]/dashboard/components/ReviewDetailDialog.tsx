@@ -18,17 +18,6 @@ interface ReviewDetailDialogProps {
   onClose: () => void;
 }
 
-const formatDate = (ts: string) => {
-  const d = new Date(ts);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
 export default function ReviewDetailDialog({ reviewId, businessSlug, onClose }: ReviewDetailDialogProps) {
   const { data: review, isLoading } = useReviewDetails(businessSlug, reviewId);
 
@@ -55,14 +44,11 @@ export default function ReviewDetailDialog({ reviewId, businessSlug, onClose }: 
           <div className="p-6 space-y-8 overflow-y-auto max-h-[80vh]">
             {/* Header / Meta Info */}
             <div className="flex flex-wrap gap-6 items-start justify-between">
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-1.5">
-                  <Clock className="w-3 h-3" />
-                  Submitted At
-                </span>
-                <p className="text-sm font-bold text-slate-700">
-                  {formatDate(review.submittedAt)}
-                </p>
+              <div className="space-y-4">
+                <DetailRow label="Submitted At" value={review.formattedAt} />
+                {review.scan && (
+                  <DetailRow label="First Scanned At" value={review.scan.formattedAt} />
+                )}
               </div>
 
               <div className="space-y-1.5">

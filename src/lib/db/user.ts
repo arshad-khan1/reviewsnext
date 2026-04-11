@@ -59,7 +59,7 @@ export async function upsertUser(phone: string) {
     include: {
       businesses: {
         where: { isDeleted: false },
-        select: { id: true, slug: true, name: true },
+        select: { id: true, slug: true, name: true, createdAt: true, updatedAt: true },
       },
     },
   });

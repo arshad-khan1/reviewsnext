@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { ReviewType } from "@prisma/client";
+import { apiClient } from "@/lib/api-client";
 
 export interface ReviewsResponse {
   data: any[];
@@ -40,7 +41,7 @@ export function useReviews(businessSlug: string, options: useReviewsOptions = {}
         params.append("submittedToGoogle", submittedToGoogle.toString());
       }
 
-      const res = await fetch(`/api/businesses/${businessSlug}/reviews?${params.toString()}`);
+      const res = await apiClient.get(`/api/businesses/${businessSlug}/reviews?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch reviews");
       return res.json();
     },

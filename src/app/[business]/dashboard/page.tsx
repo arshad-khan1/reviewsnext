@@ -26,25 +26,23 @@ import ReviewDetailDialog from "./components/ReviewDetailDialog";
 import ScanDetailDialog from "./components/ScanDetailDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { useBusiness } from "@/hooks/use-business";
-import { useDashboardData, type DashboardReview, type DashboardScan } from "@/hooks/use-dashboard-data";
-
-const formatDate = (ts: string) => {
-  const d = new Date(ts);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+import { useDashboardData } from "@/hooks/use-dashboard-data";
 
 const BusinessDashboard = () => {
   const params = useParams();
   const router = useRouter();
   const businessSlug = params.business as string;
 
-  const { data: business, isLoading: isBusinessLoading, error: businessError } = useBusiness(businessSlug);
-  const { data: dashboard, isLoading: isDashboardLoading, error: dashboardError } = useDashboardData(businessSlug);
+  const {
+    data: business,
+    isLoading: isBusinessLoading,
+    error: businessError,
+  } = useBusiness(businessSlug);
+  const {
+    data: dashboard,
+    isLoading: isDashboardLoading,
+    error: dashboardError,
+  } = useDashboardData(businessSlug);
 
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
@@ -143,7 +141,9 @@ const BusinessDashboard = () => {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ScansOverTimeChart data={dashboard?.charts.scansOverTime || []} />
-          <RatingDistributionChart data={dashboard?.charts.ratingDistribution || []} />
+          <RatingDistributionChart
+            data={dashboard?.charts.ratingDistribution || []}
+          />
         </div>
 
         {/* Active QR Codes List */}
@@ -226,13 +226,13 @@ const BusinessDashboard = () => {
               </button>
             </div>
 
-            <Link href={`/${businessSlug}/dashboard/${activeTab}`}>
+            <Link href={`/${businessSlug}/dashboard/reviews`}>
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-primary hover:text-primary hover:bg-primary/5 font-semibold gap-1"
               >
-                View All {activeTab === "reviews" ? "Reviews" : "Scans"}
+                View All Reviews
                 <ExternalLink className="w-3.5 h-3.5" />
               </Button>
             </Link>

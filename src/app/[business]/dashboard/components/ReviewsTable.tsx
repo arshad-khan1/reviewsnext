@@ -8,16 +8,6 @@ import { Button } from "@/components/ui/button";
 import { mockReviews } from "@/data/mockDashboardData";
 import type { ReviewEntry } from "@/data/mockDashboardData";
 
-const formatDate = (ts: string) => {
-  const d = new Date(ts);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
 import type { DashboardReview } from "@/hooks/use-dashboard-data";
 
 interface ReviewsTableProps {
@@ -47,7 +37,7 @@ const ReviewsTable = ({ onViewReview, reviews }: ReviewsTableProps) => (
           {reviews.map((r) => (
             <TableRow key={r.id}>
               <TableCell className="text-xs whitespace-nowrap">
-                {formatDate(r.submittedAt)}
+                {r.formattedAt}
               </TableCell>
               <TableCell>
                 {r.type === "POSITIVE" ? (
