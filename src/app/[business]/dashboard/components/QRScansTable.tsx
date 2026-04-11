@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, Smartphone, Globe, Eye } from "lucide-react";
+import { Star, Smartphone, Globe, Hash, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -18,17 +18,19 @@ const formatDate = (ts: string) => {
   });
 };
 
+import type { DashboardScan } from "@/hooks/use-dashboard-data";
+
 interface QRScansTableProps {
-  onViewScan: (scan: QRScan) => void;
-  scans?: QRScan[];
+  onViewScan: (scan: any) => void;
+  scans: DashboardScan[];
 }
 
-const QRScansTable = ({ onViewScan, scans = mockScans }: QRScansTableProps) => (
+const QRScansTable = ({ onViewScan, scans }: QRScansTableProps) => (
   <Card>
     <CardHeader>
       <CardTitle className="text-base">QR Code Scans</CardTitle>
       <CardDescription>
-        {scans.length} total scans • Includes device &amp; location details
+        {scans.length} total scans • Includes device &amp; session details
       </CardDescription>
     </CardHeader>
     <CardContent>
@@ -37,9 +39,9 @@ const QRScansTable = ({ onViewScan, scans = mockScans }: QRScansTableProps) => (
           <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Device</TableHead>
-            <TableHead className="hidden md:table-cell">Browser</TableHead>
-            <TableHead className="hidden md:table-cell">OS</TableHead>
-            <TableHead className="hidden lg:table-cell">Location</TableHead>
+            <TableHead>Browser</TableHead>
+            <TableHead>OS</TableHead>
+            <TableHead>IP Address</TableHead>
             <TableHead>Reviewed</TableHead>
             <TableHead></TableHead>
           </TableRow>
@@ -48,25 +50,28 @@ const QRScansTable = ({ onViewScan, scans = mockScans }: QRScansTableProps) => (
           {scans.map((s) => (
             <TableRow key={s.id}>
               <TableCell className="text-xs whitespace-nowrap">
-                {formatDate(s.timestamp)}
+                {formatDate(s.scannedAt)}
               </TableCell>
               <TableCell className="text-sm font-medium">
                 <div className="flex items-center gap-1.5">
                   <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
-                  {s.device}
+                  {s.device || "—"}
                 </div>
               </TableCell>
-              <TableCell className="hidden md:table-cell text-sm">
+              <TableCell className="text-sm">
                 <div className="flex items-center gap-1.5">
                   <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-                  {s.browser}
+                  {s.browser || "—"}
                 </div>
               </TableCell>
-              <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
-                {s.os}
+              <TableCell className="text-xs text-muted-foreground">
+                {s.os || "—"}
               </TableCell>
-              <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
-                {s.city}, {s.country}
+              <TableCell className="text-xs font-mono text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <Hash className="h-3 w-3" />
+                  {s.ipAddress || "—"}
+                </div>
               </TableCell>
               <TableCell>
                 {s.resultedInReview ? (

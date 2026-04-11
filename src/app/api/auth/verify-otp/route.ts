@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import * as cookie from "cookie";
 import { createRefreshToken } from "@/lib/db/auth";
 import { findUserByPhone, upsertUser } from "@/lib/db/user";
-import { signAccessToken, generateRefreshToken, signAdminToken } from "@/lib/auth/jwt";
-import { checkTwilioVerification } from "@/lib/auth/otp";
+import {
+  signAccessToken,
+  generateRefreshToken,
+  signAdminToken,
+} from "@/lib/auth/jwt";
+import { cookies } from "next/headers";
 
 const verifyOtpSchema = z.object({
   phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "INVALID_PHONE"),
@@ -53,12 +56,16 @@ export async function POST(req: NextRequest) {
       expiresAt,
     });
 
-    // 4. Issue Access Token with Session ID (sid)
+    // 4. Issue Access Token with Session ID (sid) and user metadata
     const accessToken = await signAccessToken({
       sub: user.id,
       phone: user.phone,
       isAdmin: user.isAdmin,
       sid: rfSession.id,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      businesses: (user as any).businesses,
     });
 
     // 5. Prepare Response
@@ -79,30 +86,24 @@ export async function POST(req: NextRequest) {
       isNewUser,
     });
 
-    // 6. Set HTTP-only Cookie
-    response.headers.append(
-      "Set-Cookie",
-      cookie.serialize("rf_refresh", rfToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        path: "/api/auth/refresh",
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-      }),
-    );
+    const cookieStore = await cookies();
+    cookieStore.set("rf_refresh", rfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+    });
 
     if (user.isAdmin) {
       const adminToken = await signAdminToken({ sub: user.id });
-      response.headers.append(
-        "Set-Cookie",
-        cookie.serialize("rf_admin_session", adminToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          path: "/",
-          maxAge: 24 * 60 * 60, // 24 hours
-        }),
-      );
+      cookieStore.set("rf_admin_session", adminToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 24 * 60 * 60, // 24 hours
+      });
     }
 
     return response;

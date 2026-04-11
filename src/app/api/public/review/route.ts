@@ -13,9 +13,6 @@ const publicReviewSchema = z.object({
   submittedToGoogle: z.boolean().optional(),
   whatWentWrong: z.string().optional(),
   howToImprove: z.string().optional(),
-  device: z.string().optional(),
-  browser: z.string().optional(),
-  os: z.string().optional(),
 }).refine((data) => {
   if (data.type === "POSITIVE" && !data.reviewText) return false;
   if (data.type === "NEGATIVE" && !data.whatWentWrong) return false;

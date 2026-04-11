@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { serialize } from "cookie";
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { withAuth } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
 
@@ -9,26 +9,25 @@ import { prisma } from "@/lib/prisma";
  */
 export const POST = withAuth(async (req, payload) => {
   // Revoke current session in DB
-  await prisma.refreshToken.update({
-    where: { id: payload.sid },
-    data: { revokedAt: new Date() },
-  });
+  try {
+    if (payload.sid) {
+      await prisma.refreshToken.update({
+        where: { id: payload.sid },
+        data: { revokedAt: new Date() },
+      });
+    }
+  } catch (err) {
+    console.error("[AUTH_LOGOUT] Failed to revoke session", err);
+  }
 
   const response = NextResponse.json({
     message: "Logged out successfully.",
   });
 
-  // Clear cookie in browser (must match path exactly)
-  response.headers.append(
-    "Set-Cookie",
-    serialize("rf_refresh", "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/api/auth/refresh",
-      maxAge: 0,
-    })
-  );
+  // Clear cookies in browser
+  const cookieStore = await cookies();
+  cookieStore.delete("rf_refresh");
+  cookieStore.delete("rf_admin_session");
 
   return response;
 });

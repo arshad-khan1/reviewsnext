@@ -21,7 +21,16 @@ export async function createRefreshToken(data: {
 export async function findRefreshToken(tokenHash: string) {
   return await prisma.refreshToken.findFirst({
     where: { tokenHash, isDeleted: false },
-    include: { user: true },
+    include: {
+      user: {
+        include: {
+          businesses: {
+            where: { isDeleted: false },
+            select: { id: true, slug: true, name: true },
+          },
+        },
+      },
+    },
   });
 }
 

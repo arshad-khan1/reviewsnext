@@ -18,12 +18,14 @@ const formatDate = (ts: string) => {
   });
 };
 
+import type { DashboardReview } from "@/hooks/use-dashboard-data";
+
 interface ReviewsTableProps {
-  onViewReview: (review: ReviewEntry) => void;
-  reviews?: ReviewEntry[];
+  onViewReview: (review: any) => void;
+  reviews: DashboardReview[];
 }
 
-const ReviewsTable = ({ onViewReview, reviews = mockReviews }: ReviewsTableProps) => (
+const ReviewsTable = ({ onViewReview, reviews }: ReviewsTableProps) => (
   <Card>
     <CardHeader>
       <CardTitle className="text-base">All Reviews &amp; Feedback</CardTitle>
@@ -37,7 +39,6 @@ const ReviewsTable = ({ onViewReview, reviews = mockReviews }: ReviewsTableProps
             <TableHead>Type</TableHead>
             <TableHead>Rating</TableHead>
             <TableHead className="hidden md:table-cell">Content</TableHead>
-            <TableHead className="hidden lg:table-cell">Device</TableHead>
             <TableHead>Google</TableHead>
             <TableHead></TableHead>
           </TableRow>
@@ -46,10 +47,10 @@ const ReviewsTable = ({ onViewReview, reviews = mockReviews }: ReviewsTableProps
           {reviews.map((r) => (
             <TableRow key={r.id}>
               <TableCell className="text-xs whitespace-nowrap">
-                {formatDate(r.timestamp)}
+                {formatDate(r.submittedAt)}
               </TableCell>
               <TableCell>
-                {r.type === "positive" ? (
+                {r.type === "POSITIVE" ? (
                   <Badge className="bg-success/10 text-success border-success/20">
                     <ThumbsUp className="h-3 w-3 mr-1" />
                     Positive
@@ -75,10 +76,7 @@ const ReviewsTable = ({ onViewReview, reviews = mockReviews }: ReviewsTableProps
                 </div>
               </TableCell>
               <TableCell className="hidden md:table-cell max-w-[200px] truncate text-sm">
-                {r.review || r.whatWentWrong || "—"}
-              </TableCell>
-              <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
-                {r.device}
+                {r.reviewText || "—"}
               </TableCell>
               <TableCell>
                 {r.submittedToGoogle ? (

@@ -3,11 +3,13 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
-import { getScansPerDay } from "@/data/mockDashboardData";
 
-const ScansOverTimeChart = () => {
-  const scansPerDay = getScansPerDay();
 
+interface ScansOverTimeChartProps {
+  data: { date: string; scans: number }[];
+}
+
+const ScansOverTimeChart = ({ data }: ScansOverTimeChartProps) => {
   return (
     <Card>
       <CardHeader>
@@ -19,7 +21,7 @@ const ScansOverTimeChart = () => {
           config={{ scans: { label: "Scans", color: "hsl(25, 95%, 53%)" } }}
           className="h-[250px]"
         >
-          <AreaChart data={scansPerDay}>
+          <AreaChart data={data}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
             <XAxis
               dataKey="date"

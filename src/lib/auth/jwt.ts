@@ -18,6 +18,11 @@ export interface TokenPayload {
   phone: string;
   isAdmin: boolean;
   sid: string; // Session ID (RefreshToken id)
+  // Metadata for stateless UI retrieval
+  name?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  businesses?: { id: string; slug: string; name: string }[];
 }
 
 /**

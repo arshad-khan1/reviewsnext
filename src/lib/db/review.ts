@@ -15,9 +15,6 @@ export async function createReview(data: {
   submittedToGoogle?: boolean;
   whatWentWrong?: string;
   howToImprove?: string;
-  device?: string;
-  browser?: string;
-  os?: string;
 }) {
   return await prisma.$transaction(async (tx) => {
     const review = await tx.review.create({
@@ -31,9 +28,6 @@ export async function createReview(data: {
         submittedToGoogle: data.submittedToGoogle ?? false,
         whatWentWrong: data.whatWentWrong,
         howToImprove: data.howToImprove,
-        device: data.device,
-        browser: data.browser,
-        os: data.os,
       },
     });
 
@@ -131,9 +125,6 @@ export async function getReviews(
       submittedToGoogle: r.submittedToGoogle,
       whatWentWrong: r.whatWentWrong,
       howToImprove: r.howToImprove,
-      device: r.device,
-      browser: r.browser,
-      os: r.os,
       submittedAt: r.submittedAt,
       qrCode: r.qrCode,
     })),
@@ -171,6 +162,10 @@ export async function getReviewDetails(id: string, businessSlug: string) {
         select: {
           id: true,
           scannedAt: true,
+          device: true,
+          browser: true,
+          os: true,
+          ipAddress: true,
           city: true,
           country: true,
         },

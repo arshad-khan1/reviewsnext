@@ -15,16 +15,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { stats } from "@/data/mockDashboardData";
-import { mockQRCodes } from "@/data/mockQRCodes";
-import type { QRScan, ReviewEntry } from "@/data/mockDashboardData";
-
 import StatCard from "./components/StatCard";
 import DetailRow from "./components/DetailRow";
 import ScansOverTimeChart from "./components/ScansOverTimeChart";
@@ -32,7 +22,11 @@ import RatingDistributionChart from "./components/RatingDistributionChart";
 import ReviewsTable from "./components/ReviewsTable";
 import QRScansTable from "./components/QRScansTable";
 import UsageCard from "./components/UsageCard";
+import ReviewDetailDialog from "./components/ReviewDetailDialog";
+import ScanDetailDialog from "./components/ScanDetailDialog";
 import { Card, CardContent } from "@/components/ui/card";
+import { useBusiness } from "@/hooks/use-business";
+import { useDashboardData, type DashboardReview, type DashboardScan } from "@/hooks/use-dashboard-data";
 
 const formatDate = (ts: string) => {
   const d = new Date(ts);
@@ -44,20 +38,20 @@ const formatDate = (ts: string) => {
   });
 };
 
-import { useBusiness } from "@/hooks/use-business";
-
 const BusinessDashboard = () => {
   const params = useParams();
   const router = useRouter();
   const businessSlug = params.business as string;
 
-  const { data: business, isLoading, error } = useBusiness(businessSlug);
+  const { data: business, isLoading: isBusinessLoading, error: businessError } = useBusiness(businessSlug);
+  const { data: dashboard, isLoading: isDashboardLoading, error: dashboardError } = useDashboardData(businessSlug);
 
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
-  const [selectedScan, setSelectedScan] = useState<QRScan | null>(null);
-  const [selectedReview, setSelectedReview] = useState<ReviewEntry | null>(
-    null,
-  );
+  const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+
+  const isLoading = isBusinessLoading || isDashboardLoading;
+  const error = businessError || dashboardError;
 
   if (isLoading) {
     return (
@@ -98,38 +92,38 @@ const BusinessDashboard = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <StatCard
                 title="QR Scans"
-                value={stats.totalScans}
+                value={dashboard?.stats.totalScans || 0}
                 icon={QrCode}
                 color="hsl(25, 95%, 53%)"
               />
               <StatCard
                 title="Reviews"
-                value={stats.totalReviews}
+                value={dashboard?.stats.totalReviews || 0}
                 icon={MessageSquare}
                 color="hsl(220, 70%, 55%)"
               />
               <StatCard
                 title="Conversion"
-                value={`${stats.conversionRate}%`}
+                value={`${dashboard?.stats.conversionRate || 0}%`}
                 subtitle="Scans → Reviews"
                 icon={TrendingUp}
                 color="hsl(152, 60%, 45%)"
               />
               <StatCard
                 title="Avg Rating"
-                value={stats.averageRating}
+                value={dashboard?.stats.avgRating || 0}
                 icon={Star}
                 color="hsl(45, 97%, 54%)"
               />
               <StatCard
                 title="Google Reviews"
-                value={stats.googleSubmissions}
+                value={dashboard?.stats.googleSubmissions || 0}
                 icon={ExternalLink}
                 color="hsl(25, 95%, 53%)"
               />
               <StatCard
                 title="Complaints"
-                value={stats.negativeFeedbacks}
+                value={dashboard?.stats.negativeFeedbacks || 0}
                 icon={ThumbsDown}
                 color="hsl(0, 84%, 60%)"
               />
@@ -148,8 +142,8 @@ const BusinessDashboard = () => {
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ScansOverTimeChart />
-          <RatingDistributionChart />
+          <ScansOverTimeChart data={dashboard?.charts.scansOverTime || []} />
+          <RatingDistributionChart data={dashboard?.charts.ratingDistribution || []} />
         </div>
 
         {/* Active QR Codes List */}
@@ -170,7 +164,7 @@ const BusinessDashboard = () => {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockQRCodes.map((qr) => (
+            {(dashboard?.activeQRCodes || []).map((qr) => (
               <Link
                 key={qr.id}
                 href={`/${businessSlug}/dashboard/qr-codes/${qr.id}`}
@@ -186,7 +180,7 @@ const BusinessDashboard = () => {
                           {qr.name}
                         </p>
                         <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                          {qr.source}
+                          {qr.sourceTag}
                         </p>
                       </div>
                     </div>
@@ -245,105 +239,31 @@ const BusinessDashboard = () => {
           </div>
 
           {activeTab === "reviews" && (
-            <ReviewsTable onViewReview={setSelectedReview} />
+            <ReviewsTable
+              onViewReview={(r) => setSelectedReviewId(r.id)}
+              reviews={dashboard?.recentReviews || []}
+            />
           )}
           {activeTab === "scans" && (
-            <QRScansTable onViewScan={setSelectedScan} />
+            <QRScansTable
+              onViewScan={(s) => setSelectedScanId(s.id)}
+              scans={dashboard?.recentScans || []}
+            />
           )}
         </div>
       </main>
 
-      {/* Detail Dialogs remain the same... */}
-      {/* Scan Detail Dialog */}
-      <Dialog open={!!selectedScan} onOpenChange={() => setSelectedScan(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Scan Details</DialogTitle>
-          </DialogHeader>
-          {selectedScan && (
-            <div className="space-y-3 text-sm">
-              <DetailRow
-                label="Date"
-                value={formatDate(selectedScan.timestamp)}
-              />
-              <DetailRow label="Device" value={selectedScan.device} />
-              <DetailRow label="Browser" value={selectedScan.browser} />
-              <DetailRow label="OS" value={selectedScan.os} />
-              <DetailRow label="IP Address" value={selectedScan.ip} />
-              <DetailRow
-                label="Location"
-                value={`${selectedScan.city}, ${selectedScan.country}`}
-              />
-              <DetailRow
-                label="Left Review"
-                value={
-                  selectedScan.resultedInReview
-                    ? `Yes (${selectedScan.rating}★)`
-                    : "No"
-                }
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ReviewDetailDialog
+        reviewId={selectedReviewId}
+        businessSlug={businessSlug}
+        onClose={() => setSelectedReviewId(null)}
+      />
 
-      {/* Review Detail Dialog */}
-      <Dialog
-        open={!!selectedReview}
-        onOpenChange={() => setSelectedReview(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Review Details</DialogTitle>
-          </DialogHeader>
-          {selectedReview && (
-            <div className="space-y-3 text-sm">
-              <DetailRow
-                label="Date"
-                value={formatDate(selectedReview.timestamp)}
-              />
-              <DetailRow
-                label="Type"
-                value={
-                  selectedReview.type === "positive"
-                    ? "👍 Positive"
-                    : "👎 Negative"
-                }
-              />
-              <div className="flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-4 w-4 ${i < selectedReview.rating ? "fill-star text-star" : "text-muted-foreground/30"}`}
-                  />
-                ))}
-              </div>
-              {selectedReview.review && (
-                <DetailRow label="Review" value={selectedReview.review} />
-              )}
-              {selectedReview.whatWentWrong && (
-                <DetailRow
-                  label="What Went Wrong"
-                  value={selectedReview.whatWentWrong}
-                />
-              )}
-              {selectedReview.howToImprove && (
-                <DetailRow
-                  label="How to Improve"
-                  value={selectedReview.howToImprove}
-                />
-              )}
-              <DetailRow label="Device" value={selectedReview.device} />
-              <DetailRow label="Browser" value={selectedReview.browser} />
-              <DetailRow label="OS" value={selectedReview.os} />
-              <DetailRow
-                label="Submitted to Google"
-                value={selectedReview.submittedToGoogle ? "Yes ✅" : "No"}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ScanDetailDialog
+        scanId={selectedScanId}
+        businessSlug={businessSlug}
+        onClose={() => setSelectedScanId(null)}
+      />
     </div>
   );
 };

@@ -1,101 +1,72 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import {
-  Search,
-  Star,
   ChevronLeft,
   ChevronRight,
-  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { mockReviews, mockScans } from "@/data/mockDashboardData";
-import { mockBusinesses } from "@/data/mockBusinesses";
 import ReviewsTable from "../components/ReviewsTable";
 import QRScansTable from "../components/QRScansTable";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import type { ReviewEntry, QRScan } from "@/data/mockDashboardData";
-import DetailRow from "../components/DetailRow";
 import DashboardTabSwitcher from "../components/DashboardTabSwitcher";
 import DashboardFilters from "../components/DashboardFilters";
+import ReviewDetailDialog from "../components/ReviewDetailDialog";
+import ScanDetailDialog from "../components/ScanDetailDialog";
+import { useReviews } from "@/hooks/use-reviews";
+import { useScans } from "@/hooks/use-scans";
+import { ReviewType } from "@prisma/client";
 
 const ITEMS_PER_PAGE = 8;
-
-const formatDate = (ts: string) => {
-  const d = new Date(ts);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
 
 export default function ReviewsPage() {
   const params = useParams();
   const businessSlug = params.business as string;
-  const business = mockBusinesses.find((b) => b.slug === businessSlug);
 
+  // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
-  const [typeFilter, setTypeFilter] = useState<"positive" | "negative" | null>(
-    null,
-  );
+  const [typeFilter, setTypeFilter] = useState<ReviewType | null>(null);
+  
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [scansPage, setScansPage] = useState(1);
+  
+  // Tab State
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
-  const [selectedReview, setSelectedReview] = useState<ReviewEntry | null>(
-    null,
-  );
-  const [selectedScan, setSelectedScan] = useState<QRScan | null>(null);
+  
+  // Selection State (for Dialogs)
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+  const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
 
-  const filteredReviews = useMemo(() => {
-    return mockReviews.filter((review) => {
-      const searchStr = (
-        review.review ||
-        review.whatWentWrong ||
-        ""
-      ).toLowerCase();
-      const matchesSearch = searchStr.includes(searchQuery.toLowerCase());
-      const matchesRating =
-        ratingFilter === null || review.rating === ratingFilter;
-      const matchesType = typeFilter === null || review.type === typeFilter;
-      return matchesSearch && matchesRating && matchesType;
-    });
-  }, [searchQuery, ratingFilter, typeFilter]);
+  // Fetch Reviews
+  const { data: reviewsData, isLoading: isLoadingReviews } = useReviews(businessSlug, {
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    type: typeFilter,
+    rating: ratingFilter,
+    search: searchQuery,
+  });
 
-  const totalPages = Math.ceil(filteredReviews.length / ITEMS_PER_PAGE);
-  const paginatedReviews = filteredReviews.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
-  );
+  // Fetch Scans
+  const { data: scansData, isLoading: isLoadingScans } = useScans(businessSlug, {
+    page: scansPage,
+    limit: ITEMS_PER_PAGE,
+    search: searchQuery,
+  });
 
-  const totalScansPages = Math.ceil(mockScans.length / ITEMS_PER_PAGE);
-  const paginatedScans = mockScans.slice(
-    (scansPage - 1) * ITEMS_PER_PAGE,
-    scansPage * ITEMS_PER_PAGE,
-  );
-
-  if (!business) return null;
+  const totalPages = reviewsData?.pagination.totalPages || 1;
+  const totalScansPages = scansData?.pagination.totalPages || 1;
 
   return (
     <div className="min-h-screen bg-background pb-12">
-      {/* Header */}
-      {/* Main Content */}
       <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-8 space-y-8">
-        {/* Tab Switcher & Filters */}
+        
         <DashboardTabSwitcher
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          reviewCount={filteredReviews.length}
-          scanCount={mockScans.length}
+          reviewCount={reviewsData?.pagination.total || 0}
+          scanCount={scansData?.pagination.total || 0}
         />
 
         {activeTab === "reviews" ? (
@@ -106,9 +77,9 @@ export default function ReviewsPage() {
                 setSearchQuery(q);
                 setCurrentPage(1);
               }}
-              typeFilter={typeFilter}
+              typeFilter={typeFilter as any} // Cast because component might expect lowercase
               setTypeFilter={(t) => {
-                setTypeFilter(t);
+                setTypeFilter(t as ReviewType);
                 setCurrentPage(1);
               }}
               ratingFilter={ratingFilter}
@@ -118,42 +89,33 @@ export default function ReviewsPage() {
               }}
             />
 
-            {/* Reviews Table */}
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-foreground/5">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-foreground/5 relative min-h-[400px]">
+              {isLoadingReviews && (
+                <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                   <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                </div>
+              )}
               <ReviewsTable
-                onViewReview={setSelectedReview}
-                reviews={paginatedReviews}
+                onViewReview={(r) => setSelectedReviewId(r.id)}
+                reviews={reviewsData?.data || []}
               />
+              {!isLoadingReviews && reviewsData?.data.length === 0 && (
+                <div className="py-20 text-center space-y-2">
+                  <p className="text-sm font-bold text-muted-foreground">No reviews found matching your filters.</p>
+                </div>
+              )}
             </div>
 
-            {/* Reviews Pagination */}
             {totalPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/10">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
-                  Showing{" "}
-                  <span className="text-foreground">
-                    {(currentPage - 1) * ITEMS_PER_PAGE + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="text-foreground">
-                    {Math.min(
-                      currentPage * ITEMS_PER_PAGE,
-                      filteredReviews.length,
-                    )}
-                  </span>{" "}
-                  of{" "}
-                  <span className="text-foreground">
-                    {filteredReviews.length}
-                  </span>{" "}
-                  entries
+                  Showing <span className="text-foreground">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="text-foreground">{Math.min(currentPage * ITEMS_PER_PAGE, reviewsData?.pagination.total || 0)}</span> of <span className="text-foreground">{reviewsData?.pagination.total}</span> entries
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
                     className="h-10 px-4 rounded-xl font-bold bg-card border-border/50 shadow-sm transition-all active:scale-95"
                   >
@@ -174,9 +136,7 @@ export default function ReviewsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
                     className="h-10 px-4 rounded-xl font-bold bg-card border-border/50 shadow-sm transition-all active:scale-95"
                   >
@@ -189,36 +149,33 @@ export default function ReviewsPage() {
           </div>
         ) : (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Scans Table */}
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-foreground/5">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-foreground/5 relative min-h-[400px]">
+              {isLoadingScans && (
+                <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                   <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                </div>
+              )}
               <QRScansTable
-                onViewScan={setSelectedScan}
-                scans={paginatedScans}
+                onViewScan={(s) => setSelectedScanId(s.id)}
+                scans={scansData?.data || []}
               />
+              {!isLoadingScans && scansData?.data.length === 0 && (
+                <div className="py-20 text-center space-y-2">
+                  <p className="text-sm font-bold text-muted-foreground">No scan events recorded yet.</p>
+                </div>
+              )}
             </div>
 
-            {/* Scans Pagination */}
             {totalScansPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/10">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
-                  Showing{" "}
-                  <span className="text-foreground">
-                    {(scansPage - 1) * ITEMS_PER_PAGE + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="text-foreground">
-                    {Math.min(scansPage * ITEMS_PER_PAGE, mockScans.length)}
-                  </span>{" "}
-                  of <span className="text-foreground">{mockScans.length}</span>{" "}
-                  scans
+                  Showing <span className="text-foreground">{(scansPage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="text-foreground">{Math.min(scansPage * ITEMS_PER_PAGE, scansData?.pagination.total || 0)}</span> of <span className="text-foreground">{scansData?.pagination.total}</span> scans
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      setScansPage((prev) => Math.max(prev - 1, 1))
-                    }
+                    onClick={() => setScansPage((prev) => Math.max(prev - 1, 1))}
                     disabled={scansPage === 1}
                     className="h-10 px-4 rounded-xl font-bold bg-card border-border/50 shadow-sm transition-all active:scale-95"
                   >
@@ -239,11 +196,7 @@ export default function ReviewsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      setScansPage((prev) =>
-                        Math.min(prev + 1, totalScansPages),
-                      )
-                    }
+                    onClick={() => setScansPage((prev) => Math.min(prev + 1, totalScansPages))}
                     disabled={scansPage === totalScansPages}
                     className="h-10 px-4 rounded-xl font-bold bg-card border-border/50 shadow-sm transition-all active:scale-95"
                   >
@@ -257,185 +210,17 @@ export default function ReviewsPage() {
         )}
       </main>
 
-      {/* Review Detail Dialog */}
-      <Dialog
-        open={!!selectedReview}
-        onOpenChange={() => setSelectedReview(null)}
-      >
-        <DialogContent className="sm:max-w-md rounded-3xl overflow-hidden border-none p-0 bg-card">
-          <div className="bg-primary/5 p-6 border-b border-primary/10">
-            <DialogHeader className="p-0">
-              <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                  <MessageSquare className="w-4 h-4" />
-                </div>
-                Review Details
-              </DialogTitle>
-            </DialogHeader>
-          </div>
-
-          {selectedReview && (
-            <div className="p-6 space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Date & Time
-                  </span>
-                  <p className="text-sm font-semibold">
-                    {formatDate(selectedReview.timestamp)}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Type
-                  </span>
-                  <div>
-                    {selectedReview.type === "positive" ? (
-                      <Badge className="bg-success/10 text-success border-success/20">
-                        Positive
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="destructive"
-                        className="bg-destructive/10 text-destructive border-destructive/20"
-                      >
-                        Negative
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-star">
-                  Rating
-                </span>
-                <div className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-4 w-4 ${i < selectedReview.rating ? "fill-star text-star" : "text-muted-foreground/30"}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {selectedReview.review && (
-                <div className="space-y-1 p-3 rounded-xl bg-muted/30 border border-border/50">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Review Content
-                  </span>
-                  <p className="text-sm leading-relaxed italic">
-                    &quot;{selectedReview.review}&quot;
-                  </p>
-                </div>
-              )}
-
-              {selectedReview.whatWentWrong && (
-                <div className="space-y-1 p-3 rounded-xl bg-destructive/5 border border-destructive/10">
-                  <span className="text-[10px] font-bold text-destructive uppercase tracking-widest">
-                    What Went Wrong
-                  </span>
-                  <p className="text-sm font-medium">
-                    {selectedReview.whatWentWrong}
-                  </p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4 py-4 border-t border-border/50">
-                <DetailRow label="Device" value={selectedReview.device} />
-                <DetailRow label="Browser" value={selectedReview.browser} />
-                <DetailRow label="OS" value={selectedReview.os} />
-                <DetailRow
-                  label="To Google"
-                  value={selectedReview.submittedToGoogle ? "Yes ✅" : "No"}
-                />
-              </div>
-
-              <Button
-                onClick={() => setSelectedReview(null)}
-                className="w-full rounded-xl py-6 font-bold text-base shadow-lg shadow-primary/20"
-              >
-                Close Details
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Scan Detail Dialog */}
-      <Dialog open={!!selectedScan} onOpenChange={() => setSelectedScan(null)}>
-        <DialogContent className="sm:max-w-md rounded-3xl overflow-hidden border-none p-0 bg-card">
-          <div className="bg-orange-500/5 p-6 border-b border-orange-500/10">
-            <DialogHeader className="p-0">
-              <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600">
-                  <Search className="w-4 h-4" />
-                </div>
-                Scan Details
-              </DialogTitle>
-            </DialogHeader>
-          </div>
-
-          {selectedScan && (
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Timestamp
-                  </span>
-                  <p className="text-sm font-semibold">
-                    {formatDate(selectedScan.timestamp)}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Converted
-                  </span>
-                  <div>
-                    {selectedScan.resultedInReview ? (
-                      <Badge className="bg-success/10 text-success border-success/20">
-                        Yes ✅
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="text-muted-foreground border-border"
-                      >
-                        No
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/30 p-4 rounded-2xl border border-border/50">
-                <DetailRow label="Device" value={selectedScan.device} />
-                <DetailRow label="OS" value={selectedScan.os} />
-                <DetailRow label="Browser" value={selectedScan.browser} />
-                <DetailRow label="IP Address" value={selectedScan.ip} />
-                <DetailRow
-                  label="Location"
-                  value={`${selectedScan.city}, ${selectedScan.country}`}
-                />
-                {selectedScan.resultedInReview && (
-                  <DetailRow
-                    label="Rating"
-                    value={`${selectedScan.rating} ★`}
-                  />
-                )}
-              </div>
-
-              <Button
-                onClick={() => setSelectedScan(null)}
-                className="w-full rounded-xl py-6 font-bold text-base bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-600/20"
-              >
-                Close Details
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Reusable Detail Dialogs */}
+      <ReviewDetailDialog 
+        reviewId={selectedReviewId} 
+        businessSlug={businessSlug} 
+        onClose={() => setSelectedReviewId(null)} 
+      />
+      <ScanDetailDialog 
+        scanId={selectedScanId} 
+        businessSlug={businessSlug} 
+        onClose={() => setSelectedScanId(null)} 
+      />
     </div>
   );
 }

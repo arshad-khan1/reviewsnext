@@ -13,13 +13,20 @@ interface ProtectedRouteProps {
  * Redirects to /login if not authenticated.
  */
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const { user, isAuthenticated, isLoading, isInitialized, initFromToken } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isInitialized) {
+      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+      initFromToken(token);
+    }
+  }, [isInitialized, initFromToken]);
+
+  useEffect(() => {
+    if (isInitialized && !isLoading) {
       if (!isAuthenticated) {
         // Avoid redirecting if already on login page
         if (pathname !== "/login" && pathname !== "/admin") {
@@ -65,12 +72,19 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
  * Redirects to /login if not.
  */
 export function AdminRoute({ children }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const { user, isAuthenticated, isLoading, isInitialized, initFromToken } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isInitialized) {
+      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+      initFromToken(token);
+    }
+  }, [isInitialized, initFromToken]);
+
+  useEffect(() => {
+    if (isInitialized && !isLoading) {
       if (!isAuthenticated) {
         router.push("/login?redirect=" + encodeURIComponent(pathname));
       } else if (!user?.isAdmin) {

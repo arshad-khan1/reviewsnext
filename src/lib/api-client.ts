@@ -76,7 +76,11 @@ export async function apiFetch(
 
   // 3. Intercept 401 logic
   if (response.status === 401) {
-    if (!isRefreshing) {
+    // Only attempt refresh if we HAD a token (meaning an active session likely just expired).
+    // If we have no token, it's a guest request that hit a protected route; just return the 401.
+    const hasExistingToken = !!accessToken;
+
+    if (hasExistingToken && !isRefreshing) {
       isRefreshing = true;
       try {
         // Attempt to refresh the session
@@ -85,6 +89,7 @@ export async function apiFetch(
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "same-origin",
         });
 
         if (refreshRes.ok) {

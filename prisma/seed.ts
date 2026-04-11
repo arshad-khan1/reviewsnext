@@ -1,3 +1,4 @@
+import "dotenv/config";
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   PlanType,
@@ -275,6 +276,7 @@ async function main() {
         device: "iPhone 15 Pro",
         browser: "Safari",
         os: "iOS",
+        ipAddress: "192.168.1.1",
         resultedInReview: true,
         scannedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
       },
@@ -302,6 +304,7 @@ async function main() {
         device: "Pixel 8",
         browser: "Chrome",
         os: "Android",
+        ipAddress: "192.168.1.2",
         resultedInReview: true,
         scannedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
       },
@@ -323,6 +326,7 @@ async function main() {
     await prisma.scan.create({
       data: {
         qrCodeId: pro1Qr1.id,
+        ipAddress: "192.168.1.3",
         resultedInReview: false,
         scannedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
       },

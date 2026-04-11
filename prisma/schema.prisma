@@ -333,11 +333,6 @@ model Review {
   whatWentWrong String?
   howToImprove  String?
 
-  // ── Device Metadata (captured at review time) ─────────────
-  device  String?
-  browser String?
-  os      String?
-
   submittedAt DateTime @default(now())
 
   // ── Relations ─────────────────────────────────────────────
