@@ -22,7 +22,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { stats } from "@/data/mockDashboardData";
-import { mockBusinesses } from "@/data/mockBusinesses";
 import { mockQRCodes } from "@/data/mockQRCodes";
 import type { QRScan, ReviewEntry } from "@/data/mockDashboardData";
 
@@ -45,12 +44,14 @@ const formatDate = (ts: string) => {
   });
 };
 
+import { useBusiness } from "@/hooks/use-business";
+
 const BusinessDashboard = () => {
   const params = useParams();
   const router = useRouter();
   const businessSlug = params.business as string;
 
-  const business = mockBusinesses.find((b) => b.slug === businessSlug);
+  const { data: business, isLoading, error } = useBusiness(businessSlug);
 
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
   const [selectedScan, setSelectedScan] = useState<QRScan | null>(null);
@@ -58,7 +59,15 @@ const BusinessDashboard = () => {
     null,
   );
 
-  if (!business) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!business || error) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center text-destructive mb-4">
@@ -128,10 +137,10 @@ const BusinessDashboard = () => {
           </div>
           <div className="lg:col-span-1">
             <UsageCard
-              monthlyUsed={business.usage.monthlyUsed}
-              monthlyTotal={business.usage.monthlyAllocation}
-              topupUsed={business.usage.topupUsed}
-              topupTotal={business.usage.topupAllocation}
+              monthlyUsed={business.aiCredits?.monthlyUsed || 0}
+              monthlyTotal={business.aiCredits?.monthlyAllocation || 0}
+              topupUsed={business.aiCredits?.topupUsed || 0}
+              topupTotal={business.aiCredits?.topupAllocation || 0}
               className="h-full"
             />
           </div>

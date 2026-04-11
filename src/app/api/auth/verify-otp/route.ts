@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
         isVerified: user.isVerified,
         isAdmin: user.isAdmin,
         createdAt: user.createdAt,
+        businesses: (user as any).businesses || [],
       },
       isNewUser,
     });

@@ -24,37 +24,72 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useAuthStore } from "@/store/auth-store";
+import { useEffect } from "react";
+import { toast } from "sonner";
+import { useLoginMutation } from "@/hooks/use-auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, isAuthenticated } = useAuthStore();
   const [phone, setPhone] = useState("+91");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState(1); // 1: Phone, 2: OTP
   const [isLoading, setIsLoading] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const loginMutation = useLoginMutation();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.businesses && user.businesses.length > 0) {
+        router.push(`/${user.businesses[0].slug}/dashboard`);
+      } else {
+        router.push("/onboard");
+      }
+    }
+  }, [isAuthenticated, user, router]);
+
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone) return;
     setIsLoading(true);
 
-    // Simulate sending OTP
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send OTP");
+
+      toast.success("OTP sent successfully!");
       setStep(2);
-    }, 1000);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send OTP");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otp) return;
-    setIsVerifying(true);
 
-    // Simulate verification
-    setTimeout(() => {
-      setIsVerifying(false);
-      router.push("/businesses");
-    }, 1500);
+    loginMutation.mutate(
+      { phone, otp, deviceLabel: "Web Browser" },
+      {
+        onSuccess: (data) => {
+          const user = data.user;
+          // Redirect based on business ownership
+          if (user.businesses && user.businesses.length > 0) {
+            router.push(`/${user.businesses[0].slug}/dashboard`);
+          } else {
+            router.push("/onboard");
+          }
+        },
+      },
+    );
   };
 
   return (
@@ -86,7 +121,7 @@ export default function LoginPage() {
             <Building2 className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            ReviewFunnel
+            Reviews Next
           </h1>
         </div>
 
@@ -178,9 +213,9 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     className="w-full h-11 transition-all bg-primary hover:bg-primary/90"
-                    disabled={isVerifying || otp.length < 4}
+                    disabled={loginMutation.isPending || otp.length < 4}
                   >
-                    {isVerifying ? (
+                    {loginMutation.isPending ? (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                         Verifying...

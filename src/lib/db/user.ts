@@ -6,6 +6,12 @@ import { prisma } from "../prisma";
 export async function findUserByPhone(phone: string) {
   return await prisma.user.findFirst({
     where: { phone, isDeleted: false },
+    include: {
+      businesses: {
+        where: { isDeleted: false },
+        select: { id: true, slug: true, name: true },
+      },
+    },
   });
 }
 
@@ -15,6 +21,12 @@ export async function findUserByPhone(phone: string) {
 export async function findUserByEmail(email: string) {
   return await prisma.user.findFirst({
     where: { email, isDeleted: false },
+    include: {
+      businesses: {
+        where: { isDeleted: false },
+        select: { id: true, slug: true, name: true },
+      },
+    },
   });
 }
 
@@ -24,6 +36,12 @@ export async function findUserByEmail(email: string) {
 export async function findUserById(id: string) {
   return await prisma.user.findFirst({
     where: { id, isDeleted: false },
+    include: {
+      businesses: {
+        where: { isDeleted: false },
+        select: { id: true, slug: true, name: true },
+      },
+    },
   });
 }
 
@@ -37,6 +55,12 @@ export async function upsertUser(phone: string) {
     create: {
       phone,
       isVerified: true, // Mark as verified since they passed OTP
+    },
+    include: {
+      businesses: {
+        where: { isDeleted: false },
+        select: { id: true, slug: true, name: true },
+      },
     },
   });
 }
@@ -55,6 +79,12 @@ export async function updateUserProfile(
   return await prisma.user.update({
     where: { id: userId },
     data,
+    include: {
+      businesses: {
+        where: { isDeleted: false },
+        select: { id: true, slug: true, name: true },
+      },
+    },
   });
 }
 

@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import DashboardHeader from "@/components/layout/DashboardHeader";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 
 export default function BusinessLayout({
   children,
@@ -12,9 +13,11 @@ export default function BusinessLayout({
   const showHeader = pathname.includes("/dashboard") || pathname.includes("/settings");
 
   return (
-    <div className="min-h-screen bg-background">
-      {showHeader && <DashboardHeader />}
-      {children}
-    </div>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-background">
+        {showHeader && <DashboardHeader />}
+        {children}
+      </div>
+    </ProtectedRoute>
   );
 }

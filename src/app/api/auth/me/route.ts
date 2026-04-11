@@ -28,6 +28,7 @@ export const GET = withAuth(async (req, payload) => {
       isAdmin: user.isAdmin,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      businesses: user.businesses,
     },
   });
 });
@@ -77,6 +78,7 @@ export const PATCH = withAuth(async (req, payload) => {
         email: updatedUser.email,
         avatarUrl: updatedUser.avatarUrl,
         updatedAt: updatedUser.updatedAt,
+        businesses: updatedUser.businesses,
       },
     });
   } catch (error) {

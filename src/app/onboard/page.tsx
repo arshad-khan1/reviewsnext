@@ -62,8 +62,12 @@ const COMMENT_STYLES = [
   "Enthusiastic & Warm",
 ];
 
+import { useAuthStore } from "@/store/auth-store";
+import { useEffect } from "react";
+
 export default function OnboardingPage() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
@@ -80,6 +84,13 @@ export default function OnboardingPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+
+  useEffect(() => {
+    if (user?.phone) {
+      setFormData((prev) => ({ ...prev, phone: user.phone }));
+      setIsPhoneVerified(true);
+    }
+  }, [user]);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
 
   const updateFormData = (data: Partial<typeof formData>) => {

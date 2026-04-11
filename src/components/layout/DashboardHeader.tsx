@@ -12,8 +12,9 @@ import {
   BarChart3,
   Zap,
 } from "lucide-react";
+import { UserNav } from "./UserNav";
 import { Button } from "@/components/ui/button";
-import { mockBusinesses } from "@/data/mockBusinesses";
+import { useBusiness } from "@/hooks/use-business";
 import PlanBadge from "@/app/[business]/dashboard/components/PlanBadge";
 
 export default function DashboardHeader() {
@@ -21,9 +22,10 @@ export default function DashboardHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const businessSlug = params.business as string;
-  const business = mockBusinesses.find((b) => b.slug === businessSlug);
+  const { data: business, isLoading } = useBusiness(businessSlug);
 
-  if (!business) return null;
+  if (isLoading || !business)
+    return <header className="border-b border-border bg-card h-16" />;
 
   // Determine page type and metadata
   const isMainDashboard = pathname === `/${businessSlug}/dashboard`;
@@ -105,7 +107,7 @@ export default function DashboardHeader() {
                       <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
                         {business.name}
                       </p>
-                      <PlanBadge plan={business.plan} />
+                      <PlanBadge plan={business.subscription?.plan || "FREE"} />
                     </div>
                   </div>
                 </>
@@ -115,7 +117,10 @@ export default function DashboardHeader() {
             <>
               <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center p-1 border shadow-sm overflow-hidden relative">
                 <Image
-                  src={business.logo}
+                  src={
+                    business.logoUrl ||
+                    "https://res.cloudinary.com/dly7lqtr3/image/upload/q_auto/f_auto/v1775932121/default_logo_uwesod.png"
+                  }
                   alt={`${business.name} logo`}
                   fill
                   className="object-contain p-1.5"
@@ -131,7 +136,7 @@ export default function DashboardHeader() {
                   <h1 className="text-base font-bold text-foreground">
                     {business.name}
                   </h1>
-                  <PlanBadge plan={business.plan} />
+                  <PlanBadge plan={business.subscription?.plan || "FREE"} />
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Dashboard & Analytics
@@ -143,9 +148,9 @@ export default function DashboardHeader() {
 
         <div className="flex items-center gap-2">
           <Link href={`/${businessSlug}/dashboard/reviews`}>
-            <Button 
-              variant={isReviewsPage ? "secondary" : "ghost"} 
-              size="sm" 
+            <Button
+              variant={isReviewsPage ? "secondary" : "ghost"}
+              size="sm"
               className={`gap-2 font-medium ${isReviewsPage ? "bg-blue-50 text-blue-600 border-none hover:bg-blue-100" : ""}`}
             >
               <MessageSquare className="w-4 h-4" />
@@ -153,9 +158,9 @@ export default function DashboardHeader() {
             </Button>
           </Link>
           <Link href={`/${businessSlug}/dashboard/qr-codes`}>
-            <Button 
-              variant={isQRCodesPage ? "secondary" : "ghost"} 
-              size="sm" 
+            <Button
+              variant={isQRCodesPage ? "secondary" : "ghost"}
+              size="sm"
               className={`gap-2 font-medium ${isQRCodesPage ? "bg-indigo-50 text-indigo-600 border-none hover:bg-indigo-100" : ""}`}
             >
               <QrCode className="w-4 h-4" />
@@ -163,9 +168,9 @@ export default function DashboardHeader() {
             </Button>
           </Link>
           <Link href={`/${businessSlug}/settings`}>
-            <Button 
-              variant={isSettingsPage ? "secondary" : "ghost"} 
-              size="sm" 
+            <Button
+              variant={isSettingsPage ? "secondary" : "ghost"}
+              size="sm"
               className={`gap-2 font-medium ${isSettingsPage ? "bg-slate-100 text-slate-900" : ""}`}
             >
               <Settings className="w-4 h-4" />
@@ -183,6 +188,8 @@ export default function DashboardHeader() {
               <span className="md:hidden">View</span>
             </Button>
           </Link>
+
+          <UserNav />
         </div>
       </div>
     </header>
