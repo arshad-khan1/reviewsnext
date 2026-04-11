@@ -89,6 +89,7 @@ model User {
   avatarUrl  String?
   isVerified Boolean  @default(false) /// true after first successful OTP verification
   isAdmin    Boolean  @default(false) /// Platform-level admin flag. Grants access to /api/admin/* routes.
+  password   String?  /// Hashed password for admin login
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

@@ -10,6 +10,15 @@ export async function findUserByPhone(phone: string) {
 }
 
 /**
+ * Finds a user by their email address
+ */
+export async function findUserByEmail(email: string) {
+  return await prisma.user.findFirst({
+    where: { email, isDeleted: false },
+  });
+}
+
+/**
  * Finds a user by ID
  */
 export async function findUserById(id: string) {
