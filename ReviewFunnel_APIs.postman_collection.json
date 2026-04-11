@@ -466,6 +466,275 @@
           }
         }
       ]
+    },
+    {
+      "name": "QR Codes",
+      "item": [
+        {
+          "name": "List QR Codes",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes?search=&isActive=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "qr-codes"
+              ],
+              "query": [
+                { "key": "search", "value": "" },
+                { "key": "isActive", "value": "true" }
+              ],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Create QR Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Waitlist Counter\",\n  \"sourceTag\": \"waitlist-counter\",\n  \"commentStyle\": \"FRIENDLY_CASUAL\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "qr-codes"
+              ],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Get QR Code Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "qr-codes",
+                ":id"
+              ],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clqr001" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update QR Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Main Entrance (Updated)\",\n  \"isActive\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "qr-codes",
+                ":id"
+              ],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clqr001" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete QR Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "qr-codes",
+                ":id"
+              ],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clqr001" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Public: Submit Review",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qrCodeId\": \"clqr001\",\n  \"rating\": 5,\n  \"type\": \"POSITIVE\",\n  \"reviewText\": \"Amazing food!\",\n  \"submittedToGoogle\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "review"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Dashboard Reviews",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/reviews?page=1&limit=8&type=POSITIVE&rating=5&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "reviews"
+              ],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "8" },
+                { "key": "type", "value": "POSITIVE" },
+                { "key": "rating", "value": "5", "description": "Filter by rating (1-5)" },
+                { "key": "search", "value": "", "description": "Search in review text or feedback" }
+              ],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Get Review Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/reviews/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "reviews",
+                ":id"
+              ],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clrev001" }
+              ]
+            }
+          }
+        }
+      ]
     }
   ],
   "variable": [
