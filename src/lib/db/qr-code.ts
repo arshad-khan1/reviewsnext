@@ -60,6 +60,7 @@ export async function getQRCodesByBusiness(
       googleMapsLink: qr.googleMapsLink,
       aiGuidingPrompt: qr.aiGuidingPrompt,
       commentStyle: qr.commentStyle,
+      locationId: qr.locationId,
       scans,
       conversions,
       conversionRate: parseFloat(conversionRate.toFixed(1)),
@@ -141,7 +142,7 @@ export async function createQRCode(businessSlug: string, data: CreateQRCodeInput
 export async function getQRCodeDetails(id: string, businessSlug: string) {
   const qrCode = await prisma.qRCode.findFirst({
     where: {
-      id,
+      OR: [{ id }, { sourceTag: id }],
       business: { slug: businessSlug },
       isDeleted: false,
     },

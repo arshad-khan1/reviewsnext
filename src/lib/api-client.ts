@@ -14,8 +14,7 @@ if (typeof window !== "undefined") {
   accessToken = localStorage.getItem(STORAGE_KEY);
 }
 
-let isRefreshing = false;
-let refreshSubscribers: ((token: string | null) => void)[] = [];
+let refreshPromise: Promise<string | null> | null = null;
 
 /**
  * Set the access token in memory and localStorage.
@@ -36,21 +35,6 @@ export function setAccessToken(token: string | null) {
  */
 export function getAccessToken() {
   return accessToken;
-}
-
-/**
- * Add a callback to the queue to be executed after token refresh.
- */
-function subscribeTokenRefresh(cb: (token: string | null) => void) {
-  refreshSubscribers.push(cb);
-}
-
-/**
- * Execute all callbacks in the queue with the new token (or null if failed).
- */
-function onRefreshed(token: string | null) {
-  refreshSubscribers.forEach((cb) => cb(token));
-  refreshSubscribers = [];
 }
 
 /**
@@ -76,54 +60,61 @@ export async function apiFetch(
 
   // 3. Intercept 401 logic
   if (response.status === 401) {
-    // Only attempt refresh if we HAD a token (meaning an active session likely just expired).
-    // If we have no token, it's a guest request that hit a protected route; just return the 401.
-    const hasExistingToken = !!accessToken;
+    const urlStr =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
 
-    if (hasExistingToken && !isRefreshing) {
-      isRefreshing = true;
-      try {
-        // Attempt to refresh the session
-        const refreshRes = await fetch("/api/auth/refresh", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "same-origin",
-        });
+    // We want to attempt refresh if we HAD an access token (active session expired),
+    // OR if we are explicitly fetching the initial session state since the refresh cookie might exist.
+    const isAuthMe = urlStr.includes("/api/auth/me");
+    const shouldAttemptRefresh = !!accessToken || isAuthMe;
 
-        if (refreshRes.ok) {
-          const data = await refreshRes.json();
-          setAccessToken(data.accessToken);
-          onRefreshed(data.accessToken);
-        } else {
-          // Token refresh failed, meaning user session is fully expired.
-          setAccessToken(null);
-          onRefreshed(null);
-        }
-      } catch (error) {
-        console.error("Token refresh completely failed", error);
-        setAccessToken(null);
-        onRefreshed(null);
-      } finally {
-        isRefreshing = false;
-      }
+    if (!shouldAttemptRefresh) {
+      return response;
     }
 
-    // Wait until the refresh succeeds (or fails)
-    return new Promise((resolve) => {
-      subscribeTokenRefresh((newToken: string | null) => {
-        if (newToken) {
-          // Retry the original request with the newly issued token
-          headers.set("Authorization", `Bearer ${newToken}`);
-          resolve(fetch(input, { ...init, headers }));
-        } else {
-          // Provide the original 401 error back to the caller so they can handle unauthenticated state
-          resolve(response);
-          // Optional: You could redirect the user here using window.location.href = '/login'
+    if (!refreshPromise) {
+      refreshPromise = (async () => {
+        try {
+          const refreshRes = await fetch("/api/auth/refresh", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "same-origin",
+          });
+
+          if (refreshRes.ok) {
+            const data = await refreshRes.json();
+            setAccessToken(data.accessToken);
+            return data.accessToken;
+          } else {
+            setAccessToken(null);
+            return null;
+          }
+        } catch (error) {
+          console.error("Token refresh completely failed", error);
+          setAccessToken(null);
+          return null;
+        } finally {
+          refreshPromise = null;
         }
-      });
-    });
+      })();
+    }
+
+    const newToken = await refreshPromise;
+
+    if (newToken) {
+      // Retry the original request with the newly issued token
+      headers.set("Authorization", `Bearer ${newToken}`);
+      return fetch(input, { ...init, headers });
+    } else {
+      // Return the original 401 response if refresh failed
+      return response;
+    }
   }
 
   // 4. Return the (successful) response directly
@@ -158,6 +149,19 @@ export const apiClient = {
     return apiFetch(url, {
       ...init,
       method: "PUT",
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  },
+
+  patch: (url: string, body?: any, init?: RequestInit) => {
+    const headers = new Headers(init?.headers);
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+    return apiFetch(url, {
+      ...init,
+      method: "PATCH",
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });

@@ -204,6 +204,7 @@ model Business {
 
 model Location {
   id        String   @id @default(cuid())
+  slug      String   /// URL-safe identifier for the location
   name      String /// e.g. "Bandra Branch", "Andheri Outlet", "Floor 2"
   address   String? /// Full street address of this branch
   city      String? /// City of this branch (may differ from business HQ city)
@@ -220,6 +221,7 @@ model Location {
 
   isDeleted Boolean @default(false)
 
+  @@unique([businessId, slug]) /// Location slugs must be unique within a business
   @@index([businessId])
 }
 

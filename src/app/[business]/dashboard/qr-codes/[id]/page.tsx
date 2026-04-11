@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
-import { Signal, TrendingUp, ArrowUpRight, Calendar } from "lucide-react";
-import { mockQRCodes, type QRCodeData } from "@/data/mockQRCodes";
-import {
-  mockScans,
-  mockReviews,
-  getStatsForQR,
-} from "@/data/mockDashboardData";
+import { Signal, TrendingUp, ArrowUpRight, Calendar, Loader2 } from "lucide-react";
+
+import { useQRCodeDetail } from "@/hooks/use-qr-codes";
+import { useReviews } from "@/hooks/use-reviews";
+import { useScans } from "@/hooks/use-scans";
+
 import DashboardTabSwitcher from "../../components/DashboardTabSwitcher";
 import DashboardFilters from "../../components/DashboardFilters";
 import ReviewsTable from "../../components/ReviewsTable";
@@ -17,69 +16,94 @@ import StatCard from "../../components/StatCard";
 
 export default function IndividualQRDashboard() {
   const params = useParams();
-  const qrId = params.id as string;
+  const businessSlug = params.business as string;
+  const qrId = params.id as string; // Will actually be the sourceTag now!
 
-  const initialQR = mockQRCodes.find((q) => q.id === qrId);
-  const [qr, setQr] = useState<QRCodeData | undefined>(initialQR);
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"positive" | "negative" | null>(
-    null,
-  );
+  const [typeFilter, setTypeFilter] = useState<"POSITIVE" | "NEGATIVE" | null>(null);
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
+  const [resultFilter, setResultFilter] = useState<boolean | null>(null);
+  const [dateRange, setDateRange] = useState<{from?: Date; to?: Date} | undefined>();
 
-  // Filtered data for this specific QR
-  const qrStats = useMemo(() => getStatsForQR(qrId), [qrId]);
+  // Queries
+  const { data: qrData, isLoading: isQrLoading } = useQRCodeDetail(businessSlug, qrId);
+  const qrCode = qrData?.qrCode;
 
-  const filteredScans = useMemo(
-    () => mockScans.filter((s) => s.qrId === qrId),
-    [qrId],
-  );
+  // Real ID from returned QR object
+  const realQrId = qrCode?.id;
 
-  const filteredReviews = useMemo(() => {
-    return mockReviews.filter((r) => {
-      const isThisQR = r.qrId === qrId;
-      if (!isThisQR) return false;
+  const { data: reviewsData, isLoading: isReviewsLoading } = useReviews(businessSlug, {
+    qrCodeId: realQrId,
+    search: searchQuery,
+    type: typeFilter,
+    rating: ratingFilter,
+    from: dateRange?.from,
+    to: dateRange?.to,
+  });
 
-      const searchStr = (r.review || r.whatWentWrong || "").toLowerCase();
-      const matchesSearch = searchStr.includes(searchQuery.toLowerCase());
-      const matchesRating = ratingFilter === null || r.rating === ratingFilter;
-      const matchesType = typeFilter === null || r.type === typeFilter;
+  const { data: scansData, isLoading: isScansLoading } = useScans(businessSlug, {
+    qrCodeId: realQrId,
+    search: searchQuery,
+    resultedInReview: resultFilter,
+    from: dateRange?.from,
+    to: dateRange?.to,
+  });
 
-      return matchesSearch && matchesRating && matchesType;
-    });
-  }, [qrId, searchQuery, ratingFilter, typeFilter]);
+  if (isQrLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
 
-  if (!qr) return null;
+  if (!qrCode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-slate-500 font-medium">QR code not found.</p>
+      </div>
+    );
+  }
+
+  const stats = qrCode.stats;
+  const filteredReviews = reviewsData?.data || [];
+  const filteredScans = scansData?.data || [];
 
   return (
     <div className="min-h-screen bg-slate-50/50">
       <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-8 space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-black text-slate-900">{qrCode.name}</h1>
+          <p className="text-slate-500 font-mono mt-1 pr-12 text-sm">{qrCode.sourceTag}</p>
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            title="Specific Scans"
-            value={qrStats.totalScans}
+            title="Total Scans"
+            value={stats?.totalScans || 0}
             icon={Signal}
             color="hsl(220, 70%, 55%)"
           />
           <StatCard
             title="Conversions"
-            value={qrStats.totalReviews}
+            value={stats?.totalReviews || 0}
             icon={ArrowUpRight}
             color="hsl(152, 60%, 45%)"
           />
           <StatCard
             title="Conversion Rate"
-            value={`${qrStats.conversionRate}%`}
+            value={`${stats?.conversionRate || 0}%`}
             icon={TrendingUp}
             color="hsl(25, 95%, 53%)"
           />
           <StatCard
             title="Avg Rating"
-            value={qrStats.avgRating}
+            value={stats?.avgRating || 0}
             icon={Calendar}
             color="hsl(45, 97%, 54%)"
           />
@@ -89,34 +113,50 @@ export default function IndividualQRDashboard() {
           <DashboardTabSwitcher
             activeTab={activeTab}
             setActiveTab={setActiveTab}
-            reviewCount={filteredReviews.length}
-            scanCount={filteredScans.length}
+            reviewCount={reviewsData?.pagination.total || 0}
+            scanCount={scansData?.pagination.total || 0}
           />
 
-          {activeTab === "reviews" ? (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-3xl shadow-lg shadow-slate-200/40 border border-slate-200 overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-100 bg-slate-50/50 space-y-4">
               <DashboardFilters
+                mode={activeTab}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 typeFilter={typeFilter}
-                setTypeFilter={setTypeFilter}
+                setTypeFilter={(val) => setTypeFilter(val as any)}
                 ratingFilter={ratingFilter}
                 setRatingFilter={setRatingFilter}
+                resultFilter={resultFilter}
+                setResultFilter={setResultFilter}
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                onClearAll={() => {
+                  setSearchQuery("");
+                  setTypeFilter(null);
+                  setRatingFilter(null);
+                  setResultFilter(null);
+                  setDateRange(undefined);
+                }}
               />
-              <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-foreground/5">
-                <ReviewsTable
-                  onViewReview={() => {}}
-                  reviews={filteredReviews}
-                />
+            </div>
+            
+            <div className="p-6 relative min-h-[300px]">
+              {(activeTab === "reviews" ? isReviewsLoading : isScansLoading) && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-b-3xl">
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                </div>
+              )}
+              
+              <div className="rounded-xl border border-slate-100 overflow-hidden bg-white shadow-sm">
+                {activeTab === "reviews" ? (
+                  <ReviewsTable onViewReview={() => {}} reviews={filteredReviews as any} />
+                ) : (
+                  <QRScansTable onViewScan={() => {}} scans={filteredScans as any} />
+                )}
               </div>
             </div>
-          ) : (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-foreground/5">
-                <QRScansTable onViewScan={() => {}} scans={filteredScans} />
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </main>
     </div>

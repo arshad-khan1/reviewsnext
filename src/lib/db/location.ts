@@ -30,6 +30,7 @@ export async function getLocations(businessSlug: string, includeStats: boolean =
     return {
       data: locations.map(l => ({
         id: l.id,
+        slug: l.slug,
         name: l.name,
         address: l.address,
         city: l.city,
@@ -63,6 +64,7 @@ export async function getLocations(businessSlug: string, includeStats: boolean =
 
       return {
         id: l.id,
+        slug: l.slug,
         name: l.name,
         address: l.address,
         city: l.city,
@@ -92,9 +94,22 @@ export async function createLocation(businessSlug: string, data: { name: string;
 
   if (!business) throw new Error("BUSINESS_NOT_FOUND");
 
+  const slugBase = data.name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  let slug = slugBase || "location";
+  let counter = 1;
+  while (true) {
+    const existing = await prisma.location.findFirst({
+      where: { businessId: business.id, slug }
+    });
+    if (!existing) break;
+    slug = `${slugBase}-${counter}`;
+    counter++;
+  }
+
   const location = await prisma.location.create({
     data: {
       ...data,
+      slug,
       businessId: business.id,
     },
   });
@@ -108,7 +123,7 @@ export async function createLocation(businessSlug: string, data: { name: string;
 /**
  * Detailed view of a single location.
  */
-export async function getLocationDetail(businessSlug: string, locationId: string, period: string = "30d") {
+export async function getLocationDetail(businessSlug: string, locationSlug: string, period: string = "30d") {
   const business = await prisma.business.findFirst({
     where: { slug: businessSlug, isDeleted: false },
   });
@@ -116,7 +131,7 @@ export async function getLocationDetail(businessSlug: string, locationId: string
   if (!business) throw new Error("BUSINESS_NOT_FOUND");
 
   const location = await prisma.location.findFirst({
-    where: { id: locationId, businessId: business.id, isDeleted: false },
+    where: { slug: locationSlug, businessId: business.id, isDeleted: false },
     include: {
       qrCodes: {
         where: { isDeleted: false },
@@ -156,6 +171,7 @@ export async function getLocationDetail(businessSlug: string, locationId: string
 
   return {
     id: location.id,
+    slug: location.slug,
     name: location.name,
     address: location.address,
     city: location.city,
@@ -199,7 +215,7 @@ export async function getLocationDetail(businessSlug: string, locationId: string
 /**
  * Updates a location.
  */
-export async function updateLocation(businessSlug: string, locationId: string, data: Partial<{ name: string; address: string; city: string; isActive: boolean }>) {
+export async function updateLocation(businessSlug: string, locationSlug: string, data: Partial<{ name: string; address: string; city: string; isActive: boolean }>) {
   const business = await prisma.business.findFirst({
     where: { slug: businessSlug, isDeleted: false },
   });
@@ -207,7 +223,7 @@ export async function updateLocation(businessSlug: string, locationId: string, d
   if (!business) throw new Error("BUSINESS_NOT_FOUND");
 
   return await prisma.location.update({
-    where: { id: locationId, businessId: business.id },
+    where: { businessId_slug: { businessId: business.id, slug: locationSlug } },
     data,
   });
 }
@@ -215,7 +231,7 @@ export async function updateLocation(businessSlug: string, locationId: string, d
 /**
  * Deletes a location (soft delete) and unassigns QR codes.
  */
-export async function deleteLocation(businessSlug: string, locationId: string) {
+export async function deleteLocation(businessSlug: string, locationSlug: string) {
   const business = await prisma.business.findFirst({
     where: { slug: businessSlug, isDeleted: false },
   });
@@ -224,7 +240,7 @@ export async function deleteLocation(businessSlug: string, locationId: string) {
 
   // Verify ownership before deleting
   const location = await prisma.location.findFirst({
-    where: { id: locationId, businessId: business.id, isDeleted: false },
+    where: { slug: locationSlug, businessId: business.id, isDeleted: false },
   });
 
   if (!location) throw new Error("LOCATION_NOT_FOUND");
@@ -232,13 +248,13 @@ export async function deleteLocation(businessSlug: string, locationId: string) {
   return await prisma.$transaction(async (tx) => {
     // 1. Unassign QR codes
     const updatedQrs = await tx.qRCode.updateMany({
-      where: { locationId: locationId },
+      where: { locationId: location.id },
       data: { locationId: null },
     });
 
     // 2. Soft delete location
     await tx.location.update({
-      where: { id: locationId },
+      where: { id: location.id },
       data: { isDeleted: true },
     });
 

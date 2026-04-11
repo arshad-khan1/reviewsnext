@@ -21,9 +21,12 @@ interface useReviewsOptions {
   type?: ReviewType | null;
   rating?: number | null;
   search?: string;
+  qrCodeId?: string;
   submittedToGoogle?: boolean | null;
   from?: Date | null;
   to?: Date | null;
+  locationId?: string;
+  enabled?: boolean;
 }
 
 export function useReviews(
@@ -36,9 +39,12 @@ export function useReviews(
     type,
     rating,
     search,
+    qrCodeId,
     submittedToGoogle,
     from,
     to,
+    locationId,
+    enabled = true,
   } = options;
 
   return useQuery<ReviewsResponse>({
@@ -50,9 +56,12 @@ export function useReviews(
       type,
       rating,
       search,
+      qrCodeId,
       submittedToGoogle,
       from,
       to,
+      locationId,
+      enabled,
     ],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -63,11 +72,13 @@ export function useReviews(
       if (type) params.append("type", type);
       if (rating) params.append("rating", rating.toString());
       if (search) params.append("search", search);
+      if (qrCodeId) params.append("qrCodeId", qrCodeId);
       if (submittedToGoogle !== null && submittedToGoogle !== undefined) {
         params.append("submittedToGoogle", submittedToGoogle.toString());
       }
       if (from) params.append("from", from.toISOString());
       if (to) params.append("to", to.toISOString());
+      if (locationId) params.append("locationId", locationId);
 
       const res = await apiClient.get(
         `/api/businesses/${businessSlug}/reviews?${params.toString()}`,
@@ -76,5 +87,6 @@ export function useReviews(
       return res.json();
     },
     placeholderData: (previousData) => previousData,
+    enabled,
   });
 }

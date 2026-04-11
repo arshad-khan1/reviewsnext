@@ -22,6 +22,8 @@ interface useScansOptions {
   search?: string;
   from?: Date | null;
   to?: Date | null;
+  locationId?: string;
+  enabled?: boolean;
 }
 
 export function useScans(businessSlug: string, options: useScansOptions = {}) {
@@ -33,6 +35,8 @@ export function useScans(businessSlug: string, options: useScansOptions = {}) {
     search,
     from,
     to,
+    locationId,
+    enabled = true,
   } = options;
 
   return useQuery<ScansResponse>({
@@ -46,6 +50,8 @@ export function useScans(businessSlug: string, options: useScansOptions = {}) {
       search,
       from,
       to,
+      locationId,
+      enabled,
     ],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -60,6 +66,7 @@ export function useScans(businessSlug: string, options: useScansOptions = {}) {
       if (search) params.append("search", search);
       if (from) params.append("from", from.toISOString());
       if (to) params.append("to", to.toISOString());
+      if (locationId) params.append("locationId", locationId);
 
       const res = await apiClient.get(
         `/api/businesses/${businessSlug}/scans?${params.toString()}`,
@@ -68,5 +75,6 @@ export function useScans(businessSlug: string, options: useScansOptions = {}) {
       return res.json();
     },
     placeholderData: (previousData) => previousData,
+    enabled,
   });
 }

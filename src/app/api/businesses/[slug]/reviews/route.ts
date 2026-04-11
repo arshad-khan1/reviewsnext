@@ -26,6 +26,7 @@ export const GET = withAuth(async (req, payload, context: { params: Promise<{ sl
     const ratingStr = searchParams.get("rating");
     const rating = ratingStr ? parseInt(ratingStr) : undefined;
     const qrCodeId = searchParams.get("qrCodeId") || undefined;
+    const locationId = searchParams.get("locationId") || undefined;
     const search = searchParams.get("search") || undefined;
     
     const subToGoogleStr = searchParams.get("submittedToGoogle");
@@ -38,6 +39,7 @@ export const GET = withAuth(async (req, payload, context: { params: Promise<{ sl
       type,
       rating,
       qrCodeId,
+      locationId,
       search,
       submittedToGoogle,
       from,

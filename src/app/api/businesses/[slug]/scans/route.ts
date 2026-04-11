@@ -20,6 +20,7 @@ export const GET = withAuth(async (req, payload, context: { params: Promise<{ sl
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "8");
     const qrCodeId = searchParams.get("qrCodeId") || undefined;
+    const locationId = searchParams.get("locationId") || undefined;
     const resultedInReview = searchParams.has("resultedInReview") 
       ? searchParams.get("resultedInReview") === "true" 
       : undefined;
@@ -29,6 +30,7 @@ export const GET = withAuth(async (req, payload, context: { params: Promise<{ sl
 
     const result = await getScans(slug, page, limit, {
       qrCodeId,
+      locationId,
       resultedInReview,
       search,
       from,

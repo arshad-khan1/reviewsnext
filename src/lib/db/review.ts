@@ -74,6 +74,7 @@ export async function getReviews(
     submittedToGoogle?: boolean;
     from?: Date;
     to?: Date;
+    locationId?: string;
   } = {},
 ) {
   const skip = (page - 1) * limit;
@@ -87,6 +88,11 @@ export async function getReviews(
     ...(filters.type && { type: filters.type }),
     ...(filters.rating && { rating: filters.rating }),
     ...(filters.qrCodeId && { qrCodeId: filters.qrCodeId }),
+    ...(filters.locationId && {
+      qrCode: {
+        locationId: filters.locationId,
+      },
+    }),
     ...(filters.submittedToGoogle !== undefined && {
       submittedToGoogle: filters.submittedToGoogle,
     }),

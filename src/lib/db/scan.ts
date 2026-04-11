@@ -82,6 +82,7 @@ export async function getScans(
     search?: string;
     from?: Date;
     to?: Date;
+    locationId?: string;
   } = {}
 ) {
   const skip = (page - 1) * limit;
@@ -93,6 +94,11 @@ export async function getScans(
     },
     isDeleted: false,
     ...(filters.qrCodeId && { qrCodeId: filters.qrCodeId }),
+    ...(filters.locationId && {
+      qrCode: {
+        locationId: filters.locationId,
+      },
+    }),
     ...(filters.resultedInReview !== undefined && { resultedInReview: filters.resultedInReview }),
     ...(filters.search && {
       OR: [

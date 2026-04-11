@@ -61,7 +61,7 @@ async function main() {
       ownerId: starterOwner.id,
       subscription: {
         create: {
-          plan: PlanType.STARTER,
+          plan: PlanType.PRO,
           status: SubscriptionStatus.ACTIVE,
           billingInterval: BillingInterval.MONTHLY,
         },
@@ -112,7 +112,7 @@ async function main() {
       },
       subscription: {
         create: {
-          plan: PlanType.GROWTH,
+          plan: PlanType.PRO,
           status: SubscriptionStatus.ACTIVE,
           billingInterval: BillingInterval.YEARLY,
           monthlyAiCredits: 500,
@@ -186,11 +186,13 @@ async function main() {
       locations: {
         create: [
           {
+            slug: "indiranagar-branch",
             name: "Indiranagar Branch",
             city: "Bangalore",
             address: "123 100ft Road",
           },
           {
+            slug: "koramangala-branch",
             name: "Koramangala Branch",
             city: "Bangalore",
             address: "456 80ft Road",

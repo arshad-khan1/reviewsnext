@@ -11,7 +11,9 @@ import {
   MessageSquare,
   BarChart3,
   Zap,
+  MapPin,
 } from "lucide-react";
+import { useLocations } from "@/hooks/use-locations";
 import { UserNav } from "./UserNav";
 import { Button } from "@/components/ui/button";
 import { useBusiness } from "@/hooks/use-business";
@@ -22,10 +24,16 @@ export default function DashboardHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const businessSlug = params.business as string;
-  const { data: business, isLoading } = useBusiness(businessSlug);
+  const locationSlug = params.locationSlug as string;
+  const { data: business, isLoading: isBizLoading } = useBusiness(businessSlug);
+  const { data: locationsData } = useLocations(businessSlug);
+  const locations = locationsData?.data || [];
+  const currentLocation = locations.find((l) => l.slug === locationSlug);
 
-  if (isLoading || !business)
-    return <header className="border-b border-border bg-card h-16" />;
+  if (isBizLoading || !business)
+    return (
+      <header className="border-b border-border bg-card h-16 sticky top-0 z-50" />
+    );
 
   // Determine page type and metadata
   const isMainDashboard = pathname === `/${businessSlug}/dashboard`;
@@ -34,6 +42,7 @@ export default function DashboardHeader() {
   const isQRCodesPage = pathname.includes("/qr-codes");
   const isSettingsPage = pathname.includes("/settings");
   const isTopupPage = pathname.includes("/topup");
+  const isLocationHub = pathname.includes("/qr-codes/location/");
 
   const getPageConfig = () => {
     if (isReviewsPage)
@@ -72,6 +81,15 @@ export default function DashboardHeader() {
         color: "text-indigo-600",
         bg: "bg-indigo-500/10",
       };
+    if (isLocationHub)
+      return {
+        title: currentLocation
+          ? `Location: ${currentLocation.name}`
+          : "Location Hub",
+        icon: MapPin,
+        color: "text-indigo-600",
+        bg: "bg-indigo-500/10",
+      };
     return null;
   };
 
@@ -81,13 +99,22 @@ export default function DashboardHeader() {
   return (
     <header className="border-b border-border bg-card sticky top-0 z-50">
       <div className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <Link
+          href={`/${businessSlug}/dashboard`}
+          className="flex items-center gap-3"
+        >
           {showBackButton ? (
             <>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => router.back()}
+                onClick={() => {
+                  if (isLocationHub) {
+                    router.push(`/${businessSlug}/dashboard/qr-codes`);
+                  } else {
+                    router.back();
+                  }
+                }}
                 className="rounded-xl hover:bg-muted"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -100,15 +127,15 @@ export default function DashboardHeader() {
                     <config.icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <h1 className="text-base font-bold text-foreground">
-                      {config.title}
-                    </h1>
                     <div className="flex items-center gap-2">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
+                      <h1 className="text-base font-bold text-foreground">
                         {business.name}
-                      </p>
+                      </h1>
                       <PlanBadge plan={business.subscription?.plan || "FREE"} />
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      {config.title}
+                    </p>
                   </div>
                 </>
               )}
@@ -144,7 +171,7 @@ export default function DashboardHeader() {
               </div>
             </>
           )}
-        </div>
+        </Link>
 
         <div className="flex items-center gap-2">
           <Link href={`/${businessSlug}/dashboard/reviews`}>

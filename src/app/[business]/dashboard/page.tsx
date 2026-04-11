@@ -13,8 +13,13 @@ import {
   ArrowLeft,
   QrCode,
   ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useReviews } from "@/hooks/use-reviews";
+import { useScans } from "@/hooks/use-scans";
 import StatCard from "./components/StatCard";
 import DetailRow from "./components/DetailRow";
 import ScansOverTimeChart from "./components/ScansOverTimeChart";
@@ -47,6 +52,24 @@ const BusinessDashboard = () => {
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+
+  // Pagination for Dashboard
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [scansPage, setScansPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  const { data: reviewsData, isLoading: isLoadingReviews } = useReviews(
+    businessSlug,
+    { page: reviewsPage, limit: ITEMS_PER_PAGE }
+  );
+
+  const { data: scansData, isLoading: isLoadingScans } = useScans(
+    businessSlug, 
+    { page: scansPage, limit: ITEMS_PER_PAGE }
+  );
+
+  const totalReviewsPages = reviewsData?.pagination.totalPages || 1;
+  const totalScansPages = scansData?.pagination.totalPages || 1;
 
   const isLoading = isBusinessLoading || isDashboardLoading;
   const error = businessError || dashboardError;
@@ -238,18 +261,85 @@ const BusinessDashboard = () => {
             </Link>
           </div>
 
-          {activeTab === "reviews" && (
-            <ReviewsTable
-              onViewReview={(r) => setSelectedReviewId(r.id)}
-              reviews={dashboard?.recentReviews || []}
-            />
-          )}
-          {activeTab === "scans" && (
-            <QRScansTable
-              onViewScan={(s) => setSelectedScanId(s.id)}
-              scans={dashboard?.recentScans || []}
-            />
-          )}
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+            {activeTab === "reviews" ? (
+              <div className="space-y-4">
+                {isLoadingReviews && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                )}
+                <ReviewsTable
+                  onViewReview={(r) => setSelectedReviewId(r.id)}
+                  reviews={reviewsData?.data || []}
+                />
+                {/* Pagination Controls */}
+                <div className="p-4 flex items-center justify-between border-t border-border/50 bg-slate-50/50">
+                   <p className="text-xs font-medium text-muted-foreground">
+                     Page {reviewsPage} of {totalReviewsPages}
+                   </p>
+                   <div className="flex items-center gap-2">
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       className="h-8 w-8 p-0" 
+                       onClick={() => setReviewsPage(p => Math.max(1, p - 1))}
+                       disabled={reviewsPage === 1}
+                     >
+                       <ChevronLeft className="h-4 w-4" />
+                     </Button>
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       className="h-8 w-8 p-0" 
+                       onClick={() => setReviewsPage(p => Math.min(totalReviewsPages, p + 1))}
+                       disabled={reviewsPage === totalReviewsPages}
+                     >
+                       <ChevronRight className="h-4 w-4" />
+                     </Button>
+                   </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {isLoadingScans && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+                  </div>
+                )}
+                <QRScansTable
+                  onViewScan={(s) => setSelectedScanId(s.id)}
+                  scans={scansData?.data || []}
+                />
+                {/* Pagination Controls */}
+                <div className="p-4 flex items-center justify-between border-t border-border/50 bg-slate-50/50">
+                   <p className="text-xs font-medium text-muted-foreground">
+                     Page {scansPage} of {totalScansPages}
+                   </p>
+                   <div className="flex items-center gap-2">
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       className="h-8 w-8 p-0" 
+                       onClick={() => setScansPage(p => Math.max(1, p - 1))}
+                       disabled={scansPage === 1}
+                     >
+                       <ChevronLeft className="h-4 w-4" />
+                     </Button>
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       className="h-8 w-8 p-0" 
+                       onClick={() => setScansPage(p => Math.min(totalScansPages, p + 1))}
+                       disabled={scansPage === totalScansPages}
+                     >
+                       <ChevronRight className="h-4 w-4" />
+                     </Button>
+                   </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
