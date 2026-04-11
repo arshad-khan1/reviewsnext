@@ -3,7 +3,7 @@ import { z } from "zod";
 import * as cookie from "cookie";
 import { createRefreshToken } from "@/lib/db/auth";
 import { findUserByPhone, upsertUser } from "@/lib/db/user";
-import { signAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
+import { signAccessToken, generateRefreshToken, signAdminToken } from "@/lib/auth/jwt";
 import { checkTwilioVerification } from "@/lib/auth/otp";
 
 const verifyOtpSchema = z.object({
@@ -89,6 +89,20 @@ export async function POST(req: NextRequest) {
         maxAge: 30 * 24 * 60 * 60, // 30 days
       }),
     );
+
+    if (user.isAdmin) {
+      const adminToken = await signAdminToken({ sub: user.id });
+      response.headers.append(
+        "Set-Cookie",
+        cookie.serialize("rf_admin_session", adminToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          path: "/",
+          maxAge: 24 * 60 * 60, // 24 hours
+        }),
+      );
+    }
 
     return response;
   } catch (error) {

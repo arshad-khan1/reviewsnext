@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import pg from "pg";
+import { Pool } from "pg";
 
 /**
  * Global Prisma client singleton for Next.js.
@@ -15,7 +15,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const pool = new pg.Pool({
+  const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
   });
 

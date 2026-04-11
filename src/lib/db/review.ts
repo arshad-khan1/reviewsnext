@@ -42,6 +42,23 @@ export async function createReview(data: {
         where: { id: data.scanId },
         data: { resultedInReview: true },
       });
+
+      // Link AI usage log if it exists for this scan
+      // We look for any log created recently for this scanId that hasn't been linked yet
+      const aiLog = await tx.aiUsageLog.findFirst({
+        where: {
+          metadata: { path: ["scanId"], equals: data.scanId } as any,
+          reviewId: null,
+        },
+        orderBy: { usedAt: "desc" },
+      });
+
+      if (aiLog) {
+        await tx.aiUsageLog.update({
+          where: { id: aiLog.id },
+          data: { reviewId: review.id },
+        });
+      }
     }
 
     return review;

@@ -9,6 +9,10 @@ const REFRESH_TOKEN_SECRET = new TextEncoder().encode(
   process.env.REFRESH_TOKEN_SECRET || "rt-secret-minimum-32-chars-long-please"
 );
 
+const ADMIN_JWT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || "admin-secret-minimum-32-chars-long-please"
+);
+
 export interface TokenPayload {
   sub: string;
   phone: string;
@@ -69,3 +73,26 @@ export function hashToken(token: string): string {
  * 
  * I will use a random string as the token.
  */
+/**
+ * Signs an Admin Session Token (24h)
+ * This is an extra cookie for admins.
+ */
+export async function signAdminToken(payload: { sub: string }): Promise<string> {
+  return await new jose.SignJWT({ ...payload, isAdminSession: true })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("24h")
+    .sign(ADMIN_JWT_SECRET);
+}
+
+/**
+ * Verifies an Admin Session Token
+ */
+export async function verifyAdminToken(token: string): Promise<{ sub: string; isAdminSession: boolean } | null> {
+  try {
+    const { payload } = await jose.jwtVerify(token, ADMIN_JWT_SECRET);
+    return payload as unknown as { sub: string; isAdminSession: boolean };
+  } catch (error) {
+    return null;
+  }
+}

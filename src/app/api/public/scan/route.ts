@@ -1,0 +1,52 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { createScan } from "@/lib/db/scan";
+
+const scanSchema = z.object({
+  businessSlug: z.string().min(1),
+  sourceTag: z.string().min(1),
+  device: z.string().optional(),
+  browser: z.string().optional(),
+  os: z.string().optional(),
+});
+
+/**
+ * POST /api/public/scan
+ * Records a QR code scan event.
+ * Returns QR and Business info for rendering the review page.
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const result = scanSchema.safeParse(body);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { code: "VALIDATION_ERROR", message: "Invalid scan data", errors: result.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const { businessSlug, sourceTag, device, browser, os } = result.data;
+    const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0] || "0.0.0.0";
+
+    const scanData = await createScan({
+      businessSlug,
+      sourceTag,
+      device,
+      browser,
+      os,
+      ipAddress,
+    });
+
+    return NextResponse.json(scanData, { status: 201 });
+
+  } catch (error) {
+    if (error instanceof Error && error.message === "QR_NOT_FOUND") {
+      return NextResponse.json({ code: "QR_NOT_FOUND", message: "QR Code not found" }, { status: 404 });
+    }
+
+    console.error("[POST_PUBLIC_SCAN_ERROR]", error);
+    return NextResponse.json({ code: "INTERNAL_ERROR", message: "Failed to record scan" }, { status: 500 });
+  }
+}
