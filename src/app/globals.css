@@ -61,7 +61,7 @@
 
   --border: hsl(30 15% 89%);
   --input: hsl(30 15% 89%);
-  --ring: hsl(25 95% 53%);
+  --ring: hsl(230 75% 60%);
 
   --radius: 0.75rem;
 
@@ -99,7 +99,7 @@
   --destructive-foreground: hsl(0 0% 100%);
   --border: hsl(220 15% 20%);
   --input: hsl(220 15% 20%);
-  --ring: hsl(25 95% 53%);
+  --ring: hsl(230 75% 60%);
   --star: hsl(45 97% 54%);
   --star-inactive: hsl(220 10% 30%);
   --success: hsl(152 60% 45%);
@@ -163,7 +163,7 @@
     color: var(--foreground);
     font-family: 'DM Sans', sans-serif;
   }
-  button {
+  button, select {
     cursor: pointer;
   }
 }

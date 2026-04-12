@@ -18,12 +18,16 @@ const DEFAULT_BRANDING = {
 export async function getBranding(businessSlug: string) {
   const business = await prisma.business.findFirst({
     where: { slug: businessSlug, isDeleted: false },
-    include: { subscription: true },
+    include: { 
+      owner: {
+        include: { activeSubscription: true }
+      }
+    },
   });
 
   if (!business) throw new Error("BUSINESS_NOT_FOUND");
 
-  const plan = business.subscription?.plan || PlanType.STARTER;
+  const plan = business.owner.activeSubscription?.plan || PlanType.STARTER;
   const config = business.brandingConfig as any;
 
   return {

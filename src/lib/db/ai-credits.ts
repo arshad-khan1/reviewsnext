@@ -18,7 +18,7 @@ export async function getAiCredits(businessSlug: string) {
               },
             },
           },
-          subscription: true,
+          activeSubscription: true,
         },
       },
     },
@@ -29,7 +29,7 @@ export async function getAiCredits(businessSlug: string) {
   }
 
   const aiCredits = business.owner.aiCredits;
-  const subscription = business.owner.subscription;
+  const activeSubscription = business.owner.activeSubscription;
   const used = (aiCredits?.monthlyUsed || 0) + (aiCredits?.topupUsed || 0);
   const total = (aiCredits?.monthlyAllocation || 0) + (aiCredits?.topupAllocation || 0);
 
@@ -41,10 +41,10 @@ export async function getAiCredits(businessSlug: string) {
       percentUsed: total > 0 ? parseFloat(((used / total) * 100).toFixed(1)) : 0,
     },
     plan: {
-      name: subscription?.plan || "STARTER",
-      monthlyAllotment: subscription?.monthlyAiCredits || 100,
-      status: subscription?.status || "ACTIVE",
-      currentPeriodEnd: subscription?.currentPeriodEnd,
+      name: activeSubscription?.plan || "STARTER",
+      monthlyAllotment: activeSubscription?.monthlyAiCredits || 100,
+      status: activeSubscription?.status || "ACTIVE",
+      currentPeriodEnd: activeSubscription?.currentPeriodEnd,
     },
     recentUsage: aiCredits?.usageLogs.map((log) => ({
       id: log.id,

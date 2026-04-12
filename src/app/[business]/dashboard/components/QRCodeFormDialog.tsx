@@ -19,10 +19,16 @@ import {
   ExternalLink,
   Loader2,
   Signal,
+  Star,
 } from "lucide-react";
-import { type QRCode, type CommentStyle } from "@/hooks/use-qr-codes";
+import {
+  type QRCode,
+  type CommentStyle,
+  useQRCodeDetail,
+} from "@/hooks/use-qr-codes";
 import { type Location } from "@/hooks/use-locations";
 import { toast } from "sonner";
+import { useParams } from "next/navigation";
 
 const STYLE_MAP: Record<string, CommentStyle> = {
   "Professional & Polite": "PROFESSIONAL_POLITE",
@@ -69,50 +75,74 @@ export function QRCodeFormDialog({
     "Professional & Polite",
   );
   const [googleMapsLink, setGoogleMapsLink] = useState("");
+  const [acceptedStarsThreshold, setAcceptedStarsThreshold] =
+    useState<number>(4);
+  const [useDefaultConfig, setUseDefaultConfig] = useState(true);
   const [isAttempted, setIsAttempted] = useState(false);
   const [isSourceEdited, setIsSourceEdited] = useState(false);
 
+  const params = useParams();
+  const businessSlug = params.business as string;
+
+  const { data: detailData, isLoading: isDetailLoading } = useQRCodeDetail(
+    businessSlug,
+    qr?.id || "",
+  );
+
+  const qrDetail = detailData?.qrCode;
+
+  // Consolidate initialization and guard against cascading renders
   useEffect(() => {
-    if (open) {
-      setIsAttempted(false);
-      if (qr) {
-        setName(qr.name);
-        setSourceTag(qr.sourceTag);
-        setLocationId(qr.locationId || "unassigned");
-        setAiPrompt(qr.aiGuidingPrompt || "");
-        setCommentStyle(
-          REVERSE_STYLE_MAP[qr.commentStyle] || "Professional & Polite",
-        );
-        setGoogleMapsLink(qr.googleMapsLink || "");
-        setIsSourceEdited(true);
-      } else {
-        // Reset for Create
-        setName("");
-        setSourceTag("");
-        setLocationId("unassigned");
-        setIsSourceEdited(false);
+    if (!open) return;
 
-        const defaultQR =
-          qrs?.find((q) => q.sourceTag === "default") || qrs?.[0] || {};
-        const promptToUse =
-          defaultQR?.aiGuidingPrompt ||
-          business?.defaultAiPrompt ||
-          "Please share your honest feedback about our services.";
-        const linkToUse =
-          defaultQR?.googleMapsLink || business?.defaultGoogleMapsLink || "";
-        const styleToUse =
-          defaultQR?.commentStyle ||
-          business?.defaultCommentStyle ||
-          "PROFESSIONAL_POLITE";
+    // Use the detailed data if available, otherwise fallback to the basic QR data
+    const source = qrDetail || qr;
 
-        setAiPrompt(promptToUse);
-        setGoogleMapsLink(linkToUse);
-        setCommentStyle(
-          REVERSE_STYLE_MAP[styleToUse] || "Professional & Polite",
-        );
-      }
+    if (source) {
+      setName((prev) => (prev !== source.name ? source.name : prev));
+      setSourceTag((prev) =>
+        prev !== source.sourceTag ? source.sourceTag : prev,
+      );
+      setLocationId((prev) => {
+        const next = source.locationId || "unassigned";
+        return prev !== next ? next : prev;
+      });
+      setAiPrompt((prev) => {
+        const next = source.aiGuidingPrompt || "";
+        return prev !== next ? next : prev;
+      });
+      setCommentStyle((prev) => {
+        const next = source.commentStyle
+          ? REVERSE_STYLE_MAP[source.commentStyle as CommentStyle]
+          : "Inherit from Business Settings";
+        return prev !== next ? next : prev;
+      });
+      setGoogleMapsLink((prev) => {
+        const next = source.googleMapsLink || "";
+        return prev !== next ? next : prev;
+      });
+      setAcceptedStarsThreshold((prev) => {
+        const next = source.acceptedStarsThreshold || 0;
+        return prev !== next ? next : prev;
+      });
+      setUseDefaultConfig((prev) => {
+        const next = source.useDefaultConfig ?? true;
+        return prev !== next ? next : prev;
+      });
+      setIsSourceEdited(true);
+    } else {
+      // Create Mode Reset
+      setName("");
+      setSourceTag("");
+      setLocationId("unassigned");
+      setIsSourceEdited(false);
+      setAiPrompt("");
+      setGoogleMapsLink("");
+      setCommentStyle("Inherit from Business Settings");
+      setAcceptedStarsThreshold(0);
+      setUseDefaultConfig(true);
     }
-  }, [open, qr, business, qrs]);
+  }, [qrDetail, qr, open]);
 
   const errors = useMemo(() => {
     const newErrors: Record<string, string> = {};
@@ -176,9 +206,12 @@ export function QRCodeFormDialog({
       name: name.trim(),
       sourceTag: isEdit ? undefined : finalSourceTag,
       locationId: locationId === "unassigned" ? null : locationId,
-      aiGuidingPrompt: aiPrompt.trim(),
-      commentStyle: STYLE_MAP[commentStyle] || "PROFESSIONAL_POLITE",
-      googleMapsLink: googleMapsLink.trim(),
+      aiGuidingPrompt: aiPrompt.trim() || null,
+      commentStyle: STYLE_MAP[commentStyle] || null,
+      googleMapsLink: googleMapsLink.trim() || null,
+      acceptedStarsThreshold:
+        acceptedStarsThreshold === 0 ? null : acceptedStarsThreshold,
+      useDefaultConfig,
     });
   };
 
@@ -295,71 +328,148 @@ export function QRCodeFormDialog({
               </div>
             )}
 
-            <div className="space-y-4 pt-2 border-t border-slate-100">
-              <div className="space-y-2">
-                <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-slate-400" />
-                  AI Guiding Prompt
-                </Label>
-                <textarea
-                  placeholder="Instructions for the AI..."
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
-                  <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
-                  Comment Style
-                </Label>
-                <select
-                  value={commentStyle}
-                  onChange={(e) => setCommentStyle(e.target.value)}
-                  className="flex h-11 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                >
-                  {Object.keys(STYLE_MAP).map((style) => (
-                    <option key={style}>{style}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  className={
-                    showError("googleMapsLink")
-                      ? "text-red-500 font-semibold px-0.5 flex items-center gap-2"
-                      : "text-slate-700 font-semibold px-0.5 flex items-center gap-2"
-                  }
-                >
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  Google Maps Link
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="https://g.page/r/..."
-                    value={googleMapsLink}
-                    onChange={(e) => setGoogleMapsLink(e.target.value)}
-                    className={`h-11 border-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0 ${showError("googleMapsLink") ? "border-red-500 bg-red-50/30" : ""}`}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-11 w-11 shrink-0 bg-slate-50 hover:bg-slate-100 border-slate-200"
-                    onClick={() => window.open(googleMapsLink, "_blank")}
-                    disabled={!googleMapsLink}
-                    title="Test Link"
-                  >
-                    <ExternalLink className="w-4 h-4 text-slate-600" />
-                  </Button>
-                </div>
-                {showError("googleMapsLink") && (
-                  <p className="text-[11px] font-bold text-red-500 px-1">
-                    {errors.googleMapsLink}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-indigo-900 font-bold flex items-center gap-2">
+                    <Signal className="w-4 h-4" />
+                    Use Business Defaults
+                  </Label>
+                  <p className="text-[11px] text-indigo-600/70 font-medium">
+                    Automatically inherit all settings from business profile
                   </p>
-                )}
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useDefaultConfig}
+                    onChange={(e) => setUseDefaultConfig(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+              </div>
+
+              <div
+                className={`space-y-4 transition-all duration-300 ${useDefaultConfig ? "opacity-50 pointer-events-none grayscale-[0.5]" : "opacity-100"}`}
+              >
+                <div className="space-y-2">
+                  <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+                    AI Guiding Prompt
+                  </Label>
+                  <textarea
+                    placeholder={
+                      business?.defaultAiPrompt || "Instructions for the AI..."
+                    }
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    disabled={useDefaultConfig}
+                    className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-800 italic"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
+                    <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                    Comment Style
+                  </Label>
+                  <select
+                    value={commentStyle}
+                    onChange={(e) => setCommentStyle(e.target.value)}
+                    disabled={useDefaultConfig}
+                    className="flex h-11 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                  >
+                    {Object.keys(STYLE_MAP).map((style) => (
+                      <option key={style} value={style}>
+                        {style}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    Google Maps Link
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder={
+                        business?.defaultGoogleMapsLink ||
+                        "https://g.page/r/..."
+                      }
+                      value={googleMapsLink}
+                      onChange={(e) => setGoogleMapsLink(e.target.value)}
+                      disabled={useDefaultConfig}
+                      className="h-11 border-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-800 italic"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-11 w-11 shrink-0 bg-slate-50 hover:bg-slate-100 border-slate-200"
+                      onClick={() => {
+                        const effectiveLink = useDefaultConfig
+                          ? business?.defaultGoogleMapsLink
+                          : googleMapsLink || business?.defaultGoogleMapsLink;
+                        if (effectiveLink) window.open(effectiveLink, "_blank");
+                      }}
+                      disabled={
+                        useDefaultConfig
+                          ? !business?.defaultGoogleMapsLink
+                          : !(googleMapsLink || business?.defaultGoogleMapsLink)
+                      }
+                      title="Test Link"
+                    >
+                      <ExternalLink className="w-4 h-4 text-slate-800" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-slate-50">
+                  <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
+                    <Star className="w-3.5 h-3.5 text-amber-500" />
+                    Review Routing Filter
+                  </Label>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-3">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-[10px] uppercase font-bold text-slate-400">
+                        Stars required for Google Review
+                      </span>
+                      <span className="text-sm font-black text-amber-600">
+                        {acceptedStarsThreshold === 0
+                          ? business?.acceptedStarsThreshold || 4
+                          : acceptedStarsThreshold}
+                        + Stars
+                      </span>
+                      {useDefaultConfig && (
+                        <span className="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full font-black border border-indigo-100 flex items-center gap-1">
+                          <Signal className="w-2 h-2" /> INHERITED
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 4, 5].map((stars) => (
+                        <button
+                          key={stars}
+                          type="button"
+                          onClick={() => setAcceptedStarsThreshold(stars)}
+                          disabled={useDefaultConfig}
+                          className={`flex-1 h-10 rounded-lg flex items-center justify-center transition-all border ${
+                            acceptedStarsThreshold === stars
+                              ? "bg-amber-500 border-amber-600 text-white shadow-sm scale-105"
+                              : "bg-white border-slate-200 text-slate-400 hover:border-amber-200 hover:bg-amber-50/30"
+                          }`}
+                        >
+                          <span className="font-bold text-sm tracking-tight">
+                            {stars}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

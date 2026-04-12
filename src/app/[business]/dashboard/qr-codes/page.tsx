@@ -146,6 +146,7 @@ export default function QRCodeManager() {
     aiGuidingPrompt?: string;
     commentStyle?: CommentStyle;
     googleMapsLink?: string;
+    acceptedStarsThreshold?: number;
   }) => {
     try {
       if (data.id) {
@@ -155,6 +156,7 @@ export default function QRCodeManager() {
           aiGuidingPrompt: data.aiGuidingPrompt,
           commentStyle: data.commentStyle,
           googleMapsLink: data.googleMapsLink,
+          acceptedStarsThreshold: data.acceptedStarsThreshold,
         });
         await assignQrLocationMutation.mutateAsync({
           qrId: data.id,
@@ -167,6 +169,7 @@ export default function QRCodeManager() {
           aiGuidingPrompt: data.aiGuidingPrompt,
           commentStyle: data.commentStyle,
           googleMapsLink: data.googleMapsLink,
+          acceptedStarsThreshold: data.acceptedStarsThreshold,
         });
 
         const newId = (result as any)?.data?.id || (result as any)?.id || (result as any)?.qrCode?.id;

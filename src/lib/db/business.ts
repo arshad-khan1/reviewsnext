@@ -167,9 +167,8 @@ export async function createBusiness(
           // We can pre-fill it with the business's default links, though they are also business-level defaults.
           googleMapsLink: data.defaultGoogleMapsLink,
           aiGuidingPrompt: data.defaultAiPrompt,
-          ...(data.defaultCommentStyle && {
-            commentStyle: data.defaultCommentStyle,
-          }),
+          commentStyle: data.defaultCommentStyle,
+          acceptedStarsThreshold: data.acceptedStarsThreshold,
         },
       },
     },

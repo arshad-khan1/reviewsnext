@@ -22,7 +22,7 @@ export async function getAdminDashboardStats() {
   ] = await Promise.all([
     prisma.user.count(),
     prisma.business.count({ where: { isDeleted: false } }),
-    prisma.subscription.count({ where: { status: "ACTIVE" } }),
+    prisma.userSubscription.count({ where: { status: "ACTIVE" } }),
     prisma.scan.count({ where: { isDeleted: false } }),
     prisma.review.count({ where: { isDeleted: false } }),
     prisma.aiCredits.aggregate({
@@ -36,11 +36,11 @@ export async function getAdminDashboardStats() {
       where: { status: "SUCCESS", completedAt: { gte: startOfMonth } },
       _sum: { amountInPaise: true },
     }),
-    prisma.subscription.groupBy({
+    prisma.userSubscription.groupBy({
       by: ["plan"],
       _count: { _all: true },
     }),
-    prisma.subscription.groupBy({
+    prisma.userSubscription.groupBy({
       by: ["status"],
       _count: { _all: true },
     }),
@@ -206,13 +206,13 @@ export async function getExpiringSubscriptions(options: { withinDays: number; pa
   const expiryDate = new Date();
   expiryDate.setDate(expiryDate.getDate() + options.withinDays);
 
-  const where: Prisma.SubscriptionWhereInput = {
+  const where: Prisma.UserSubscriptionWhereInput = {
     status: { in: ["ACTIVE", "TRIALING"] },
     currentPeriodEnd: { lte: expiryDate, gte: new Date() },
   };
 
   const [subs, total] = await Promise.all([
-    prisma.subscription.findMany({
+    prisma.userSubscription.findMany({
       where,
       skip: (options.page - 1) * options.limit,
       take: options.limit,
@@ -223,7 +223,7 @@ export async function getExpiringSubscriptions(options: { withinDays: number; pa
       },
       orderBy: { currentPeriodEnd: "asc" },
     }),
-    prisma.subscription.count({ where }),
+    prisma.userSubscription.count({ where }),
   ]);
 
   const data = subs.map(s => {
@@ -250,8 +250,8 @@ export async function getExpiringSubscriptions(options: { withinDays: number; pa
         status: s.status,
         currentPeriodEnd: s.currentPeriodEnd,
         daysUntilExpiry,
-        razorpaySubId: s.razorpaySubscriptionId,
-        isAutoRenewing: !!s.razorpaySubscriptionId,
+        razorpaySubId: s.razorpaySubId,
+        isAutoRenewing: !!s.razorpaySubId,
       },
     };
   });

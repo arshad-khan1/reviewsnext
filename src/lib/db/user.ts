@@ -9,7 +9,7 @@ export async function findUserByPhone(phone: string) {
     include: {
       businesses: {
         where: { isDeleted: false },
-        select: { id: true, slug: true, name: true },
+        select: { id: true, slug: true, name: true, logoUrl: true },
       },
     },
   });
@@ -24,7 +24,7 @@ export async function findUserByEmail(email: string) {
     include: {
       businesses: {
         where: { isDeleted: false },
-        select: { id: true, slug: true, name: true },
+        select: { id: true, slug: true, name: true, logoUrl: true },
       },
     },
   });
@@ -39,7 +39,7 @@ export async function findUserById(id: string) {
     include: {
       businesses: {
         where: { isDeleted: false },
-        select: { id: true, slug: true, name: true },
+        select: { id: true, slug: true, name: true, logoUrl: true },
       },
     },
   });
@@ -59,7 +59,7 @@ export async function upsertUser(phone: string) {
     include: {
       businesses: {
         where: { isDeleted: false },
-        select: { id: true, slug: true, name: true, createdAt: true, updatedAt: true },
+        select: { id: true, slug: true, name: true, logoUrl: true, createdAt: true, updatedAt: true },
       },
     },
   });
@@ -82,7 +82,7 @@ export async function updateUserProfile(
     include: {
       businesses: {
         where: { isDeleted: false },
-        select: { id: true, slug: true, name: true },
+        select: { id: true, slug: true, name: true, logoUrl: true },
       },
     },
   });

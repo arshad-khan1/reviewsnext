@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 
 export interface Business {
   id: string;
@@ -43,5 +44,25 @@ export function useBusiness(slug: string) {
       return data.business as Business;
     },
     enabled: !!slug,
+  });
+}
+
+export function useUpdateBusiness(slug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: Partial<Business>) => {
+      const res = await apiClient.patch(`/api/businesses/${slug}`, data);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Failed to update business settings");
+      return json;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["business", slug] });
+      toast.success("Business settings updated successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
   });
 }

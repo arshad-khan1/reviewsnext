@@ -81,8 +81,8 @@ export function generateSignedUploadParams(
 }
 
 /**
- * Uploads a file directly from the server to Cloudinary.
- * @param file - File path, Buffer, base64 string, or remote URL
+ * Uploads a file directly from the server to Cloudinary using native fetch to bypass SDK network bugs.
+ * @param file - base64 string
  */
 export async function uploadToCloudinary(
   file: string,
@@ -90,11 +90,47 @@ export async function uploadToCloudinary(
   identifier: string
 ): Promise<UploadApiResponse> {
   const { folder, publicId } = getUploadConfig(type, identifier);
+  
+  const timestamp = Math.round(new Date().getTime() / 1000);
+  const cloudName = process.env.CLOUDINARY_URL?.split("@")[1] || cloudinary.config().cloud_name;
+  const apiKey = process.env.CLOUDINARY_API_KEY || cloudinary.config().api_key;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET || cloudinary.config().api_secret;
 
-  return await cloudinary.uploader.upload(file, {
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error("Missing Cloudinary configuration");
+  }
+  
+  const paramsToSign = {
+    timestamp,
     folder,
     public_id: publicId,
     overwrite: true,
-    resource_type: "auto",
+  };
+  
+  // Create signature synchronously using SDK utility
+  const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
+  
+  // Use Next.js native FormData instead of buggy Node SDK https stream
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("timestamp", timestamp.toString());
+  formData.append("folder", folder);
+  formData.append("public_id", publicId);
+  formData.append("overwrite", "true");
+  formData.append("api_key", apiKey);
+  formData.append("signature", signature);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: "POST",
+    body: formData,
+    // Add extra 60s timeout handling natively using AbortController if needed, but fetch defaults usually work.
   });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("[CLOUDINARY NATIVE FETCH ERROR]", errText);
+    throw new Error(`Cloudinary upload failed: ${errText}`);
+  }
+  
+  return res.json();
 }

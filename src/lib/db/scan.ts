@@ -23,11 +23,7 @@ export async function createScan(data: {
       isDeleted: false,
     },
     include: {
-      business: {
-        include: {
-          subscription: true,
-        },
-      },
+      business: true,
     },
   });
 
@@ -60,10 +56,10 @@ export async function createScan(data: {
     qrCodeId: qrCode.id,
     businessName: business.name,
     logoUrl: business.logoUrl,
-    acceptedStarsThreshold: business.acceptedStarsThreshold,
-    googleMapsLink: qrCode.googleMapsLink || business.defaultGoogleMapsLink,
-    aiGuidingPrompt: qrCode.aiGuidingPrompt || business.defaultAiPrompt,
-    commentStyle: qrCode.commentStyle || business.defaultCommentStyle,
+    acceptedStarsThreshold: qrCode.useDefaultConfig ? business.acceptedStarsThreshold : (qrCode.acceptedStarsThreshold || business.acceptedStarsThreshold),
+    googleMapsLink: qrCode.useDefaultConfig ? business.defaultGoogleMapsLink : (qrCode.googleMapsLink || business.defaultGoogleMapsLink),
+    aiGuidingPrompt: qrCode.useDefaultConfig ? business.defaultAiPrompt : (qrCode.aiGuidingPrompt || business.defaultAiPrompt),
+    commentStyle: qrCode.useDefaultConfig ? business.defaultCommentStyle : (qrCode.commentStyle || business.defaultCommentStyle),
     effectiveBranding,
     showWatermark,
   };

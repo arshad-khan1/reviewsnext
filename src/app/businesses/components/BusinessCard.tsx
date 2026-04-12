@@ -41,7 +41,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
           <div className="flex items-center gap-3 w-full">
             <div className="shrink-0 w-12 h-12 rounded-xl bg-background border shadow-sm flex items-center justify-center overflow-hidden">
               <Image
-                src={logo}
+                src={logoUrl || logo}
                 alt={`${name} logo`}
                 width={48}
                 height={48}

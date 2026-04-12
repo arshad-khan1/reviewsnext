@@ -60,6 +60,8 @@ export async function getQRCodesByBusiness(
       googleMapsLink: qr.googleMapsLink,
       aiGuidingPrompt: qr.aiGuidingPrompt,
       commentStyle: qr.commentStyle,
+      acceptedStarsThreshold: qr.acceptedStarsThreshold,
+      useDefaultConfig: qr.useDefaultConfig,
       locationId: qr.locationId,
       scans,
       conversions,
@@ -90,6 +92,8 @@ export type CreateQRCodeInput = {
   googleMapsLink?: string;
   aiGuidingPrompt?: string;
   commentStyle?: CommentStyle;
+  acceptedStarsThreshold?: number;
+  useDefaultConfig?: boolean;
 };
 
 /**
@@ -131,6 +135,8 @@ export async function createQRCode(businessSlug: string, data: CreateQRCodeInput
       googleMapsLink: data.googleMapsLink,
       aiGuidingPrompt: data.aiGuidingPrompt,
       commentStyle: data.commentStyle,
+      acceptedStarsThreshold: data.acceptedStarsThreshold,
+      useDefaultConfig: data.useDefaultConfig ?? true,
       businessId: business.id,
     },
   });
@@ -199,7 +205,7 @@ export async function getQRCodeDetails(id: string, businessSlug: string) {
 export async function updateQRCode(
   id: string,
   businessSlug: string,
-  data: Partial<CreateQRCodeInput> & { isActive?: boolean },
+  data: Partial<CreateQRCodeInput> & { isActive?: boolean; locationId?: string | null },
 ) {
   // Use findFirst to ensure it belongs to the business
   const existing = await prisma.qRCode.findFirst({
@@ -217,6 +223,9 @@ export async function updateQRCode(
       googleMapsLink: data.googleMapsLink,
       aiGuidingPrompt: data.aiGuidingPrompt,
       commentStyle: data.commentStyle,
+      acceptedStarsThreshold: data.acceptedStarsThreshold,
+      useDefaultConfig: data.useDefaultConfig,
+      locationId: data.locationId,
     },
   });
 }

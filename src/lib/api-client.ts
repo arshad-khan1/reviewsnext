@@ -130,40 +130,43 @@ export const apiClient = {
 
   post: (url: string, body?: any, init?: RequestInit) => {
     const headers = new Headers(init?.headers);
-    if (!headers.has("Content-Type")) {
+    const isFormData = body instanceof FormData;
+    if (!isFormData && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
     return apiFetch(url, {
       ...init,
       method: "POST",
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
     });
   },
 
   put: (url: string, body?: any, init?: RequestInit) => {
     const headers = new Headers(init?.headers);
-    if (!headers.has("Content-Type")) {
+    const isFormData = body instanceof FormData;
+    if (!isFormData && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
     return apiFetch(url, {
       ...init,
       method: "PUT",
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
     });
   },
 
   patch: (url: string, body?: any, init?: RequestInit) => {
     const headers = new Headers(init?.headers);
-    if (!headers.has("Content-Type")) {
+    const isFormData = body instanceof FormData;
+    if (!isFormData && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
     return apiFetch(url, {
       ...init,
       method: "PATCH",
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
     });
   },
 

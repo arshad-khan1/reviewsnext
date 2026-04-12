@@ -18,6 +18,9 @@ const patchQRCodeSchema = z.object({
     ])
     .optional()
     .nullable(),
+  acceptedStarsThreshold: z.number().min(1).max(5).optional().nullable(),
+  useDefaultConfig: z.boolean().optional(),
+  locationId: z.string().optional().nullable(),
 });
 
 /**
@@ -59,6 +62,9 @@ export const GET = withAuth(
           googleMapsLink: qrCode.googleMapsLink,
           aiGuidingPrompt: qrCode.aiGuidingPrompt,
           commentStyle: qrCode.commentStyle,
+          acceptedStarsThreshold: qrCode.acceptedStarsThreshold,
+          useDefaultConfig: qrCode.useDefaultConfig,
+          locationId: qrCode.locationId,
           createdAt: qrCode.createdAt,
           reviewUrl: `${origin}/${slug}/review?source=${qrCode.sourceTag}`,
           stats: qrCode.stats,
@@ -116,6 +122,9 @@ export const PATCH = withAuth(
           id: updated.id,
           name: updated.name,
           isActive: updated.isActive,
+          acceptedStarsThreshold: updated.acceptedStarsThreshold,
+          useDefaultConfig: updated.useDefaultConfig,
+          locationId: updated.locationId,
           updatedAt: updated.updatedAt,
         },
       });

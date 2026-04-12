@@ -10,6 +10,8 @@ const createQRCodeSchema = z.object({
   googleMapsLink: z.string().url().optional().nullable(),
   aiGuidingPrompt: z.string().optional().nullable(),
   commentStyle: z.enum(["PROFESSIONAL_POLITE", "FRIENDLY_CASUAL", "CONCISE_DIRECT", "ENTHUSIASTIC_WARM"]).optional().nullable(),
+  acceptedStarsThreshold: z.number().min(1).max(5).optional().nullable(),
+  useDefaultConfig: z.boolean().optional().default(true),
 });
 
 /**
@@ -84,6 +86,8 @@ export const POST = withAuth(async (req, payload, context: { params: Promise<{ s
         googleMapsLink: qrCode.googleMapsLink,
         aiGuidingPrompt: qrCode.aiGuidingPrompt,
         commentStyle: qrCode.commentStyle,
+        acceptedStarsThreshold: qrCode.acceptedStarsThreshold,
+        useDefaultConfig: qrCode.useDefaultConfig,
         scans: 0,
         conversions: 0,
         createdAt: qrCode.createdAt,

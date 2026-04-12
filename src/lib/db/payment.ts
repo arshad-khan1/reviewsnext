@@ -88,7 +88,7 @@ export async function handleSubscriptionCharged(payload: {
 }) {
   return await prisma.$transaction(async (tx) => {
     // 1. Find the subscription
-    const subscription = await tx.subscription.findUnique({
+    const subscription = await tx.userSubscription.findUnique({
       where: { razorpaySubId: payload.subscriptionId },
       include: {
         user: {

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PrismaClient, PlanCategory, PlanType, BillingInterval, ReviewType, CommentStyle, SubscriptionStatus } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
@@ -5,6 +6,15 @@ import { Pool } from "pg";
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
+
+// Verify connection string
+if (!process.env.DATABASE_URL) {
+  console.error("❌ ERROR: DATABASE_URL is not defined in environment variables.");
+  process.exit(1);
+} else {
+  const maskedUrl = process.env.DATABASE_URL.replace(/:([^@]+)@/, ":****@");
+  console.log(`📡 Connecting to database: ${maskedUrl}`);
+}
 
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
@@ -137,6 +147,15 @@ async function main() {
   const qrLuxeMain = await setupQRCode(luxeSpa.id, "Main Spa Reception", "spa-main", true, locBangalore.id);
   await generateRealisticActivity(qrLuxeMain.id, 60, 25);
 
+  // Override threshold for testing: Reception Desk at Urban Fitness
+  await prisma.qRCode.update({
+    where: { id: receptionQR.id },
+    data: { 
+      acceptedStarsThreshold: 5,
+      useDefaultConfig: false // Explicitly disable inheritance for this override
+    }
+  });
+
   console.log("✅ Comprehensive Seeding Complete.");
 }
 
@@ -201,11 +220,19 @@ async function setupLocation(businessId: string, name: string, slug: string, add
   });
 }
 
-async function setupQRCode(businessId: string, name: string, sourceTag: string, isDefault: boolean = false, locationId?: string) {
+async function setupQRCode(
+  businessId: string, 
+  name: string, 
+  sourceTag: string, 
+  isDefault: boolean = false, 
+  locationId?: string, 
+  acceptedStarsThreshold?: number,
+  useDefaultConfig: boolean = true
+) {
   return await prisma.qRCode.upsert({
     where: { businessId_sourceTag: { businessId, sourceTag } },
-    update: { name, isDefault, locationId },
-    create: { businessId, name, sourceTag, isDefault, locationId },
+    update: { name, isDefault, locationId, acceptedStarsThreshold, useDefaultConfig },
+    create: { businessId, name, sourceTag, isDefault, locationId, acceptedStarsThreshold, useDefaultConfig },
   });
 }
 

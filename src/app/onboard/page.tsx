@@ -300,7 +300,7 @@ export default function OnboardingPage() {
                     type="file"
                     onChange={handleLogoUpload}
                     className="absolute inset-0 opacity-0 cursor-pointer"
-                    accept="image/*"
+                    accept="image/*, image/svg+xml, .svg"
                   />
                 </div>
                 <Label>Business Logo</Label>

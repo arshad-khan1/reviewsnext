@@ -1,47 +1,51 @@
 "use client";
 
-import { useRouter, useParams } from "next/navigation";
-import BusinessForm, { BusinessFormData } from "@/components/forms/BusinessForm";
-import { companyConfig } from "@/config/companyConfig";
+import { useParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useBusiness, useUpdateBusiness } from "@/hooks/use-business";
+import { useUserProfile, useUpdateProfile } from "@/hooks/use-auth";
+import { BusinessProfileSection } from "./components/BusinessProfileSection";
+import { UserProfileSection } from "./components/UserProfileSection";
+import { RoutingSettingsSection } from "./components/RoutingSettingsSection";
 
-// Mock mapping companyConfig to BusinessFormData
-const initialData: Partial<BusinessFormData> = {
-  logo: companyConfig.logo,
-  name: companyConfig.name,
-  industry: "Restaurant & Food", // Mock default industry
-  phone: "+1 (555) 123-4567", // Mock default phone
-  description: "A great place for customers.", // Mock default description
-  aiPrompt: "You are a helpful assistant responding to reviews.",
-  acceptedStars: 4,
-  notAcceptedStars: 3,
-  commentStyle: "Professional & Polite",
-  googleMapsLink: "https://g.page/r/example",
-};
-
-export default function EditBusinessPage() {
-  const router = useRouter();
+export default function SettingsPage() {
   const params = useParams();
-  const businessSlug = params.business as string;
+  const slug = params.business as string;
 
-  const handleSubmit = (data: BusinessFormData) => {
-    console.log("Updating business", businessSlug, data);
-    // In a real app, you'd call an API here
-    router.push(`/${businessSlug}/dashboard`);
-  };
+  // Data
+  const { data: business, isLoading: isBusinessLoading } = useBusiness(slug);
+  const { data: user, isLoading: isUserLoading } = useUserProfile();
+
+  // Mutations
+  const updateBusinessMutation = useUpdateBusiness(slug);
+  const updateProfileMutation = useUpdateProfile();
+
+  if (isBusinessLoading || isUserLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 space-y-8 pb-12 pt-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+        <BusinessProfileSection
+          business={business}
+          updateBusinessMutation={updateBusinessMutation}
+        />
+        <UserProfileSection
+          user={user}
+          business={business}
+          updateProfileMutation={updateProfileMutation}
+        />
+      </div>
 
-      <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-6 space-y-6">
-        <div className="bg-transparent">
-          <BusinessForm 
-            initialData={initialData}
-            onSubmit={handleSubmit} 
-            onCancel={() => router.back()} 
-            disablePhone={true}
-          />
-        </div>
-      </main>
+      <RoutingSettingsSection
+        business={business}
+        updateBusinessMutation={updateBusinessMutation}
+      />
     </div>
   );
 }

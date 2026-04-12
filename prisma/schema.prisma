@@ -246,13 +246,15 @@ model QRCode {
   sourceTag String /// Slug-safe unique identifier for tracking source: e.g. "table-5"
   isActive  Boolean  @default(true)
   isDefault Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  useDefaultConfig Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // ── Per-QR Override Settings ───────────────────────────────
-  googleMapsLink  String? /// If set, overrides the business default
-  aiGuidingPrompt String? /// If set, overrides the business default
-  commentStyle    CommentStyle? /// If set, overrides the business default
+  googleMapsLink         String? /// If set, overrides the business default
+  aiGuidingPrompt        String? /// If set, overrides the business default
+  commentStyle           CommentStyle? /// If set, overrides the business default
+  acceptedStarsThreshold Int? /// If set, overrides the business default
 
   // ── Ownership ──────────────────────────────────────────────
   businessId String

@@ -4,13 +4,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 
-export type CommentStyle = 
-  | "PROFESSIONAL_POLITE" 
-  | "FRIENDLY_CASUAL" 
-  | "CONCISE_DIRECT" 
+export type CommentStyle =
+  | "PROFESSIONAL_POLITE"
+  | "FRIENDLY_CASUAL"
+  | "CONCISE_DIRECT"
   | "ENTHUSIASTIC_WARM";
 
 export interface QRCode {
+  useDefaultConfig: boolean;
   id: string;
   name: string;
   sourceTag: string;
@@ -18,6 +19,7 @@ export interface QRCode {
   googleMapsLink: string | null;
   aiGuidingPrompt: string | null;
   commentStyle: CommentStyle | null;
+  acceptedStarsThreshold: number | null;
   locationId: string | null;
   scans: number;
   conversions: number;
@@ -39,7 +41,9 @@ export function useQRCodes(businessSlug: string) {
   return useQuery<QRCodesResponse>({
     queryKey: ["qr-codes", businessSlug],
     queryFn: async () => {
-      const res = await apiClient.get(`/api/businesses/${businessSlug}/qr-codes`);
+      const res = await apiClient.get(
+        `/api/businesses/${businessSlug}/qr-codes`,
+      );
       if (!res.ok) throw new Error("Failed to fetch QR codes");
       return res.json();
     },
@@ -51,7 +55,9 @@ export function useQRCodeDetail(businessSlug: string, qrId: string) {
   return useQuery<{ qrCode: QRCode & { stats: any } }>({
     queryKey: ["qr-codes", businessSlug, qrId],
     queryFn: async () => {
-      const res = await apiClient.get(`/api/businesses/${businessSlug}/qr-codes/${qrId}`);
+      const res = await apiClient.get(
+        `/api/businesses/${businessSlug}/qr-codes/${qrId}`,
+      );
       if (!res.ok) throw new Error("Failed to fetch QR code details");
       return res.json();
     },
@@ -69,10 +75,11 @@ export function useCreateQRCode(businessSlug: string) {
       googleMapsLink?: string | null;
       aiGuidingPrompt?: string | null;
       commentStyle?: CommentStyle | null;
+      acceptedStarsThreshold?: number | null;
     }) => {
       const res = await apiClient.post(
         `/api/businesses/${businessSlug}/qr-codes`,
-        data
+        data,
       );
       if (!res.ok) {
         const errorData = await res.json();
@@ -104,10 +111,11 @@ export function useUpdateQRCode(businessSlug: string) {
       googleMapsLink?: string | null;
       aiGuidingPrompt?: string | null;
       commentStyle?: CommentStyle | null;
+      acceptedStarsThreshold?: number | null;
     }) => {
       const res = await apiClient.patch(
         `/api/businesses/${businessSlug}/qr-codes/${id}`,
-        data
+        data,
       );
       if (!res.ok) {
         const errorData = await res.json();
@@ -131,7 +139,7 @@ export function useDeleteQRCode(businessSlug: string) {
   return useMutation({
     mutationFn: async (id: string) => {
       const res = await apiClient.delete(
-        `/api/businesses/${businessSlug}/qr-codes/${id}`
+        `/api/businesses/${businessSlug}/qr-codes/${id}`,
       );
       if (!res.ok) {
         const errorData = await res.json();

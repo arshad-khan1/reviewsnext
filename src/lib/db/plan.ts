@@ -10,14 +10,14 @@ export async function checkBusinessPlan(businessSlug: string, requiredPlan: Plan
     where: { slug: businessSlug, isDeleted: false },
     include: { 
       owner: {
-        include: { subscription: true }
+        include: { activeSubscription: true }
       }
     },
   });
 
   if (!business) return { business: null, hasPlan: false, error: "BUSINESS_NOT_FOUND" };
 
-  const currentPlan = business.owner.subscription?.plan || PlanType.STARTER;
+  const currentPlan = business.owner.activeSubscription?.plan || PlanType.STARTER;
 
   const planPriority: Record<PlanType, number> = {
     [PlanType.STARTER]: 0,

@@ -1,4 +1,5 @@
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import {
   LogOut,
   LayoutDashboard,
@@ -88,10 +89,23 @@ export function UserNav() {
           {businesses.map((b) => (
             <Link key={b.id} href={`/${b.slug}/dashboard`}>
               <DropdownMenuItem className="cursor-pointer flex items-center justify-between">
-                <div className="flex items-center">
-                  <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center flex-1 min-w-0">
+                  <div className="mr-3 w-6 h-6 rounded-md bg-secondary flex items-center justify-center overflow-hidden border border-border/50 shrink-0">
+                    {b.logoUrl ? (
+                      <Image
+                        src={b.logoUrl}
+                        alt={b.name}
+                        width={24}
+                        height={24}
+                        className="object-contain"
+                      />
+                    ) : (
+                      <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </div>
                   <span
                     className={cn(
+                      "truncate",
                       b.slug === currentSlug && "font-bold text-primary",
                     )}
                   >
