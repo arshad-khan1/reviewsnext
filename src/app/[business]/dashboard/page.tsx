@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Star,
   MessageSquare,
@@ -32,6 +32,8 @@ import ScanDetailDialog from "./components/ScanDetailDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { useBusiness } from "@/hooks/use-business";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
+import WelcomeModal from "@/components/dashboard/WelcomeModal";
+import { useEffect } from "react";
 
 const BusinessDashboard = () => {
   const params = useParams();
@@ -52,6 +54,18 @@ const BusinessDashboard = () => {
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("welcome") === "1") {
+      setShowWelcome(true);
+      // Clean up the URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({ ...window.history.state }, "", newUrl);
+    }
+  }, [searchParams]);
 
   // Pagination for Dashboard
   const [reviewsPage, setReviewsPage] = useState(1);
@@ -353,6 +367,11 @@ const BusinessDashboard = () => {
         scanId={selectedScanId}
         businessSlug={businessSlug}
         onClose={() => setSelectedScanId(null)}
+      />
+
+      <WelcomeModal
+        isOpen={showWelcome}
+        onClose={() => setShowWelcome(false)}
       />
     </div>
   );

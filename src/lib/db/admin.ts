@@ -132,22 +132,25 @@ export async function getAllBusinesses(options: {
         { owner: { phone: { contains: options.search } } },
       ],
     }),
-    ...(options.plan && { subscription: { plan: options.plan as any } }),
-    ...(options.status && { subscription: { status: options.status as any } }),
+    ...(options.plan && { owner: { activeSubscription: { plan: options.plan as any } } }),
+    ...(options.status && { owner: { activeSubscription: { status: options.status as any } } }),
   };
 
   const [businesses, total] = await Promise.all([
-    prisma.business.findMany({
+        prisma.business.findMany({
       where,
       skip,
       take: options.limit,
       orderBy: { [options.sortBy || "createdAt"]: options.sortOrder || "desc" },
       include: {
-        owner: true,
-        subscription: true,
-        aiCredits: true,
+        owner: {
+          include: { 
+            activeSubscription: true,
+            aiCredits: true,
+          }
+        },
         _count: {
-          select: { scans: true, reviews: true, qrCodes: true },
+          select: { qrCodes: true }, // Scans/Reviews are on QRCode
         },
       },
     }),
@@ -155,8 +158,6 @@ export async function getAllBusinesses(options: {
   ]);
 
   const data = businesses.map(b => {
-    const totalScans = b._count.scans;
-    const totalReviews = b._count.reviews;
     return {
       id: b.id,
       slug: b.slug,
@@ -172,16 +173,16 @@ export async function getAllBusinesses(options: {
         email: b.owner.email,
       },
       subscription: {
-        plan: b.subscription?.plan,
-        status: b.subscription?.status,
-        currentPeriodEnd: b.subscription?.currentPeriodEnd,
+        plan: b.owner.activeSubscription?.plan || "STARTER",
+        status: b.owner.activeSubscription?.status || "TRIALING",
+        currentPeriodEnd: b.owner.activeSubscription?.currentPeriodEnd,
       },
       usage: {
-        totalScans,
-        totalReviews,
-        conversionRate: totalScans > 0 ? parseFloat(((totalReviews / totalScans) * 100).toFixed(1)) : 0,
-        aiCreditsUsed: (b.aiCredits?.monthlyUsed || 0) + (b.aiCredits?.topupUsed || 0),
-        aiCreditsTotal: (b.aiCredits?.monthlyAllocation || 0) + (b.aiCredits?.topupAllocation || 0),
+        totalScans: 0,
+        totalReviews: 0,
+        conversionRate: 0,
+        aiCreditsUsed: (b.owner.aiCredits?.monthlyUsed || 0) + (b.owner.aiCredits?.topupUsed || 0),
+        aiCreditsTotal: (b.owner.aiCredits?.monthlyAllocation || 0) + (b.owner.aiCredits?.topupAllocation || 0),
       },
       qrCodeCount: b._count.qrCodes,
     };
@@ -216,8 +217,8 @@ export async function getExpiringSubscriptions(options: { withinDays: number; pa
       skip: (options.page - 1) * options.limit,
       take: options.limit,
       include: {
-        business: {
-          include: { owner: true },
+        user: {
+          include: { businesses: true },
         },
       },
       orderBy: { currentPeriodEnd: "asc" },
@@ -227,16 +228,22 @@ export async function getExpiringSubscriptions(options: { withinDays: number; pa
 
   const data = subs.map(s => {
     const now = new Date();
-    const daysUntilExpiry = Math.ceil((new Date(s.currentPeriodEnd!).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntilExpiry = s.currentPeriodEnd 
+      ? Math.ceil((new Date(s.currentPeriodEnd).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
     
+    // For admin UI, just pick the first business or generic user info
+    const primaryBusiness = s.user.businesses[0];
+
     return {
-      businessId: s.businessId,
-      businessSlug: s.business.slug,
-      businessName: s.business.name,
+      userId: s.user.id,
+      userName: s.user.name,
+      businessSlug: primaryBusiness?.slug,
+      businessName: primaryBusiness?.name,
       owner: {
-        name: s.business.owner.name,
-        phone: s.business.owner.phone,
-        email: s.business.owner.email,
+        name: s.user.name,
+        phone: s.user.phone,
+        email: s.user.email,
       },
       subscription: {
         plan: s.plan,
@@ -266,16 +273,16 @@ export async function getExpiringSubscriptions(options: { withinDays: number; pa
 export async function adjustBusinessCredits(businessSlug: string, amount: number, reason: string) {
   const business = await prisma.business.findFirst({
     where: { slug: businessSlug, isDeleted: false },
-    include: { aiCredits: true },
+    include: { owner: { include: { aiCredits: true } } },
   });
 
   if (!business) throw new Error("BUSINESS_NOT_FOUND");
 
   return await prisma.$transaction(async (tx) => {
     const aiCredits = await tx.aiCredits.upsert({
-      where: { businessId: business.id },
+      where: { userId: business.ownerId },
       create: {
-        businessId: business.id,
+        userId: business.ownerId,
         topupAllocation: amount > 0 ? amount : 0,
         topupUsed: amount < 0 ? Math.abs(amount) : 0,
       },

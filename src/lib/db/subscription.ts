@@ -2,37 +2,40 @@ import { prisma } from "../prisma";
 import { PlanType, BillingInterval, SubscriptionStatus } from "@prisma/client";
 
 /**
- * Initiates a subscription for a business.
+ * Initiates a subscription for a user using a predefined Plan.
  */
 export async function initiateSubscription(
-  businessId: string,
-  plan: PlanType,
-  interval: BillingInterval,
+  userId: string,
+  planId: string,
   razorpaySubId: string
 ) {
-  // Plan allotment map
-  const allotments = {
-    [PlanType.STARTER]: 100,
-    [PlanType.GROWTH]: 800,
-    [PlanType.PRO]: 10000, /// Represeting a "Unlimited" cap for now
-  };
+  // 1. Fetch the plan details
+  const plan = await prisma.plan.findUnique({
+    where: { id: planId, isDeleted: false },
+  });
 
-  return await prisma.subscription.upsert({
-    where: { businessId },
+  if (!plan || plan.type !== "SUBSCRIPTION") {
+    throw new Error("INVALID_PLAN_OR_NOT_A_SUBSCRIPTION");
+  }
+
+  return await prisma.userSubscription.upsert({
+    where: { userId },
     update: {
-      plan,
-      billingInterval: interval,
-      razorpaySubId,
-      status: SubscriptionStatus.TRIALING, /// Initial state until webhook charge
-      monthlyAiCredits: allotments[plan],
-    },
-    create: {
-      businessId,
-      plan,
-      billingInterval: interval,
+      planId: plan.id,
+      plan: plan.planTier || PlanType.STARTER,
+      billingInterval: plan.billingInterval || BillingInterval.YEARLY,
       razorpaySubId,
       status: SubscriptionStatus.TRIALING,
-      monthlyAiCredits: allotments[plan],
+      monthlyAiCredits: plan.credits,
+    },
+    create: {
+      userId,
+      planId: plan.id,
+      plan: plan.planTier || PlanType.STARTER,
+      billingInterval: plan.billingInterval || BillingInterval.YEARLY,
+      razorpaySubId,
+      status: SubscriptionStatus.TRIALING,
+      monthlyAiCredits: plan.credits,
     },
   });
 }

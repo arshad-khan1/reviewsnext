@@ -21,8 +21,12 @@ export async function findBusinessBySlug(slug: string) {
   return await prisma.business.findFirst({
     where: { slug, isDeleted: false },
     include: {
-      subscription: true,
-      aiCredits: true,
+      owner: {
+        include: { 
+          activeSubscription: true,
+          aiCredits: true 
+        },
+      },
     },
   });
 }
@@ -80,7 +84,9 @@ export async function getBusinessesByUser(
       take: limit,
       orderBy: { createdAt: "desc" },
       include: {
-        aiCredits: true,
+        owner: {
+          include: { aiCredits: true }
+        },
         // _count: { select: { reviews: true, scans: true } } // Wait, relation is not direct from business to reviews/scans. They are on QRCode.
         // Need totalReviews, totalScans according to requirements
         qrCodes: {

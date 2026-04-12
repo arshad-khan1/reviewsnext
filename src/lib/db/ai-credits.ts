@@ -8,20 +8,17 @@ export async function getAiCredits(businessSlug: string) {
   const business = await prisma.business.findFirst({
     where: { slug: businessSlug, isDeleted: false },
     include: {
-      aiCredits: {
+      owner: {
         include: {
-          usageLogs: {
-            take: 10,
-            orderBy: { usedAt: "desc" },
+          aiCredits: {
+            include: {
+              usageLogs: {
+                take: 10,
+                orderBy: { usedAt: "desc" },
+              },
+            },
           },
-        },
-      },
-      subscription: {
-        select: {
-          plan: true,
-          status: true,
-          currentPeriodEnd: true,
-          monthlyAiCredits: true,
+          subscription: true,
         },
       },
     },
@@ -31,7 +28,8 @@ export async function getAiCredits(businessSlug: string) {
     throw new Error("BUSINESS_NOT_FOUND");
   }
 
-  const aiCredits = business.aiCredits;
+  const aiCredits = business.owner.aiCredits;
+  const subscription = business.owner.subscription;
   const used = (aiCredits?.monthlyUsed || 0) + (aiCredits?.topupUsed || 0);
   const total = (aiCredits?.monthlyAllocation || 0) + (aiCredits?.topupAllocation || 0);
 
@@ -43,10 +41,10 @@ export async function getAiCredits(businessSlug: string) {
       percentUsed: total > 0 ? parseFloat(((used / total) * 100).toFixed(1)) : 0,
     },
     plan: {
-      name: business.subscription?.plan || "STARTER",
-      monthlyAllotment: business.subscription?.monthlyAiCredits || 100,
-      status: business.subscription?.status || "ACTIVE",
-      currentPeriodEnd: business.subscription?.currentPeriodEnd,
+      name: subscription?.plan || "STARTER",
+      monthlyAllotment: subscription?.monthlyAiCredits || 100,
+      status: subscription?.status || "ACTIVE",
+      currentPeriodEnd: subscription?.currentPeriodEnd,
     },
     recentUsage: aiCredits?.usageLogs.map((log) => ({
       id: log.id,
@@ -99,7 +97,11 @@ export async function completeTopupPayment(data: {
       },
       include: {
         business: {
-          include: { aiCredits: true },
+          include: { 
+            owner: {
+              include: { aiCredits: true }
+            } 
+          },
         },
       },
     });
@@ -123,12 +125,14 @@ export async function completeTopupPayment(data: {
       },
     });
 
-    // 3. Increment credits
+    // 3. Increment credits (User-level)
     const creditsAdded = payment.creditsAdded || 0;
+    const userId = payment.business.ownerId;
+
     const aiCredits = await tx.aiCredits.upsert({
-      where: { businessId: payment.businessId },
+      where: { userId },
       create: {
-        businessId: payment.businessId,
+        userId,
         topupAllocation: creditsAdded,
       },
       update: {

@@ -12,8 +12,12 @@ export async function getDashboardData(
   const business = await prisma.business.findFirst({
     where: { slug: businessSlug, isDeleted: false },
     include: {
-      subscription: true,
-      aiCredits: true,
+      owner: {
+        include: { 
+          activeSubscription: true,
+          aiCredits: true 
+        },
+      },
     },
   });
 
@@ -244,12 +248,12 @@ export async function getDashboardData(
     })),
     aiCredits: {
       used:
-        (business.aiCredits?.monthlyUsed || 0) +
-        (business.aiCredits?.topupUsed || 0),
+        (business.owner.aiCredits?.monthlyUsed || 0) +
+        (business.owner.aiCredits?.topupUsed || 0),
       total:
-        (business.aiCredits?.monthlyAllocation || 0) +
-        (business.aiCredits?.topupAllocation || 0),
+        (business.owner.aiCredits?.monthlyAllocation || 0) +
+        (business.owner.aiCredits?.topupAllocation || 0),
     },
-    plan: business.subscription?.plan || "STARTER",
+    plan: business.owner.activeSubscription?.plan || "STARTER",
   };
 }

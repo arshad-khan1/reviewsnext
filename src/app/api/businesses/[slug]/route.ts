@@ -37,16 +37,16 @@ export const GET = withAuth(async (req, payload, context: { params: Promise<{ sl
         defaultCommentStyle: business.defaultCommentStyle,
         createdAt: business.createdAt,
         updatedAt: business.updatedAt,
-        subscription: business.subscription ? {
-          plan: business.subscription.plan,
-          status: business.subscription.status,
-          currentPeriodEnd: business.subscription.currentPeriodEnd,
+        subscription: business.owner.activeSubscription ? {
+          plan: business.owner.activeSubscription.plan,
+          status: business.owner.activeSubscription.status,
+          currentPeriodEnd: business.owner.activeSubscription.currentPeriodEnd,
         } : null,
-        aiCredits: business.aiCredits ? {
-          monthlyAllocation: business.aiCredits.monthlyAllocation,
-          monthlyUsed: business.aiCredits.monthlyUsed,
-          topupAllocation: business.aiCredits.topupAllocation,
-          topupUsed: business.aiCredits.topupUsed,
+        aiCredits: business.owner.aiCredits ? {
+          monthlyAllocation: business.owner.aiCredits.monthlyAllocation,
+          monthlyUsed: business.owner.aiCredits.monthlyUsed,
+          topupAllocation: business.owner.aiCredits.topupAllocation,
+          topupUsed: business.owner.aiCredits.topupUsed,
         } : null,
       }
     });

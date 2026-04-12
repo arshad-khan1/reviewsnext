@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+// Triggering reload to clear cached globalThis.prisma
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 

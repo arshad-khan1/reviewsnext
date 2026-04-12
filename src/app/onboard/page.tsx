@@ -20,6 +20,7 @@ import {
   ArrowRightCircle,
   Building2,
   LayoutGrid,
+  Contact,
 } from "lucide-react";
 
 import { PhoneInput } from "react-international-phone";
@@ -64,6 +65,9 @@ const COMMENT_STYLES = [
 
 import { useAuthStore } from "@/store/auth-store";
 import { useEffect } from "react";
+import { toast } from "sonner";
+import { step1Schema, step2Schema, step3Schema } from "./validation";
+import { setAccessToken } from "@/lib/api-client";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -72,8 +76,10 @@ export default function OnboardingPage() {
   const [formData, setFormData] = useState({
     name: "",
     industry: "",
+    ownerName: "",
     phone: "+91",
     logo: null as string | null,
+    logoFile: null as File | null,
     minRatingToExternal: "4",
     googleMapsUrl: "",
     aiPrompt: "",
@@ -84,6 +90,9 @@ export default function OnboardingPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (user?.phone) {
@@ -97,12 +106,35 @@ export default function OnboardingPage() {
     setFormData((prev) => ({ ...prev, ...data }));
   };
 
-  const nextStep = () => setStep((s) => Math.min(s + 1, 3));
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+  const nextStep = () => {
+    // Validate current step before proceeding
+    let result;
+    if (step === 1) result = step1Schema.safeParse(formData);
+    if (step === 2) result = step2Schema.safeParse(formData);
+
+    if (result && !result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        errors[String(issue.path[0])] = issue.message;
+      });
+      setFormErrors(errors);
+      toast.error("Please fix the errors before proceeding.");
+      return;
+    }
+
+    setFormErrors({});
+    setStep((s) => Math.min(s + 1, 3));
+  };
+
+  const prevStep = () => {
+    setFormErrors({});
+    setStep((s) => Math.max(s - 1, 1));
+  };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      updateFormData({ logoFile: file });
       const reader = new FileReader();
       reader.onloadend = () => {
         updateFormData({ logo: reader.result as string });
@@ -114,31 +146,128 @@ export default function OnboardingPage() {
   const isStepValid = () => {
     if (step === 1)
       return (
-        formData.name && formData.industry && formData.phone && formData.location && isPhoneVerified
+        formData.name &&
+        formData.industry &&
+        formData.phone &&
+        formData.location &&
+        isPhoneVerified
       );
     if (step === 2) return true; // Threshold always has default
     if (step === 3) return formData.googleMapsUrl && formData.aiPrompt;
     return true;
   };
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (!formData.phone) return;
     setIsSendingOtp(true);
-    setTimeout(() => {
-      setIsSendingOtp(false);
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        body: JSON.stringify({ phone: formData.phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send OTP");
       setOtpSent(true);
-    }, 1000);
+      toast.success("OTP sent successfully!");
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsSendingOtp(false);
+    }
   };
 
-  const handleVerifyOtp = () => {
+  const setUser = useAuthStore((state) => state.setUser);
+
+  const handleVerifyOtp = async () => {
     if (otpCode.length < 4) return;
-    // Simulate verification
-    setIsPhoneVerified(true);
+    setIsVerifyingOtp(true);
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        body: JSON.stringify({ phone: formData.phone, otp: otpCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Verification failed");
+
+      setIsPhoneVerified(true);
+      // Store the access token in localStorage (the shared store used everywhere in the app)
+      if (data.accessToken) {
+        setAccessToken(data.accessToken);
+      }
+      setUser(data.user);
+
+      toast.success("Phone verified successfully!");
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
-  const handleSubmit = () => {
-    // Simulate API call
-    router.push("/businesses");
+  const handleSubmit = async () => {
+    // Validate step 3 fields before final submission
+    const step3Result = step3Schema.safeParse(formData);
+    if (!step3Result.success) {
+      const errors: Record<string, string> = {};
+      step3Result.error.issues.forEach((issue) => {
+        errors[String(issue.path[0])] = issue.message;
+      });
+      setFormErrors(errors);
+      toast.error("Please fix the errors before finishing.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const body = new FormData();
+      body.append("name", formData.name);
+      body.append("industry", formData.industry);
+      body.append("location", formData.location);
+      body.append("ownerName", formData.ownerName);
+      body.append("acceptedStarsThreshold", formData.minRatingToExternal);
+      body.append("defaultGoogleMapsLink", formData.googleMapsUrl);
+      body.append("defaultAiPrompt", formData.aiPrompt);
+      body.append("defaultCommentStyle", formData.commentStyle);
+
+      if (formData.logoFile) {
+        body.append("logo", formData.logoFile);
+      }
+
+      const res = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
+        },
+        body,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to complete onboarding");
+
+      // Refresh the token so the JWT payload now includes the newly created business.
+      // Without this, ProtectedRoute reads stale user.businesses = [] and bounces back to /onboard.
+      try {
+        const refreshRes = await fetch("/api/auth/refresh", {
+          method: "POST",
+          credentials: "same-origin",
+        });
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          setAccessToken(refreshData.accessToken);
+          // Re-init auth store from new token so businesses list is up-to-date
+          useAuthStore.getState().initFromToken(refreshData.accessToken);
+        }
+      } catch {
+        // Non-fatal: navigation will still proceed; the dashboard may show stale data briefly
+      }
+
+      toast.success("Onboarding complete! Welcome aboard.");
+      router.push(data.redirectTo);
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderStep = () => {
@@ -187,7 +316,13 @@ export default function OnboardingPage() {
                   placeholder="e.g. Blue Bottle Coffee"
                   value={formData.name}
                   onChange={(e) => updateFormData({ name: e.target.value })}
+                  className={formErrors.name ? "border-destructive" : ""}
                 />
+                {formErrors.name && (
+                  <p className="text-[10px] text-destructive font-medium">
+                    {formErrors.name}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -200,7 +335,13 @@ export default function OnboardingPage() {
                   placeholder="e.g. New York, NY"
                   value={formData.location}
                   onChange={(e) => updateFormData({ location: e.target.value })}
+                  className={formErrors.location ? "border-destructive" : ""}
                 />
+                {formErrors.location && (
+                  <p className="text-[10px] text-destructive font-medium">
+                    {formErrors.location}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -210,7 +351,9 @@ export default function OnboardingPage() {
                 </div>
                 <select
                   id="industry"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all border-border/50"
+                  className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all border-border/50 ${
+                    formErrors.industry ? "border-destructive" : ""
+                  }`}
                   value={formData.industry}
                   onChange={(e) => updateFormData({ industry: e.target.value })}
                 >
@@ -223,6 +366,30 @@ export default function OnboardingPage() {
                     </option>
                   ))}
                 </select>
+                {formErrors.industry && (
+                  <p className="text-[10px] text-destructive font-medium">
+                    {formErrors.industry}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Contact className="w-4 h-4 text-primary" />
+                  <Label htmlFor="ownerName">Your Name</Label>
+                </div>
+                <Input
+                  id="ownerName"
+                  placeholder="e.g. John Doe"
+                  value={formData.ownerName}
+                  onChange={(e) => updateFormData({ ownerName: e.target.value })}
+                  className={formErrors.ownerName ? "border-destructive" : ""}
+                />
+                {formErrors.ownerName && (
+                  <p className="text-[10px] text-destructive font-medium">
+                    {formErrors.ownerName}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -283,13 +450,14 @@ export default function OnboardingPage() {
                         onChange={(e) => setOtpCode(e.target.value)}
                         className="tracking-widest font-mono"
                         maxLength={6}
+                        disabled={isVerifyingOtp}
                       />
                       <Button
                         type="button"
                         onClick={handleVerifyOtp}
-                        disabled={otpCode.length < 4}
+                        disabled={otpCode.length < 4 || isVerifyingOtp}
                       >
-                        Verify
+                        {isVerifyingOtp ? "Verifying..." : "Verify"}
                       </Button>
                     </div>
                   </motion.div>
@@ -517,7 +685,13 @@ export default function OnboardingPage() {
                   onChange={(e) =>
                     updateFormData({ googleMapsUrl: e.target.value })
                   }
+                  className={formErrors.googleMapsUrl ? "border-destructive" : ""}
                 />
+                {formErrors.googleMapsUrl && (
+                  <p className="text-[10px] text-destructive font-medium">
+                    {formErrors.googleMapsUrl}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -531,7 +705,13 @@ export default function OnboardingPage() {
                   rows={4}
                   value={formData.aiPrompt}
                   onChange={(e) => updateFormData({ aiPrompt: e.target.value })}
+                  className={formErrors.aiPrompt ? "border-destructive" : ""}
                 />
+                {formErrors.aiPrompt && (
+                  <p className="text-[10px] text-destructive font-medium">
+                    {formErrors.aiPrompt}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -618,7 +798,6 @@ export default function OnboardingPage() {
               <Button
                 onClick={nextStep}
                 className="gap-2 px-8"
-                disabled={!isStepValid()}
               >
                 Next Step
                 <ArrowRight className="w-4 h-4" />
@@ -627,9 +806,9 @@ export default function OnboardingPage() {
               <Button
                 onClick={handleSubmit}
                 className="gap-2 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-                disabled={!isStepValid()}
+                disabled={isSubmitting}
               >
-                Finish Onboarding
+                {isSubmitting ? "Finishing..." : "Finish Onboarding"}
                 <CheckCircle2 className="w-4 h-4" />
               </Button>
             )}

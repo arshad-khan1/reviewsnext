@@ -16,7 +16,7 @@ export async function handlePaymentCaptured(payload: {
     // 1. Find the pending payment record
     const payment = await tx.payment.findUnique({
       where: { razorpayOrderId: payload.orderId },
-      include: { business: true },
+      include: { business: true, plan: true },
     });
 
     if (!payment) {
@@ -39,15 +39,18 @@ export async function handlePaymentCaptured(payload: {
     });
 
     // 3. If it's a topup, increment AI credits
-    if (payment.isTopup && payment.creditsAdded) {
+    const creditsToStore = payment.plan?.credits ?? payment.creditsAdded;
+
+    if ((payment.isTopup || payment.plan?.type === "TOPUP") && creditsToStore) {
+      const userId = payment.business.ownerId;
       await tx.aiCredits.upsert({
-        where: { businessId: payment.businessId },
+        where: { userId },
         create: {
-          businessId: payment.businessId,
-          topupAllocation: payment.creditsAdded,
+          userId,
+          topupAllocation: creditsToStore,
         },
         update: {
-          topupAllocation: { increment: payment.creditsAdded },
+          topupAllocation: { increment: creditsToStore },
         },
       });
     }
@@ -87,7 +90,11 @@ export async function handleSubscriptionCharged(payload: {
     // 1. Find the subscription
     const subscription = await tx.subscription.findUnique({
       where: { razorpaySubId: payload.subscriptionId },
-      include: { business: true },
+      include: {
+        user: {
+          include: { businesses: true }
+        }
+      },
     });
 
     if (!subscription) {
@@ -96,7 +103,7 @@ export async function handleSubscriptionCharged(payload: {
     }
 
     // 2. Update Subscription Period
-    const updatedSub = await tx.subscription.update({
+    const updatedSub = await tx.userSubscription.update({
       where: { id: subscription.id },
       data: {
         status: SubscriptionStatus.ACTIVE,
@@ -105,11 +112,11 @@ export async function handleSubscriptionCharged(payload: {
       },
     });
 
-    // 3. Reset Monthly Credits
+    // 3. Reset Monthly Credits for the USER
     await tx.aiCredits.upsert({
-      where: { businessId: subscription.businessId },
+      where: { userId: subscription.userId },
       create: {
-        businessId: subscription.businessId,
+        userId: subscription.userId,
         monthlyAllocation: subscription.monthlyAiCredits,
         monthlyUsed: 0,
       },
@@ -130,7 +137,7 @@ export async function handleSubscriptionStatusChange(
   razorpaySubId: string,
   newStatus: SubscriptionStatus
 ) {
-  return await prisma.subscription.update({
+  return await prisma.userSubscription.update({
     where: { razorpaySubId },
     data: { status: newStatus },
   });

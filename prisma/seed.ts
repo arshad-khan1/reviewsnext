@@ -1,341 +1,272 @@
-import "dotenv/config";
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import {
-  PlanType,
-  SubscriptionStatus,
-  BillingInterval,
-  PaymentStatus,
-  CommentStyle,
-  ReviewType,
-} from "@prisma/client";
-import bcrypt from "bcryptjs";
-import { prisma } from "../src/lib/prisma";
+import { PrismaClient, PlanCategory, PlanType, BillingInterval, ReviewType, CommentStyle, SubscriptionStatus } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
+
+/**
+ * Random helpers for realistic data
+ */
+const randomRating = () => Math.floor(Math.random() * 5) + 1;
+const pickOne = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+const DEVICES = ["iPhone 15 Pro", "Samsung S24 Ultra", "Pixel 8 Pro", "iPhone 13", "iPad Air"];
+const BROWSERS = ["Safari 18", "Chrome 128", "Edge 130", "Firefox 132"];
+const CITIES = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Pune", "Chennai", "Kolkata"];
 
 async function main() {
-  console.log("Clearing existing data...");
-  await prisma.review.deleteMany();
-  await prisma.scan.deleteMany();
-  await prisma.qRCode.deleteMany();
-  await prisma.location.deleteMany();
-  await prisma.payment.deleteMany();
-  await prisma.aiUsageLog.deleteMany();
-  await prisma.aiCredits.deleteMany();
-  await prisma.subscription.deleteMany();
-  await prisma.business.deleteMany();
-  await prisma.refreshToken.deleteMany();
-  await prisma.user.deleteMany();
+  console.log("🌱 Starting Comprehensive Multi-Tier Seed...");
 
-  console.log("Seeding new data...");
-
-  // 1. Create Admin User
-  const adminPassword = await bcrypt.hash("admin123", 10);
-  const adminUser = await prisma.user.create({
-    data: {
-      phone: "+919999999999",
-      name: "System Admin",
-      email: "admin@reviewfunnel.com",
-      isVerified: true,
-      isAdmin: true,
-      password: adminPassword,
+  // 1. Seed Plans
+  console.log("  - Seeding subscription and top-up plans...");
+  const plansData = [
+    {
+      name: "Starter Plan (Yearly)",
+      description: "Perfect for small businesses starting their review journey.",
+      type: PlanCategory.SUBSCRIPTION,
+      price: 118800,
+      currency: "INR",
+      billingInterval: BillingInterval.YEARLY,
+      credits: 100,
+      planTier: PlanType.STARTER,
+      externalId: "plan_RS_starter_yearly",
     },
-  });
-  console.log(`Created Admin: ${adminUser.phone} / admin123`);
-
-  // 2. Create STARTER Business Owner
-  const starterOwner = await prisma.user.create({
-    data: {
-      phone: "+918888888881",
-      name: "Starter Owner",
-      email: "starter@example.com",
-      isVerified: true,
-      isAdmin: false,
+    {
+      name: "Growth Plan (Yearly)",
+      description: "Scale your business with advanced tools and more credits.",
+      type: PlanCategory.SUBSCRIPTION,
+      price: 598800,
+      currency: "INR",
+      billingInterval: BillingInterval.YEARLY,
+      credits: 800,
+      planTier: PlanType.GROWTH,
+      externalId: "plan_RS_growth_yearly",
     },
-  });
-
-  const starterBusiness = await prisma.business.create({
-    data: {
-      slug: "starter-cafe",
-      name: "Starter Cafe",
-      industry: "Restaurant",
-      city: "Delhi",
-      ownerId: starterOwner.id,
-      subscription: {
-        create: {
-          plan: PlanType.PRO,
-          status: SubscriptionStatus.ACTIVE,
-          billingInterval: BillingInterval.MONTHLY,
-        },
-      },
-      aiCredits: {
-        create: {
-          monthlyAllocation: 50,
-          monthlyUsed: 10,
-        },
-      },
-      qrCodes: {
-        create: [
-          {
-            name: "Table 1",
-            sourceTag: "table-1",
-          },
-        ],
-      },
+    {
+      name: "Pro Plan (Yearly)",
+      description: "Ultimate control for established businesses with multi-location support.",
+      type: PlanCategory.SUBSCRIPTION,
+      price: 1198800,
+      currency: "INR",
+      billingInterval: BillingInterval.YEARLY,
+      credits: 10000,
+      planTier: PlanType.PRO,
+      externalId: "plan_RS_pro_yearly",
     },
-  });
-  console.log(`Created STARTER Owner & Business: ${starterBusiness.name}`);
-
-  // 3. Create GROWTH Business Owner
-  const growthOwner = await prisma.user.create({
-    data: {
-      phone: "+918888888882",
-      name: "Growth Owner",
-      email: "growth@example.com",
-      isVerified: true,
-      isAdmin: false,
+    {
+      name: "Small Booster",
+      type: PlanCategory.TOPUP,
+      price: 19900,
+      credits: 200,
+      externalId: "topup_booster_200",
     },
-  });
-
-  const growthBusiness = await prisma.business.create({
-    data: {
-      slug: "growth-salon",
-      name: "Growth Salon",
-      industry: "Beauty & Spa",
-      city: "Mumbai",
-      ownerId: growthOwner.id,
-      brandingConfig: {
-        primaryColor: "#ec4899", // pink-500
-        backgroundColor: "#fdf2f8", // pink-50
-        headline: "Rate your salon experience",
-        subheadline: "We would love your feedback",
-        buttonStyle: "pill",
-        fontFamily: "Inter",
-      },
-      subscription: {
-        create: {
-          plan: PlanType.PRO,
-          status: SubscriptionStatus.ACTIVE,
-          billingInterval: BillingInterval.YEARLY,
-          monthlyAiCredits: 500,
-        },
-      },
-      aiCredits: {
-        create: {
-          monthlyAllocation: 500,
-          monthlyUsed: 40,
-        },
-      },
-      qrCodes: {
-        create: [
-          {
-            name: "Reception",
-            sourceTag: "reception",
-          },
-          {
-            name: "Station 1",
-            sourceTag: "station-1",
-          },
-        ],
-      },
+    {
+      name: "Growth Booster",
+      type: PlanCategory.TOPUP,
+      price: 44900,
+      credits: 450,
+      externalId: "topup_accelerator_450",
     },
-  });
-  console.log(`Created GROWTH Owner & Business: ${growthBusiness.name}`);
-
-  // 4. Create PRO Business Owner (2 Businesses, Locations)
-  const proOwner = await prisma.user.create({
-    data: {
-      phone: "+918888888883",
-      name: "Pro Owner",
-      email: "pro@example.com",
-      isVerified: true,
-      isAdmin: false,
+    {
+      name: "Power Bundle",
+      type: PlanCategory.TOPUP,
+      price: 89900,
+      credits: 1000,
+      externalId: "topup_mega_1000",
     },
-  });
+  ];
 
-  // Pro Business 1 (with Locations)
-  const proBusiness1 = await prisma.business.create({
-    data: {
-      slug: "pro-fitness",
-      name: "Pro Fitness Club",
-      industry: "Health & Fitness",
-      city: "Bangalore",
-      ownerId: proOwner.id,
-      brandingConfig: {
-        primaryColor: "#3b82f6", // blue-500
-        backgroundColor: "#ffffff",
-        headline: "How was your workout?",
-        subheadline: "Help us improve",
-        buttonStyle: "rounded",
-        fontFamily: "Roboto",
-      },
-      subscription: {
-        create: {
-          plan: PlanType.PRO,
-          status: SubscriptionStatus.ACTIVE,
-          billingInterval: BillingInterval.YEARLY,
-          monthlyAiCredits: 2000,
-        },
-      },
-      aiCredits: {
-        create: {
-          monthlyAllocation: 2000,
-          monthlyUsed: 150,
-          topupAllocation: 500,
-          topupUsed: 0,
-        },
-      },
-      locations: {
-        create: [
-          {
-            slug: "indiranagar-branch",
-            name: "Indiranagar Branch",
-            city: "Bangalore",
-            address: "123 100ft Road",
-          },
-          {
-            slug: "koramangala-branch",
-            name: "Koramangala Branch",
-            city: "Bangalore",
-            address: "456 80ft Road",
-          },
-        ],
-      },
-    },
-    include: {
-      locations: true,
-    },
-  });
-
-  // Assign QR codes to Pro Business 1 Locations
-  const indiranagarLoc = proBusiness1.locations.find((l) =>
-    l.name.includes("Indiranagar"),
-  );
-  const koramangalaLoc = proBusiness1.locations.find((l) =>
-    l.name.includes("Koramangala"),
-  );
-
-  const pro1Qr1 = await prisma.qRCode.create({
-    data: {
-      name: "Weights Area",
-      sourceTag: "weights-in",
-      businessId: proBusiness1.id,
-      locationId: indiranagarLoc?.id,
-    },
-  });
-
-  const pro1Qr2 = await prisma.qRCode.create({
-    data: {
-      name: "Cardio Area",
-      sourceTag: "cardio-ko",
-      businessId: proBusiness1.id,
-      locationId: koramangalaLoc?.id,
-      brandingOverride: {
-        primaryColor: "#10b981", // green for cardio
-      },
-    },
-  });
-
-  // Pro Business 2 (Simple)
-  const proBusiness2 = await prisma.business.create({
-    data: {
-      slug: "pro-cafe",
-      name: "Pro Cafe Luxe",
-      industry: "Restaurant",
-      city: "Pune",
-      ownerId: proOwner.id,
-      subscription: {
-        create: {
-          plan: PlanType.PRO,
-          status: SubscriptionStatus.ACTIVE,
-        },
-      },
-      aiCredits: {
-        create: {
-          monthlyAllocation: 2000,
-          monthlyUsed: 0,
-        },
-      },
-      qrCodes: {
-        create: [{ name: "Main Entrance", sourceTag: "entrance" }],
-      },
-    },
-  });
-
-  console.log(
-    `Created PRO Owner & Businesses: ${proBusiness1.name}, ${proBusiness2.name}`,
-  );
-
-  // 5. Add some Reviews and Scans
-  console.log("Seeding dummy scans and reviews...");
-
-  // Growth Salon - Positive Review
-  const qrGrowth = await prisma.qRCode.findFirst({
-    where: { businessId: growthBusiness.id },
-  });
-  if (qrGrowth) {
-    const scan1 = await prisma.scan.create({
-      data: {
-        qrCodeId: qrGrowth.id,
-        device: "iPhone 15 Pro",
-        browser: "Safari",
-        os: "iOS",
-        ipAddress: "192.168.1.1",
-        resultedInReview: true,
-        scannedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-      },
-    });
-
-    await prisma.review.create({
-      data: {
-        scanId: scan1.id,
-        qrCodeId: qrGrowth.id,
-        type: ReviewType.POSITIVE,
-        rating: 5,
-        reviewText:
-          "Amazing service! Loved the new haircut, the stylist was very professional.",
-        submittedToGoogle: true,
-        submittedAt: new Date(Date.now() - 23 * 60 * 60 * 1000),
-      },
+  for (const plan of plansData) {
+    await prisma.plan.upsert({
+      where: { externalId: plan.externalId },
+      update: plan,
+      create: plan as any,
     });
   }
 
-  // Pro Fitness - Negative Review
-  if (pro1Qr1) {
-    const scan2 = await prisma.scan.create({
-      data: {
-        qrCodeId: pro1Qr1.id,
-        device: "Pixel 8",
-        browser: "Chrome",
-        os: "Android",
-        ipAddress: "192.168.1.2",
-        resultedInReview: true,
-        scannedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-      },
-    });
+  // Define plans for quick access
+  const starterPlan = (await prisma.plan.findUnique({ where: { externalId: "plan_RS_starter_yearly" } }))!;
+  const growthPlan = (await prisma.plan.findUnique({ where: { externalId: "plan_RS_growth_yearly" } }))!;
+  const proPlan = (await prisma.plan.findUnique({ where: { externalId: "plan_RS_pro_yearly" } }))!;
 
-    await prisma.review.create({
-      data: {
-        scanId: scan2.id,
-        qrCodeId: pro1Qr1.id,
-        type: ReviewType.NEGATIVE,
-        rating: 2,
-        whatWentWrong: "Treadmills were mostly broken or occupied.",
-        howToImprove: "Please fix the cardio machines faster.",
-        submittedAt: new Date(Date.now() - 47 * 60 * 60 * 1000),
-      },
-    });
+  // ── USER 1: STARTER TIER ──────────────────────────────────────
+  console.log("  - Setting up Starter tier: +911111111111...");
+  const starterUser = await setupUser("+911111111111", "Arjun Bakery Owner", starterPlan);
+  const bakery = await setupBusiness(starterUser.id, "The Corner Bakery", "corner-bakery", "Restaurants", "Pune");
+  const bakeryQR = await setupQRCode(bakery.id, "Main Counter", "main-counter", true);
+  await generateRealisticActivity(bakeryQR.id, 12, 4);
 
-    // Scan without review
-    await prisma.scan.create({
-      data: {
-        qrCodeId: pro1Qr1.id,
-        ipAddress: "192.168.1.3",
-        resultedInReview: false,
-        scannedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      },
+  // ── USER 2: GROWTH TIER ───────────────────────────────────────
+  console.log("  - Setting up Growth tier: +912222222222...");
+  const growthUser = await setupUser("+912222222222", "Sneha Gym Owner", growthPlan);
+  const gym = await setupBusiness(growthUser.id, "Urban Fitness Gym", "urban-fitness", "Health & Wellness", "Delhi", {
+    primaryColor: "#4F46E5",
+    headline: "How was your workout?",
+    subheadline: "We value your fitness journey",
+  });
+  const receptionQR = await setupQRCode(gym.id, "Reception Desk", "reception", true);
+  const lockerRoomQR = await setupQRCode(gym.id, "Locker Room Exit", "locker-room");
+  await generateRealisticActivity(receptionQR.id, 45, 18);
+  await generateRealisticActivity(lockerRoomQR.id, 20, 5);
+
+  // ── USER 3: PRO TIER (Multi-Business, Multi-Location) ─────────
+  console.log("  - Setting up Pro tier: +913333333333...");
+  const proUser = await setupUser("+913333333333", "Vikram Hospitality Group", proPlan);
+  
+  // Business 1: Spice Route (Restaurant Chain)
+  const spiceRoute = await setupBusiness(proUser.id, "Spice Route Dining", "spice-route", "Restaurants", "Mumbai");
+  const locBandra = await setupLocation(spiceRoute.id, "Bandra Branch", "bandra", "Linking Road, Bandra West");
+  const locColaba = await setupLocation(spiceRoute.id, "Colaba Outlet", "colaba", "Gateway Road, Colaba");
+  
+  const qrBandraTable1 = await setupQRCode(spiceRoute.id, "Table 1 (Bandra)", "bandra-t1", false, locBandra.id);
+  const qrBandraCounter = await setupQRCode(spiceRoute.id, "Bandra Takeaway", "bandra-takeaway", false, locBandra.id);
+  const qrColabaMain = await setupQRCode(spiceRoute.id, "Colaba Main", "colaba-main", true, locColaba.id);
+  
+  await generateRealisticActivity(qrBandraTable1.id, 120, 45);
+  await generateRealisticActivity(qrBandraCounter.id, 80, 20);
+  await generateRealisticActivity(qrColabaMain.id, 150, 65);
+
+  // Business 2: Luxe Spa
+  const luxeSpa = await setupBusiness(proUser.id, "Luxe Spa & Wellness", "luxe-spa", "Beauty & Spa", "Bangalore");
+  const locBangalore = await setupLocation(luxeSpa.id, "Koramangala Hub", "koramangala", "100ft Road, Koramangala");
+  const qrLuxeMain = await setupQRCode(luxeSpa.id, "Main Spa Reception", "spa-main", true, locBangalore.id);
+  await generateRealisticActivity(qrLuxeMain.id, 60, 25);
+
+  console.log("✅ Comprehensive Seeding Complete.");
+}
+
+async function setupUser(phone: string, name: string, plan: any) {
+  const user = await prisma.user.upsert({
+    where: { phone },
+    update: { name },
+    create: { phone, name, isVerified: true },
+  });
+
+  await prisma.userSubscription.upsert({
+    where: { userId: user.id },
+    update: {
+      plan: plan.planTier,
+      planId: plan.id,
+      status: SubscriptionStatus.ACTIVE,
+      monthlyAiCredits: plan.credits,
+    },
+    create: {
+      userId: user.id,
+      plan: plan.planTier,
+      planId: plan.id,
+      status: SubscriptionStatus.ACTIVE,
+      monthlyAiCredits: plan.credits,
+    },
+  });
+
+  await prisma.aiCredits.upsert({
+    where: { userId: user.id },
+    update: { monthlyAllocation: plan.credits },
+    create: {
+      userId: user.id,
+      monthlyAllocation: plan.credits,
+    },
+  });
+
+  return user;
+}
+
+async function setupBusiness(ownerId: string, name: string, slug: string, industry: string, city: string, brandingConfig?: any) {
+  return await prisma.business.upsert({
+    where: { slug },
+    update: { name, industry, city, brandingConfig },
+    create: {
+      name,
+      slug,
+      industry,
+      city,
+      ownerId,
+      brandingConfig,
+      defaultGoogleMapsLink: `https://maps.google.com/?q=${encodeURIComponent(name)}+${city}`,
+      defaultAiPrompt: "Be professional and emphasize our commitment to quality.",
+    },
+  });
+}
+
+async function setupLocation(businessId: string, name: string, slug: string, address: string) {
+  return await prisma.location.upsert({
+    where: { businessId_slug: { businessId, slug } },
+    update: { name, address },
+    create: { businessId, name, slug, address },
+  });
+}
+
+async function setupQRCode(businessId: string, name: string, sourceTag: string, isDefault: boolean = false, locationId?: string) {
+  return await prisma.qRCode.upsert({
+    where: { businessId_sourceTag: { businessId, sourceTag } },
+    update: { name, isDefault, locationId },
+    create: { businessId, name, sourceTag, isDefault, locationId },
+  });
+}
+
+/**
+ * Generates N scans and R reviews spread over the last 30 days
+ */
+async function generateRealisticActivity(qrCodeId: string, scanCount: number, reviewCount: number) {
+  const scans = [];
+  const now = new Date();
+  
+  // 1. Generate Scans
+  for (let i = 0; i < scanCount; i++) {
+    const scannedAt = new Date(now.getTime() - Math.random() * 30 * 24 * 60 * 60 * 1000);
+    scans.push({
+      qrCodeId,
+      scannedAt,
+      device: pickOne(DEVICES),
+      browser: pickOne(BROWSERS),
+      os: pickOne(["iOS", "Android", "macOS", "Windows"]),
+      city: pickOne(CITIES),
+      country: "India",
+      resultedInReview: false, // Default
     });
   }
 
-  console.log("Database seeded successfully!");
+  // Create scans in chunks
+  await prisma.scan.createMany({ data: scans });
+  
+  // Fetch some of the creates scans to link reviews
+  const createdScans = await prisma.scan.findMany({
+    where: { qrCodeId },
+    take: reviewCount,
+    orderBy: { scannedAt: "desc" }
+  });
+
+  // 2. Generate Reviews
+  for (let i = 0; i < createdScans.length; i++) {
+    const scan = createdScans[i];
+    const rating = randomRating();
+    const type = rating >= 4 ? ReviewType.POSITIVE : ReviewType.NEGATIVE;
+
+    await prisma.review.create({
+      data: {
+        qrCodeId,
+        scanId: scan.id,
+        rating,
+        type,
+        submittedAt: scan.scannedAt,
+        reviewText: type === ReviewType.POSITIVE ? "Amazing experience! Highly recommended." : null,
+        submittedToGoogle: type === ReviewType.POSITIVE && Math.random() > 0.4,
+        whatWentWrong: type === ReviewType.NEGATIVE ? "The service was a bit slow today." : null,
+        howToImprove: type === ReviewType.NEGATIVE ? "Better staffing during peak hours." : null,
+      }
+    });
+
+    // Mark scan as resulted in review
+    await prisma.scan.update({
+      where: { id: scan.id },
+      data: { resultedInReview: true }
+    });
+  }
 }
 
 main()

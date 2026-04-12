@@ -6,29 +6,27 @@ import { PlanType, BillingInterval } from "@prisma/client";
 
 export const POST = withAuth(async (req: NextRequest, { business, user }) => {
   const body = await req.json();
-  const { plan, billingInterval } = body;
+  const { planId } = body;
 
-  if (!plan || !billingInterval) {
-    return NextResponse.json({ error: "PLAN_AND_INTERVAL_REQUIRED" }, { status: 400 });
+  if (!planId) {
+    return NextResponse.json({ error: "PLAN_ID_REQUIRED" }, { status: 400 });
   }
 
   try {
     // 1. Create Razorpay Subscription (mocked)
-    const razorpaySub = await createRazorpaySubscription(plan, billingInterval);
+    const razorpaySub = await createRazorpaySubscription(planId, "YEARLY");
 
     // 2. Save/Update in DB
     await initiateSubscription(
-      business.id,
-      plan as PlanType,
-      billingInterval as BillingInterval,
+      user.id,
+      planId,
       razorpaySub.id
     );
 
     return NextResponse.json({
       subscriptionId: razorpaySub.id,
       razorpayKeyId: RAZORPAY_KEY_ID,
-      plan,
-      billingInterval
+      planId
     }, { status: 201 });
 
   } catch (error) {

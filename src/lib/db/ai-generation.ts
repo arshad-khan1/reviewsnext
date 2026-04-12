@@ -4,8 +4,14 @@ import { prisma } from "../prisma";
  * Checks if a business has credits remaining.
  */
 export async function hasRemainingCredits(businessId: string): Promise<boolean> {
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+  });
+
+  if (!business) return false;
+
   const credits = await prisma.aiCredits.findUnique({
-    where: { businessId },
+    where: { userId: business.ownerId },
   });
 
   if (!credits) return false;
@@ -29,8 +35,14 @@ export async function deductAiCredit(options: {
   const { businessId, qrCodeId, scanId, operation } = options;
 
   return await prisma.$transaction(async (tx) => {
+    const business = await tx.business.findUnique({
+      where: { id: businessId },
+    });
+
+    if (!business) throw new Error("BUSINESS_NOT_FOUND");
+
     const credits = await tx.aiCredits.findUnique({
-      where: { businessId },
+      where: { userId: business.ownerId },
       lock: { mode: 'update' } // Row-level lock for safety
     });
 
@@ -50,7 +62,7 @@ export async function deductAiCredit(options: {
 
     // 1. Update Balance
     const updatedCredits = await tx.aiCredits.update({
-      where: { businessId },
+      where: { id: credits.id },
       data: updateData,
     });
 
@@ -58,6 +70,7 @@ export async function deductAiCredit(options: {
     await tx.aiUsageLog.create({
       data: {
         aiCreditsId: credits.id,
+        businessId: businessId, // Track which business used it
         creditsUsed: 1,
         operation,
         metadata: { qrCodeId, scanId } as any,

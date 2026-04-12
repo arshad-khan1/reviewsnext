@@ -21,6 +21,11 @@ export const GET = withAuth(async (req, payload) => {
       search,
     );
 
+    const activeSubscription = await prisma.userSubscription.findUnique({
+      where: { userId: payload.sub },
+    });
+    const currentPlan = activeSubscription?.plan || "STARTER";
+
     // Map DB outcome to expected API response format
     const formattedBusinesses = businesses.map((b) => {
       // Aggregate totals from relations
@@ -53,12 +58,12 @@ export const GET = withAuth(async (req, payload) => {
         totalReviews,
         conversionRate,
         avgRating: 0, // Stub for now, requires complex aggregation on reviews
-        plan: "STARTER", // Replace with real plan when subscription is included
+        plan: currentPlan, // Replace with real plan when subscription is included
         aiCredits: {
-          monthlyAllocation: b.aiCredits?.monthlyAllocation || 100,
-          monthlyUsed: b.aiCredits?.monthlyUsed || 0,
-          topupAllocation: b.aiCredits?.topupAllocation || 0,
-          topupUsed: b.aiCredits?.topupUsed || 0,
+          monthlyAllocation: b.owner.aiCredits?.monthlyAllocation || 100,
+          monthlyUsed: b.owner.aiCredits?.monthlyUsed || 0,
+          topupAllocation: b.owner.aiCredits?.topupAllocation || 0,
+          topupUsed: b.owner.aiCredits?.topupUsed || 0,
         },
       };
     });

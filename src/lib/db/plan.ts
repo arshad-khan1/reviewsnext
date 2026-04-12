@@ -8,12 +8,16 @@ import { PlanType } from "@prisma/client";
 export async function checkBusinessPlan(businessSlug: string, requiredPlan: PlanType) {
   const business = await prisma.business.findFirst({
     where: { slug: businessSlug, isDeleted: false },
-    include: { subscription: true },
+    include: { 
+      owner: {
+        include: { subscription: true }
+      }
+    },
   });
 
   if (!business) return { business: null, hasPlan: false, error: "BUSINESS_NOT_FOUND" };
 
-  const currentPlan = business.subscription?.plan || PlanType.STARTER;
+  const currentPlan = business.owner.subscription?.plan || PlanType.STARTER;
 
   const planPriority: Record<PlanType, number> = {
     [PlanType.STARTER]: 0,

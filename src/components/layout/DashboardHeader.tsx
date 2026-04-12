@@ -42,6 +42,7 @@ export default function DashboardHeader() {
   const isQRCodesPage = pathname.includes("/qr-codes");
   const isSettingsPage = pathname.includes("/settings");
   const isTopupPage = pathname.includes("/topup");
+  const isPricingPage = pathname.includes("/pricing");
   const isLocationHub = pathname.includes("/qr-codes/location/");
 
   const getPageConfig = () => {
@@ -80,6 +81,13 @@ export default function DashboardHeader() {
         icon: Zap,
         color: "text-indigo-600",
         bg: "bg-indigo-500/10",
+      };
+    if (isPricingPage)
+      return {
+        title: "Plans & Pricing",
+        icon: Zap,
+        color: "text-amber-600",
+        bg: "bg-amber-500/10",
       };
     if (isLocationHub)
       return {
@@ -131,7 +139,10 @@ export default function DashboardHeader() {
                       <h1 className="text-base font-bold text-foreground">
                         {business.name}
                       </h1>
-                      <PlanBadge plan={business.subscription?.plan || "FREE"} />
+                    <PlanBadge 
+                      plan={business.subscription?.plan || "STARTER"} 
+                      status={business.subscription?.status} 
+                    />
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {config.title}
@@ -163,7 +174,10 @@ export default function DashboardHeader() {
                   <h1 className="text-base font-bold text-foreground">
                     {business.name}
                   </h1>
-                  <PlanBadge plan={business.subscription?.plan || "FREE"} />
+                  <PlanBadge 
+                    plan={business.subscription?.plan || "STARTER"} 
+                    status={business.subscription?.status} 
+                  />
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Dashboard & Analytics

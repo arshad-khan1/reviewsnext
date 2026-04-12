@@ -75,6 +75,11 @@ enum BusinessStatus {
   DRAFT
 }
 
+enum PlanCategory {
+  SUBSCRIPTION
+  TOPUP
+}
+
 // ============================================================
 // User
 // Auth is phone-number based (OTP). The phone number in E.164
@@ -93,7 +98,9 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  businesses    Business[]
+  businesses          Business[]
+  activeSubscription  UserSubscription?
+  aiCredits           AiCredits?
   refreshTokens RefreshToken[]
 
   isDeleted Boolean @default(false)
@@ -184,9 +191,8 @@ model Business {
   // ── Relations ─────────────────────────────────────────────
   qrCodes      QRCode[]
   locations    Location[] /// PRO plan only — physical branch locations
-  subscription Subscription?
-  aiCredits    AiCredits?
   payments     Payment[]
+  aiUsageLogs  AiUsageLog[]
 
   isDeleted Boolean @default(false)
 
@@ -362,11 +368,15 @@ model Review {
 // the external IDs for webhook reconciliation.
 // ============================================================
 
-model Subscription {
+model UserSubscription {
   id              String             @id @default(cuid())
   plan            PlanType           @default(STARTER)
   status          SubscriptionStatus @default(TRIALING)
   billingInterval BillingInterval    @default(YEARLY)
+
+  // ── Plan Reference ────────────────────────────────────────
+  planId      String?
+  planDetails Plan?   @relation(fields: [planId], references: [id])
 
   // ── Trial ──────────────────────────────────────────────────
   trialStartsAt DateTime?
@@ -388,13 +398,45 @@ model Subscription {
   updatedAt DateTime @updatedAt
 
   // ── Ownership ──────────────────────────────────────────────
-  businessId String   @unique
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   isDeleted Boolean @default(false)
 
-  @@index([businessId])
+  @@index([userId])
   @@index([status])
+  @@index([planId])
+}
+
+// ============================================================
+// Plan
+// Centralized table for all available subscription plans and
+// top-up packages.
+// ============================================================
+
+model Plan {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  type            PlanCategory
+  price           Int              /// in paise
+  currency        String           @default("INR")
+  billingInterval BillingInterval? /// YEARLY for subscriptions, null for topups
+  credits         Int              /// AI credits granted per period or one-time
+  planTier        PlanType?        /// Optional: for mapping to feature constraints
+  isActive        Boolean          @default(true)
+  externalId      String?          @unique /// Razorpay plan_id or similar
+  metadata        Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userSubscriptions UserSubscription[]
+  payments      Payment[]
+
+  isDeleted Boolean @default(false)
+
+  @@index([type])
 }
 
 // ============================================================
@@ -421,8 +463,8 @@ model AiCredits {
   updatedAt DateTime @updatedAt
 
   // ── Ownership ──────────────────────────────────────────────
-  businessId String   @unique
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // ── Relations ─────────────────────────────────────────────
   usageLogs AiUsageLog[]
@@ -446,6 +488,10 @@ model AiUsageLog {
   aiCreditsId String
   aiCredits   AiCredits @relation(fields: [aiCreditsId], references: [id], onDelete: Cascade)
 
+  /// The business that consumed these credits
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
   /// If this usage was for generating a review draft, link to the review
   reviewId String? @unique
   review   Review? @relation(fields: [reviewId], references: [id], onDelete: SetNull)
@@ -453,6 +499,7 @@ model AiUsageLog {
   isDeleted Boolean @default(false)
 
   @@index([aiCreditsId])
+  @@index([businessId])
   @@index([usedAt])
 }
 
@@ -485,9 +532,14 @@ model Payment {
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
+  // ── Plan Reference ────────────────────────────────────────
+  planId String?
+  plan   Plan?   @relation(fields: [planId], references: [id])
+
   isDeleted Boolean @default(false)
 
   @@index([businessId])
   @@index([status])
   @@index([initiatedAt])
+  @@index([planId])
 }
