@@ -8,6 +8,7 @@ import {
   signAdminToken,
 } from "@/lib/auth/jwt";
 import { cookies } from "next/headers";
+import { handleApiError } from "@/lib/error-handler";
 
 const verifyOtpSchema = z.object({
   phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "INVALID_PHONE"),
@@ -123,13 +124,6 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("[AUTH_VERIFY_OTP]", error);
-    return NextResponse.json(
-      {
-        code: "INTERNAL_ERROR",
-        message: "Sign-in failed. Please try again later.",
-      },
-      { status: 500 },
-    );
+    return handleApiError(error, "AUTH_VERIFY_OTP");
   }
 }

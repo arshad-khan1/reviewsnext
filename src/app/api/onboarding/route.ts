@@ -5,6 +5,7 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 import { generateUniqueSlug } from "@/lib/db/business";
 import { updateUserProfile } from "@/lib/db/user";
 import { prisma } from "@/lib/prisma";
+import { handleApiError } from "@/lib/error-handler";
 
 const COMMENT_STYLE_MAP: Record<string, string> = {
   "Professional & Polite": "PROFESSIONAL_POLITE",
@@ -226,9 +227,6 @@ export const POST = withAuth(async (req, payload) => {
       );
     }
 
-    return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Onboarding failed. Please try again." },
-      { status: 500 }
-    );
+    return handleApiError(error, "POST_ONBOARDING");
   }
 });

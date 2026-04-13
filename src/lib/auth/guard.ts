@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
 import { verifyAccessToken, TokenPayload, verifyAdminToken } from "./jwt";
+import { handleApiError } from "../error-handler";
+import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Result of authentication check
@@ -85,9 +86,13 @@ export function withAuth<T = any>(
   ) => Promise<NextResponse>,
 ) {
   return async (req: NextRequest, context: T) => {
-    const { user, error } = await getAuthUser(req);
-    if (error) return error;
-    return handler(req, user!, context);
+    try {
+      const { user, error } = await getAuthUser(req);
+      if (error) return error;
+      return await handler(req, user!, context);
+    } catch (error) {
+      return handleApiError(error, "AUTH_GUARD");
+    }
   };
 }
 
@@ -102,8 +107,12 @@ export function withAdminAuth<T = any>(
   ) => Promise<NextResponse>,
 ) {
   return async (req: NextRequest, context: T) => {
-    const { user, error } = await getAdminUser(req);
-    if (error) return error;
-    return handler(req, user!, context);
+    try {
+      const { user, error } = await getAdminUser(req);
+      if (error) return error;
+      return await handler(req, user!, context);
+    } catch (error) {
+      return handleApiError(error, "ADMIN_GUARD");
+    }
   };
 }

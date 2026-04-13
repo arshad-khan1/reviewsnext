@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createScan } from "@/lib/db/scan";
+import { handleApiError } from "@/lib/error-handler";
 
 const scanSchema = z.object({
   businessSlug: z.string().min(1),
@@ -45,8 +46,6 @@ export async function POST(req: NextRequest) {
     if (error instanceof Error && error.message === "QR_NOT_FOUND") {
       return NextResponse.json({ code: "QR_NOT_FOUND", message: "QR Code not found" }, { status: 404 });
     }
-
-    console.error("[POST_PUBLIC_SCAN_ERROR]", error);
-    return NextResponse.json({ code: "INTERNAL_ERROR", message: "Failed to record scan" }, { status: 500 });
+    return handleApiError(error, "POST_PUBLIC_SCAN");
   }
 }
