@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/guard";
 import { getBusinessesByUser, createBusiness } from "@/lib/db/business";
+import { getUserSubscription } from "@/lib/db/subscription";
 
 /**
  * GET /api/businesses
@@ -21,9 +22,7 @@ export const GET = withAuth(async (req, payload) => {
       search,
     );
 
-    const activeSubscription = await prisma.userSubscription.findUnique({
-      where: { userId: payload.sub },
-    });
+    const activeSubscription = await getUserSubscription(payload.sub);
     const currentPlan = activeSubscription?.plan || "STARTER";
 
     // Map DB outcome to expected API response format
@@ -147,23 +146,59 @@ export const POST = withAuth(async (req, payload) => {
     let logoUrl = result.data.logoUrl;
 
     // Process logo upload if present
-    const logoFile = formData.get("logo") as File | null;
+    const logoFile = formData.get("logo");
 
-    if (logoFile && typeof logoFile === "object" && logoFile.size > 0) {
-      const arrayBuffer = await logoFile.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const mimeType = logoFile.type || "image/png";
-      const base64Data = `data:${mimeType};base64,${buffer.toString("base64")}`;
+    if (logoFile && typeof logoFile === "object" && "size" in logoFile) {
+      const file = logoFile as unknown as {
+        size: number;
+        type: string;
+        arrayBuffer: () => Promise<ArrayBuffer>;
+      };
 
-      const uploadResult = await uploadToCloudinary(
-        base64Data,
-        "business_logo",
-        slug,
-      );
+      // Enforce 3MB limit
+      const MAX_SIZE = 3 * 1024 * 1024; // 3MB
+      if (file.size > MAX_SIZE) {
+        return NextResponse.json(
+          {
+            code: "FILE_TOO_LARGE",
+            message: "Logo file size must be less than 3MB",
+          },
+          { status: 400 },
+        );
+      }
 
-      logoUrl = uploadResult.secure_url;
+      if (file.size > 0) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const mimeType = file.type || "image/png";
+          const base64Data = `data:${mimeType};base64,${buffer.toString("base64")}`;
+
+          const uploadResult = await uploadToCloudinary(
+            base64Data,
+            "business_logo",
+            slug,
+          );
+
+          logoUrl = uploadResult.secure_url;
+        } catch (uploadError: any) {
+          console.error("[LOGO_UPLOAD_ERROR]", uploadError);
+          return NextResponse.json(
+            {
+              code: "UPLOAD_ERROR",
+              message:
+                "Failed to upload logo. Please try a different image or skip it.",
+            },
+            { status: 500 },
+          );
+        }
+      } else {
+        // Size 0 - possibly user cleared it or invalid
+        logoUrl = result.data.logoUrl;
+      }
     } else {
-      throw new Error("Logo upload failed");
+      // No new logo file uploaded via FormData, keep existing if any
+      logoUrl = result.data.logoUrl;
     }
 
     const business = await createBusiness(payload.sub, {

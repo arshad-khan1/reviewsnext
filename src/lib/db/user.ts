@@ -11,6 +11,7 @@ export async function findUserByPhone(phone: string) {
         where: { isDeleted: false },
         select: { id: true, slug: true, name: true, logoUrl: true },
       },
+      activeSubscription: true,
     },
   });
 }
@@ -26,6 +27,7 @@ export async function findUserByEmail(email: string) {
         where: { isDeleted: false },
         select: { id: true, slug: true, name: true, logoUrl: true },
       },
+      activeSubscription: true,
     },
   });
 }
@@ -41,6 +43,7 @@ export async function findUserById(id: string) {
         where: { isDeleted: false },
         select: { id: true, slug: true, name: true, logoUrl: true },
       },
+      activeSubscription: true,
     },
   });
 }
@@ -61,6 +64,7 @@ export async function upsertUser(phone: string) {
         where: { isDeleted: false },
         select: { id: true, slug: true, name: true, logoUrl: true, createdAt: true, updatedAt: true },
       },
+      activeSubscription: true,
     },
   });
 }
@@ -84,6 +88,7 @@ export async function updateUserProfile(
         where: { isDeleted: false },
         select: { id: true, slug: true, name: true, logoUrl: true },
       },
+      activeSubscription: true,
     },
   });
 }

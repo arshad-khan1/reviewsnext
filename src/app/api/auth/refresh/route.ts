@@ -106,6 +106,8 @@ export async function POST(req: NextRequest) {
     name: session.user.name,
     email: session.user.email,
     avatarUrl: session.user.avatarUrl,
+    planTier: session.user.activeSubscription?.plan,
+    subscriptionStatus: session.user.activeSubscription?.status,
     businesses: (session.user as any).businesses,
   });
 

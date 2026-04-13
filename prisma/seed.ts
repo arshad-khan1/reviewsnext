@@ -35,11 +35,24 @@ async function main() {
   // 1. Seed Plans
   console.log("  - Seeding subscription and top-up plans...");
   const plansData = [
+    // ── Free / Trial Tier ──────────────────────────────────
+    {
+      name: "Free Trial",
+      description: "Get started with basic review collection and 100 AI credits.",
+      type: PlanCategory.SUBSCRIPTION,
+      price: 0,
+      currency: "INR",
+      billingInterval: BillingInterval.MONTHLY,
+      credits: 100,
+      planTier: PlanType.FREE,
+      externalId: "plan_RS_free_trial",
+    },
+    // ── Subscriptions (Yearly Only) ──────────────────────────
     {
       name: "Starter Plan (Yearly)",
       description: "Perfect for small businesses starting their review journey.",
       type: PlanCategory.SUBSCRIPTION,
-      price: 118800,
+      price: 118800, // ₹1,188/yr (₹99/mo)
       currency: "INR",
       billingInterval: BillingInterval.YEARLY,
       credits: 100,
@@ -50,7 +63,7 @@ async function main() {
       name: "Growth Plan (Yearly)",
       description: "Scale your business with advanced tools and more credits.",
       type: PlanCategory.SUBSCRIPTION,
-      price: 598800,
+      price: 598800, // ₹5,988/yr (₹499/mo)
       currency: "INR",
       billingInterval: BillingInterval.YEARLY,
       credits: 800,
@@ -61,33 +74,50 @@ async function main() {
       name: "Pro Plan (Yearly)",
       description: "Ultimate control for established businesses with multi-location support.",
       type: PlanCategory.SUBSCRIPTION,
-      price: 1198800,
+      price: 1198800, // ₹11,988/yr (₹999/mo)
       currency: "INR",
       billingInterval: BillingInterval.YEARLY,
       credits: 10000,
       planTier: PlanType.PRO,
       externalId: "plan_RS_pro_yearly",
     },
+
+    // ── Top-up Packages ──────────────────────────────────────
     {
       name: "Small Booster",
+      description: "Add 200 AI credits to your account.",
       type: PlanCategory.TOPUP,
-      price: 19900,
+      price: 19900, // ₹199
+      currency: "INR",
+      billingInterval: null,
       credits: 200,
+      planTier: null,
       externalId: "topup_booster_200",
+      metadata: { packageId: "BOOSTER" },
     },
     {
       name: "Growth Booster",
+      description: "Add 450 AI credits to your account.",
       type: PlanCategory.TOPUP,
-      price: 44900,
+      price: 44900, // ₹449
+      currency: "INR",
+      billingInterval: null,
       credits: 450,
+      planTier: null,
       externalId: "topup_accelerator_450",
+      metadata: { packageId: "ACCELERATOR" },
     },
     {
       name: "Power Bundle",
+      description: "Add 1000 AI credits to your account.",
       type: PlanCategory.TOPUP,
-      price: 89900,
+      price: 89900, // ₹899
+      currency: "INR",
+      billingInterval: null,
       credits: 1000,
+      planTier: null,
       externalId: "topup_mega_1000",
+      metadata: { packageId: "MEGA" },
     },
   ];
 
@@ -100,9 +130,17 @@ async function main() {
   }
 
   // Define plans for quick access
+  const freePlan = (await prisma.plan.findUnique({ where: { externalId: "plan_RS_free_trial" } }))!;
   const starterPlan = (await prisma.plan.findUnique({ where: { externalId: "plan_RS_starter_yearly" } }))!;
   const growthPlan = (await prisma.plan.findUnique({ where: { externalId: "plan_RS_growth_yearly" } }))!;
   const proPlan = (await prisma.plan.findUnique({ where: { externalId: "plan_RS_pro_yearly" } }))!;
+
+  // ── USER 0: FREE TRIAL TIER ──────────────────────────────────
+  console.log("  - Setting up Free Trial tier: +910000000000...");
+  const trialUser = await setupUser("+910000000000", "New Trial User", freePlan, SubscriptionStatus.TRIALING);
+  const trialCafe = await setupBusiness(trialUser.id, "Sunnyside Cafe", "sunnyside-cafe", "Cafe", "Mumbai");
+  const cafeQR = await setupQRCode(trialCafe.id, "Entrance", "entrance", true);
+  await generateRealisticActivity(cafeQR.id, 8, 2);
 
   // ── USER 1: STARTER TIER ──────────────────────────────────────
   console.log("  - Setting up Starter tier: +911111111111...");
@@ -159,7 +197,7 @@ async function main() {
   console.log("✅ Comprehensive Seeding Complete.");
 }
 
-async function setupUser(phone: string, name: string, plan: any) {
+async function setupUser(phone: string, name: string, plan: any, status: SubscriptionStatus = SubscriptionStatus.ACTIVE) {
   const user = await prisma.user.upsert({
     where: { phone },
     update: { name },
@@ -171,14 +209,14 @@ async function setupUser(phone: string, name: string, plan: any) {
     update: {
       plan: plan.planTier,
       planId: plan.id,
-      status: SubscriptionStatus.ACTIVE,
+      status: status,
       monthlyAiCredits: plan.credits,
     },
     create: {
       userId: user.id,
       plan: plan.planTier,
       planId: plan.id,
-      status: SubscriptionStatus.ACTIVE,
+      status: status,
       monthlyAiCredits: plan.credits,
     },
   });

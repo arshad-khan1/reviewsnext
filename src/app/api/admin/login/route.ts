@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
       phone: user.phone,
       isAdmin: user.isAdmin,
       sid: rfSession.id,
+      planTier: user.activeSubscription?.plan,
     });
 
     // 5. Prepare Response

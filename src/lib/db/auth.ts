@@ -28,6 +28,7 @@ export async function findRefreshToken(tokenHash: string) {
             where: { isDeleted: false },
             select: { id: true, slug: true, name: true },
           },
+          activeSubscription: true,
         },
       },
     },

@@ -1,5 +1,6 @@
 import { prisma } from "../prisma";
-import { PlanType } from "@prisma/client";
+import { PlanType, SubscriptionStatus } from "@prisma/client";
+import { hasFeature } from "../../config/plan-limits";
 
 const DEFAULT_BRANDING = {
   primaryColor: "#4F46E5",
@@ -27,13 +28,18 @@ export async function getBranding(businessSlug: string) {
 
   if (!business) throw new Error("BUSINESS_NOT_FOUND");
 
-  const plan = business.owner.activeSubscription?.plan || PlanType.STARTER;
+  const planTier = business.owner.activeSubscription?.plan || PlanType.FREE;
+  const status = business.owner.activeSubscription?.status;
   const config = business.brandingConfig as any;
 
+  const canRemoveWatermark = hasFeature(planTier, status, "canRemoveWatermark");
+  const canCustomBranding = hasFeature(planTier, status, "canCustomBranding");
+
   return {
-    plan,
-    brandingConfig: config || (plan === PlanType.STARTER ? null : DEFAULT_BRANDING),
-    showWatermark: !config || plan === PlanType.STARTER,
+    plan: planTier,
+    status,
+    brandingConfig: config || (canCustomBranding ? DEFAULT_BRANDING : null),
+    showWatermark: !canRemoveWatermark,
   };
 }
 

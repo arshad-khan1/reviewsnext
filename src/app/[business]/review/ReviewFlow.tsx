@@ -7,6 +7,8 @@ import Image from "next/image";
 import ReviewStars from "./components/ReviewStars";
 import FeedbackForm from "./components/FeedbackForm";
 import GeneratedReview from "./components/GeneratedReview";
+import { PlanType } from "@prisma/client";
+import { hasFeature } from "@/config/plan-limits";
 
 type Flow = "idle" | "low" | "high";
 
@@ -17,6 +19,7 @@ interface ReviewFlowProps {
     logoUrl: string | null;
     threshold: number;
     qrCodeId: string | null;
+    planTier: PlanType;
   };
 }
 
@@ -106,9 +109,11 @@ const ReviewFlow = ({ businessSlug, config }: ReviewFlowProps) => {
           </AnimatePresence>
         </div>
 
-        <p className="text-center text-[10px] uppercase tracking-widest text-muted-foreground mt-8 font-medium">
-          Powered by Review Funnel
-        </p>
+        {!hasFeature(config.planTier, "canRemoveWatermark") && (
+          <p className="text-center text-[10px] uppercase tracking-widest text-muted-foreground mt-8 font-medium">
+            Powered by Review Funnel
+          </p>
+        )}
       </motion.div>
     </div>
   );

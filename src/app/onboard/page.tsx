@@ -21,6 +21,7 @@ import {
   Building2,
   LayoutGrid,
   Contact,
+  ExternalLink,
 } from "lucide-react";
 
 import { PhoneInput } from "react-international-phone";
@@ -242,7 +243,8 @@ export default function OnboardingPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to complete onboarding");
+      if (!res.ok)
+        throw new Error(data.message || "Failed to complete onboarding");
 
       // Refresh the token so the JWT payload now includes the newly created business.
       // Without this, ProtectedRoute reads stale user.businesses = [] and bounces back to /onboard.
@@ -382,7 +384,9 @@ export default function OnboardingPage() {
                   id="ownerName"
                   placeholder="e.g. John Doe"
                   value={formData.ownerName}
-                  onChange={(e) => updateFormData({ ownerName: e.target.value })}
+                  onChange={(e) =>
+                    updateFormData({ ownerName: e.target.value })
+                  }
                   className={formErrors.ownerName ? "border-destructive" : ""}
                 />
                 {formErrors.ownerName && (
@@ -678,15 +682,34 @@ export default function OnboardingPage() {
                   <MapPin className="w-4 h-4 text-primary" />
                   <Label htmlFor="map">Google Maps Review URL</Label>
                 </div>
-                <Input
-                  id="map"
-                  placeholder="https://g.page/r/..."
-                  value={formData.googleMapsUrl}
-                  onChange={(e) =>
-                    updateFormData({ googleMapsUrl: e.target.value })
-                  }
-                  className={formErrors.googleMapsUrl ? "border-destructive" : ""}
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="map"
+                    placeholder="https://g.page/r/..."
+                    value={formData.googleMapsUrl}
+                    onChange={(e) =>
+                      updateFormData({ googleMapsUrl: e.target.value })
+                    }
+                    className={
+                      formErrors.googleMapsUrl ? "border-destructive" : ""
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 shrink-0 bg-slate-50 hover:bg-slate-100 border-slate-200"
+                    onClick={() => {
+                      const effectiveLink = formData.googleMapsUrl;
+                      if (effectiveLink) window.open(effectiveLink, "_blank");
+                    }}
+                    disabled={!formData.googleMapsUrl}
+                    title="Test Link"
+                  >
+                    <ExternalLink className="w-4 h-4 text-slate-800" />
+                  </Button>
+                </div>
+
                 {formErrors.googleMapsUrl && (
                   <p className="text-[10px] text-destructive font-medium">
                     {formErrors.googleMapsUrl}
@@ -795,10 +818,7 @@ export default function OnboardingPage() {
               Back
             </Button>
             {step < 3 ? (
-              <Button
-                onClick={nextStep}
-                className="gap-2 px-8"
-              >
+              <Button onClick={nextStep} className="gap-2 px-8">
                 Next Step
                 <ArrowRight className="w-4 h-4" />
               </Button>

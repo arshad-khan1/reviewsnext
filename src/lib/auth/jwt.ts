@@ -1,5 +1,6 @@
 import * as jose from "jose";
 import { createHash, randomBytes } from "crypto";
+import { PlanType, SubscriptionStatus } from "@prisma/client";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "at-secret-minimum-32-chars-long-please"
@@ -22,8 +23,10 @@ export interface TokenPayload {
   name?: string | null;
   email?: string | null;
   avatarUrl?: string | null;
-  businesses?: { id: string; slug: string; name: string }[];
-}
+   planTier?: PlanType;
+   subscriptionStatus?: SubscriptionStatus;
+   businesses?: { id: string; slug: string; name: string }[];
+ }
 
 /**
  * Signs an Access Token (15m)

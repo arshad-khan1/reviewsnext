@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Zap, CheckCircle2, ArrowRight, ShieldCheck, X } from "lucide-react";
+import { Zap, CheckCircle2, ArrowRight, ShieldCheck, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -14,8 +14,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { mockBusinesses } from "@/data/mockBusinesses";
 import { cn } from "@/lib/utils";
+import { useBusiness } from "@/hooks/use-business";
 
 const PACKAGES = [
   {
@@ -66,7 +66,8 @@ export default function TopupPage() {
   const params = useParams();
   const router = useRouter();
   const businessSlug = params.business as string;
-  const business = mockBusinesses.find((b) => b.slug === businessSlug);
+
+  const { data: business, isLoading: isBusinessLoading } = useBusiness(businessSlug);
 
   const [selectedPackage, setSelectedPackage] = useState<
     (typeof PACKAGES)[0] | null
@@ -75,7 +76,22 @@ export default function TopupPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  if (!business) return null;
+  if (isBusinessLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50/30">
+        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!business) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50/30 p-4">
+        <h2 className="text-xl font-bold mb-4">Business Not Found</h2>
+        <Button onClick={() => router.push("/")}>Back to Home</Button>
+      </div>
+    );
+  }
 
   const handlePurchase = () => {
     setIsProcessing(true);
@@ -124,9 +140,14 @@ export default function TopupPage() {
     );
   }
 
+  const availableCredits = (business.aiCredits?.monthlyAllocation || 0) + 
+                          (business.aiCredits?.topupAllocation || 0) - 
+                          (business.aiCredits?.monthlyUsed || 0) - 
+                          (business.aiCredits?.topupUsed || 0);
+
   return (
     <div className="min-h-screen bg-slate-50/30 pb-20">
-      <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-10 space-y-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-12">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
           <div className="space-y-2">
@@ -145,7 +166,7 @@ export default function TopupPage() {
               </span>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-black text-slate-900">
-                  {business.usage.monthlyAllocation + business.usage.topupAllocation - business.usage.monthlyUsed - business.usage.topupUsed}
+                  {availableCredits}
                 </span>
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Credits

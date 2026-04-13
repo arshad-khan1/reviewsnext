@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Building2,
@@ -183,6 +184,9 @@ export function BusinessProfileSection({
             <DialogTitle className="text-2xl font-black">
               Edit Business Profile
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Modify your business name, industry, location, and logo.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-5 pt-4">
             {/* Logo Upload Section */}

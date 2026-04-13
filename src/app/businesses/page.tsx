@@ -77,7 +77,7 @@ export default function BusinessesPage() {
       <div className="min-h-screen bg-background text-foreground">
         {/* Header */}
         <header className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
-          <div className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                 <Building className="w-6 h-6 text-primary" />
@@ -101,7 +101,7 @@ export default function BusinessesPage() {
           </div>
         </header>
 
-        <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-8 space-y-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
           {/* Stat Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard

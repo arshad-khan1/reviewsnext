@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,9 @@ export default function ReviewDetailDialog({ reviewId, businessSlug, onClose }: 
               </div>
               Review Details
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              View full details of the customer review, including scan metadata and device information.
+            </DialogDescription>
           </DialogHeader>
         </div>
 

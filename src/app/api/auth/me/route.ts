@@ -29,6 +29,8 @@ export const GET = withAuth(async (req, payload) => {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       businesses: user.businesses,
+      planTier: user.activeSubscription?.plan,
+      subscriptionStatus: user.activeSubscription?.status,
     },
   });
 });
@@ -79,6 +81,8 @@ export const PATCH = withAuth(async (req, payload) => {
         avatarUrl: updatedUser.avatarUrl,
         updatedAt: updatedUser.updatedAt,
         businesses: updatedUser.businesses,
+        planTier: updatedUser.activeSubscription?.plan,
+        subscriptionStatus: updatedUser.activeSubscription?.status,
       },
     });
   } catch (error) {

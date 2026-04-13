@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -24,12 +24,17 @@ import {
   Loader2,
   FolderPlus,
 } from "lucide-react";
+import {
+  SubscriptionGateOverlay,
+  PlanBadge,
+} from "@/components/shared/SubscriptionGateOverlay";
 import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +44,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import Link from "next/link";
+import { useAuthStore } from "@/store/auth-store";
+import { PLAN_LIMITS, hasFeature, getLimit } from "@/config/plan-limits";
+import { PlanType } from "@prisma/client";
 import { useBusiness } from "@/hooks/use-business";
 import {
   useQRCodes,
@@ -55,23 +63,17 @@ import {
 } from "@/hooks/use-locations";
 import { QRCodeFormDialog } from "../components/QRCodeFormDialog";
 
-const STYLE_MAP: Record<string, CommentStyle> = {
-  "Professional & Polite": "PROFESSIONAL_POLITE",
-  "Friendly & Casual": "FRIENDLY_CASUAL",
-  "Concise & Direct": "CONCISE_DIRECT",
-  "Enthusiastic & Warm": "ENTHUSIASTIC_WARM",
-};
-
-const REVERSE_STYLE_MAP: Record<CommentStyle, string> = {
-  PROFESSIONAL_POLITE: "Professional & Polite",
-  FRIENDLY_CASUAL: "Friendly & Casual",
-  CONCISE_DIRECT: "Concise & Direct",
-  ENTHUSIASTIC_WARM: "Enthusiastic & Warm",
-};
-
 export default function QRCodeManager() {
   const params = useParams();
   const businessSlug = params.business as string;
+
+  const { user } = useAuthStore();
+  const planTier = user?.planTier || PlanType.FREE;
+  const locationLimit = getLimit(
+    planTier,
+    user?.subscriptionStatus,
+    "maxLocations",
+  );
 
   const { data: business, isLoading: isBusinessLoading } =
     useBusiness(businessSlug);
@@ -85,9 +87,20 @@ export default function QRCodeManager() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editingQR, setEditingQR] = useState<QRCode | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [analyticsGateId, setAnalyticsGateId] = useState<string | null>(null);
 
-  const { data: locationsData } = useLocations(businessSlug);
+  const { data: locationsData, error: locationsError } =
+    useLocations(businessSlug);
   const locations = locationsData?.data || [];
+  const planDisplayName = PLAN_LIMITS[planTier].displayName;
+
+  // If data is missing but we know it's a restricted tier, or it's an error, or count is over limit
+  const isLocationAtLimit = useMemo(() => {
+    if (locationsError) return true;
+    if (!locationsData) return false;
+    return locations.length >= locationLimit;
+  }, [locationsData, locationsError, locations.length, locationLimit]);
+
   const createLocationMutation = useCreateLocation(businessSlug);
   const assignQrLocationMutation = useAssignQrToLocation(businessSlug);
 
@@ -108,15 +121,15 @@ export default function QRCodeManager() {
   const handleAddLocation = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLocationAttempted(true);
-    
+
     if (Object.keys(calculatedLocationErrors).length > 0) {
       return;
     }
 
     try {
-      await createLocationMutation.mutateAsync({ 
+      await createLocationMutation.mutateAsync({
         name: newLocationName.trim(),
-        city: newLocationCity.trim() || undefined
+        city: newLocationCity.trim() || undefined,
       });
       setNewLocationName("");
       setNewLocationCity("");
@@ -127,7 +140,7 @@ export default function QRCodeManager() {
     }
   };
 
-  const qrs = qrsData?.data || [];
+  const qrs = useMemo(() => qrsData?.data || [], [qrsData?.data]);
   const summary = qrsData?.summary;
 
   const filteredQRs = useMemo(() => {
@@ -172,7 +185,10 @@ export default function QRCodeManager() {
           acceptedStarsThreshold: data.acceptedStarsThreshold,
         });
 
-        const newId = (result as any)?.data?.id || (result as any)?.id || (result as any)?.qrCode?.id;
+        const newId =
+          (result as any)?.data?.id ||
+          (result as any)?.id ||
+          (result as any)?.qrCode?.id;
         if (newId) {
           await assignQrLocationMutation.mutateAsync({
             qrId: newId,
@@ -260,7 +276,7 @@ export default function QRCodeManager() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-10 space-y-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-10">
         {/* Stats Section */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
@@ -336,29 +352,92 @@ export default function QRCodeManager() {
                     <FolderPlus className="w-4 h-4" /> Create Location
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-md bg-white">
-                  <DialogHeader>
-                    <DialogTitle>New Location Tag</DialogTitle>
-                    <DialogDescription>
+
+                <DialogContent
+                  className={cn(
+                    "sm:max-w-md bg-white border-none shadow-2xl rounded-3xl p-0 overflow-hidden transition-all duration-500",
+                    isLocationAtLimit ? "min-h-[450px]" : "min-h-[auto]",
+                  )}
+                >
+                  {isLocationAtLimit && (
+                    <SubscriptionGateOverlay
+                      title={
+                        locationLimit === 0
+                          ? "Pro Feature"
+                          : "Location Limit Reached"
+                      }
+                      planDisplayName={planDisplayName}
+                      description={
+                        locationLimit === 0 ? (
+                          <div className="space-y-2">
+                            <p>
+                              Managing multiple branches and facility groups is
+                              a <PlanBadge name="PRO" /> only feature.
+                            </p>
+                            <p className="text-xs text-slate-400 font-normal italic">
+                              You are currently on the {planDisplayName} plan.
+                            </p>
+                            <p className="mt-4 text-xs font-semibold text-slate-600">
+                              Upgrade to Pro to manage multiple business
+                              branches and view unified analytics.
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            Your <PlanBadge name={planDisplayName} /> plan
+                            allows for up to{" "}
+                            <span className="text-slate-900 font-bold">
+                              {locationLimit}
+                            </span>{" "}
+                            location
+                            {locationLimit > 1 ? "s" : ""}.
+                          </>
+                        )
+                      }
+                      onUpgrade={() =>
+                        (window.location.href = `/${businessSlug}/dashboard/topup`)
+                      }
+                      onClose={() => setIsAddLocationOpen(false)}
+                    />
+                  )}
+
+                  <DialogHeader className="px-8 pt-8 pb-4 bg-slate-50/50 border-b border-slate-100">
+                    <DialogTitle className="text-xl">
+                      New Location Tag
+                    </DialogTitle>
+                    <DialogDescription className="text-sm font-medium text-slate-500">
                       Create a location group to better organize your QR codes.
                     </DialogDescription>
                   </DialogHeader>
-                  <form onSubmit={handleAddLocation} className="space-y-4 pt-4">
+                  <form onSubmit={handleAddLocation} className="p-8 space-y-4">
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label className={isLocationAttempted && calculatedLocationErrors.name ? "text-red-500 font-semibold" : "text-slate-700 font-semibold"}>Location Name</Label>
+                        <Label
+                          className={
+                            isLocationAttempted && calculatedLocationErrors.name
+                              ? "text-red-500 font-semibold"
+                              : "text-slate-700 font-semibold"
+                          }
+                        >
+                          Location Name
+                        </Label>
                         <Input
                           value={newLocationName}
                           onChange={(e) => setNewLocationName(e.target.value)}
                           placeholder="e.g. Downtown Branch"
                           className={`h-11 border-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0 ${isLocationAttempted && calculatedLocationErrors.name ? "border-red-500 bg-red-50/30" : ""}`}
                         />
-                        {isLocationAttempted && calculatedLocationErrors.name && (
-                          <p className="text-[11px] font-bold text-red-500 px-1">{calculatedLocationErrors.name}</p>
-                        )}
+                        {isLocationAttempted &&
+                          calculatedLocationErrors.name && (
+                            <p className="text-[11px] font-bold text-red-500 px-1">
+                              {calculatedLocationErrors.name}
+                            </p>
+                          )}
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-slate-700 font-semibold">City (Optional)</Label>
+                        <Label className="text-slate-700 font-semibold">
+                          City (Optional)
+                        </Label>
                         <Input
                           value={newLocationCity}
                           onChange={(e) => setNewLocationCity(e.target.value)}
@@ -510,7 +589,7 @@ export default function QRCodeManager() {
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50 -mr-2 -mt-1"
+                                          className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 -mr-2 -mt-1"
                                           onClick={() => deleteQR(qr.id)}
                                           disabled={deleteMutation.isPending}
                                         >
@@ -520,19 +599,77 @@ export default function QRCodeManager() {
                                     </div>
                                     <div className="mt-auto space-y-3">
                                       <div className="flex items-center gap-2">
-                                        <Link
-                                          href={`/${businessSlug}/dashboard/qr-codes/${qr.sourceTag}`}
-                                          className="flex-1"
-                                        >
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-9 text-xs gap-2 px-3 w-full border-slate-200 shadow-none hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 font-bold text-slate-700 group/btn"
+                                        {!hasFeature(
+                                          planTier,
+                                          user?.subscriptionStatus,
+                                          "canAdvancedAnalytics",
+                                        ) ? (
+                                          <Dialog
+                                            open={analyticsGateId === qr.id}
+                                            onOpenChange={(open) =>
+                                              setAnalyticsGateId(
+                                                open ? qr.id : null,
+                                              )
+                                            }
                                           >
-                                            <BarChart3 className="w-3.5 h-3.5" />
-                                            View Dashboard
-                                          </Button>
-                                        </Link>
+                                            <DialogTrigger asChild>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-9 text-xs gap-2 px-3 w-fit border-slate-200 shadow-none hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 font-bold text-slate-700 group/btn"
+                                              >
+                                                <BarChart3 className="w-3.5 h-3.5" />
+                                                View Dashboard
+                                              </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-white border-none shadow-2xl rounded-3xl min-h-[400px]">
+                                              <DialogTitle className="sr-only">
+                                                Advanced Analytics Access
+                                              </DialogTitle>
+                                              <DialogDescription className="sr-only">
+                                                Upgrade to Growth or Pro plan to
+                                                view detailed analytics for this
+                                                QR code.
+                                              </DialogDescription>
+                                              <SubscriptionGateOverlay
+                                                title="Advanced Analytics"
+                                                planDisplayName="Starter"
+                                                description={
+                                                  <>
+                                                    Detailed scan analytics,
+                                                    conversion tracking, and
+                                                    geographic data are
+                                                    available on{" "}
+                                                    <PlanBadge name="Growth" />{" "}
+                                                    and <PlanBadge name="Pro" />{" "}
+                                                    plans.
+                                                  </>
+                                                }
+                                                onUpgrade={() =>
+                                                  (window.location.href = `/${businessSlug}/dashboard/topup`)
+                                                }
+                                                onClose={() =>
+                                                  setAnalyticsGateId(null)
+                                                }
+                                                iconType="lock"
+                                              />
+                                            </DialogContent>
+                                          </Dialog>
+                                        ) : (
+                                          <Link
+                                            href={`/${businessSlug}/dashboard/qr-codes/${qr.sourceTag}`}
+                                            className="flex-1"
+                                          >
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-9 text-xs gap-2 px-3 w-fit border-slate-200 shadow-none hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 font-bold text-slate-700 group/btn"
+                                            >
+                                              <BarChart3 className="w-3.5 h-3.5" />
+                                              View Dashboard
+                                            </Button>
+                                          </Link>
+                                        )}
                                         <Button
                                           variant="outline"
                                           size="sm"
@@ -662,7 +799,7 @@ export default function QRCodeManager() {
                           <Card className="group border-none shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 overflow-hidden bg-white ring-1 ring-slate-200/60 hover:ring-indigo-200">
                             <CardContent className="p-0">
                               <div className="flex h-full flex-col sm:flex-row">
-                                <div className="w-full sm:w-40 bg-slate-50/50 flex flex-col items-center justify-center p-5 border-b sm:border-b-0 sm:border-r border-slate-100 group-hover:bg-indigo-50/30 transition-colors shrink-0">
+                                <div className="w-full sm:w-40 flex flex-col items-center justify-center p-5 border-b sm:border-b-0 sm:border-r border-slate-100 transition-colors shrink-0">
                                   <div className="relative p-3 bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 group-hover:ring-indigo-100 transition-all group-hover:scale-105">
                                     <QRCodeCanvas
                                       id={`canvas-${qr.id}`}
@@ -716,7 +853,7 @@ export default function QRCodeManager() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50 -mr-2 -mt-1"
+                                        className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 -mr-2 -mt-1"
                                         onClick={() => deleteQR(qr.id)}
                                         disabled={deleteMutation.isPending}
                                       >
@@ -725,83 +862,142 @@ export default function QRCodeManager() {
                                     </div>
                                   </div>
                                   <div className="mt-auto space-y-3">
-                                    <div className="flex items-center gap-2">
-                                      <Link
-                                        href={`/${businessSlug}/dashboard/qr-codes/${qr.sourceTag}`}
-                                        className="flex-1"
-                                      >
+                                    <div className="flex items-center justify-between gap-2">
+                                      {!hasFeature(
+                                        planTier,
+                                        user?.subscriptionStatus,
+                                        "canAdvancedAnalytics",
+                                      ) ? (
+                                        <Dialog
+                                          open={analyticsGateId === qr.id}
+                                          onOpenChange={(open) =>
+                                            setAnalyticsGateId(
+                                              open ? qr.id : null,
+                                            )
+                                          }
+                                        >
+                                          <DialogTrigger asChild>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-9 text-xs gap-2 px-3 w-fit border-slate-200 shadow-none hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 font-bold text-slate-700 group/btn"
+                                            >
+                                              <BarChart3 className="w-3.5 h-3.5" />
+                                              View Analytics
+                                            </Button>
+                                          </DialogTrigger>
+                                          <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-white border-none shadow-2xl rounded-3xl min-h-[400px]">
+                                            <DialogTitle className="sr-only">
+                                              Advanced Analytics Access
+                                            </DialogTitle>
+                                            <DialogDescription className="sr-only">
+                                              Upgrade to Growth or Pro plan to
+                                              view detailed analytics for this
+                                              QR code.
+                                            </DialogDescription>
+                                            <SubscriptionGateOverlay
+                                              title="Advanced Analytics"
+                                              planDisplayName="Starter"
+                                              description={
+                                                <>
+                                                  Detailed scan analytics,
+                                                  conversion tracking, and
+                                                  geographic data are available
+                                                  on <PlanBadge name="Growth" />{" "}
+                                                  and <PlanBadge name="Pro" />{" "}
+                                                  plans.
+                                                </>
+                                              }
+                                              onUpgrade={() =>
+                                                (window.location.href = `/${businessSlug}/dashboard/topup`)
+                                              }
+                                              onClose={() =>
+                                                setAnalyticsGateId(null)
+                                              }
+                                              iconType="lock"
+                                            />
+                                          </DialogContent>
+                                        </Dialog>
+                                      ) : (
+                                        <Link
+                                          href={`/${businessSlug}/dashboard/qr-codes/${qr.sourceTag}`}
+                                          className="flex-1"
+                                        >
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-9 text-xs gap-2 px-3 w-fit border-slate-200 shadow-none hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 font-bold text-slate-700 group/btn"
+                                          >
+                                            <BarChart3 className="w-3.5 h-3.5" />
+                                            View Analytics
+                                          </Button>
+                                        </Link>
+                                      )}
+                                      <div className="flex items-center gap-2">
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="h-9 text-xs gap-2 px-3 w-full border-slate-200 shadow-none hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 font-bold text-slate-700 group/btn"
+                                          className="h-9 text-xs gap-2 px-3 border-slate-200 shadow-none hover:bg-slate-50 font-bold text-slate-700"
+                                          onClick={() => copyLink(qr)}
                                         >
-                                          <BarChart3 className="w-3.5 h-3.5" />
-                                          View Dashboard
+                                          {copiedId === qr.id ? (
+                                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                          ) : (
+                                            <Copy className="w-3.5 h-3.5" />
+                                          )}
                                         </Button>
-                                      </Link>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-9 text-xs gap-2 px-3 border-slate-200 shadow-none hover:bg-slate-50 font-bold text-slate-700"
-                                        onClick={() => copyLink(qr)}
-                                      >
-                                        {copiedId === qr.id ? (
-                                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                        ) : (
-                                          <Copy className="w-3.5 h-3.5" />
-                                        )}
-                                      </Button>
-                                      <Dialog>
-                                        <DialogTrigger asChild>
-                                          <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-9 w-9 border-slate-200 shadow-none hover:bg-slate-50 text-slate-600"
-                                          >
-                                            <Eye className="w-4 h-4" />
-                                          </Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="sm:max-w-md bg-white border-none shadow-2xl rounded-3xl p-8">
-                                          <DialogHeader className="space-y-3">
-                                            <DialogTitle className="text-2xl font-black text-center text-slate-900">
-                                              {qr.name}
-                                            </DialogTitle>
-                                            <DialogDescription className="text-center font-medium text-slate-500 pb-2">
-                                              Scan to visit:{" "}
-                                              <span className="text-indigo-600 font-mono break-all">
-                                                {qr.reviewUrl}
-                                              </span>
-                                            </DialogDescription>
-                                          </DialogHeader>
-                                          <div className="flex flex-col items-center justify-center py-6">
-                                            <div className="p-8 bg-slate-50 rounded-3xl shadow-inner border border-slate-100 flex items-center justify-center relative group">
-                                              <QRCodeCanvas
-                                                value={qr.reviewUrl}
-                                                size={240}
-                                                level="L"
-                                                className="relative z-10"
-                                              />
-                                            </div>
-                                          </div>
-                                          <div className="grid grid-cols-2 gap-4 mt-4">
-                                            <Button
-                                              className="h-12 gap-2 bg-slate-900 text-white font-bold rounded-2xl"
-                                              onClick={() => downloadPNG(qr)}
-                                            >
-                                              <ImageIcon className="w-4 h-4" />
-                                              PNG HD
-                                            </Button>
+                                        <Dialog>
+                                          <DialogTrigger asChild>
                                             <Button
                                               variant="outline"
-                                              className="h-12 gap-2 border-slate-200 hover:bg-slate-50 text-slate-900 font-bold rounded-2xl"
-                                              onClick={() => downloadSVG(qr)}
+                                              size="icon"
+                                              className="h-9 w-9 border-slate-200 shadow-none hover:bg-slate-50 text-slate-600"
                                             >
-                                              <FileCode className="w-4 h-4" />
-                                              Vector SVG
+                                              <Eye className="w-4 h-4" />
                                             </Button>
-                                          </div>
-                                        </DialogContent>
-                                      </Dialog>
+                                          </DialogTrigger>
+                                          <DialogContent className="sm:max-w-md bg-white border-none shadow-2xl rounded-3xl p-8">
+                                            <DialogHeader className="space-y-3">
+                                              <DialogTitle className="text-2xl font-black text-center text-slate-900">
+                                                {qr.name}
+                                              </DialogTitle>
+                                              <DialogDescription className="text-center font-medium text-slate-500 pb-2">
+                                                Scan to visit:{" "}
+                                                <span className="text-indigo-600 font-mono break-all">
+                                                  {qr.reviewUrl}
+                                                </span>
+                                              </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="flex flex-col items-center justify-center py-6">
+                                              <div className="p-8 bg-slate-50 rounded-3xl shadow-inner border border-slate-100 flex items-center justify-center relative group">
+                                                <QRCodeCanvas
+                                                  value={qr.reviewUrl}
+                                                  size={240}
+                                                  level="L"
+                                                  className="relative z-10"
+                                                />
+                                              </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 mt-4">
+                                              <Button
+                                                className="h-12 gap-2 bg-slate-900 text-white font-bold rounded-2xl"
+                                                onClick={() => downloadPNG(qr)}
+                                              >
+                                                <ImageIcon className="w-4 h-4" />
+                                                PNG HD
+                                              </Button>
+                                              <Button
+                                                variant="outline"
+                                                className="h-12 gap-2 border-slate-200 hover:bg-slate-50 text-slate-900 font-bold rounded-2xl"
+                                                onClick={() => downloadSVG(qr)}
+                                              >
+                                                <FileCode className="w-4 h-4" />
+                                                Vector SVG
+                                              </Button>
+                                            </div>
+                                          </DialogContent>
+                                        </Dialog>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>

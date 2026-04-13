@@ -74,7 +74,7 @@ export default function IndividualQRDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50/50">
-      <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-black text-slate-900">{qrCode.name}</h1>

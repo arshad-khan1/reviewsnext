@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useParams } from "next/navigation";
+import { PlanType } from "@prisma/client";
 import Image from "next/image";
 import {
   LogOut,
@@ -22,11 +24,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  SubscriptionGateOverlay,
+  PlanBadge,
+} from "@/components/shared/SubscriptionGateOverlay";
 
 export function UserNav() {
   const { user } = useAuthStore();
   const params = useParams();
   const logoutMutation = useLogoutMutation();
+  const [showUpgradeGate, setShowUpgradeGate] = useState(false);
 
   if (!user) return null;
 
@@ -118,12 +131,22 @@ export function UserNav() {
               </DropdownMenuItem>
             </Link>
           ))}
-          <Link href="/onboard">
-            <DropdownMenuItem className="cursor-pointer text-primary focus:text-primary focus:bg-primary/5">
+          {user.planTier === PlanType.PRO || user.isAdmin ? (
+            <Link href="/onboard">
+              <DropdownMenuItem className="cursor-pointer text-primary focus:text-primary focus:bg-primary/5 font-bold">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                <span>Add Business</span>
+              </DropdownMenuItem>
+            </Link>
+          ) : (
+            <DropdownMenuItem
+              onSelect={() => setShowUpgradeGate(true)}
+              className="cursor-pointer text-primary focus:text-primary focus:bg-primary/5 font-bold"
+            >
               <PlusCircle className="mr-2 h-4 w-4" />
-              <span className="font-bold">Add Business</span>
+              <span>Add Business</span>
             </DropdownMenuItem>
-          </Link>
+          )}
         </DropdownMenuGroup>
 
         {currentBusiness && (
@@ -150,6 +173,45 @@ export function UserNav() {
           <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
+
+      <Dialog open={showUpgradeGate} onOpenChange={setShowUpgradeGate}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-white border-none shadow-2xl rounded-3xl min-h-[400px]">
+          <DialogTitle className="sr-only">
+            Multiple Businesses Access
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Upgrade to Pro plan to manage multiple businesses under one account.
+          </DialogDescription>
+          <SubscriptionGateOverlay
+            title="Multi-Business Support"
+            planDisplayName={
+              user.subscriptionStatus === "TRIALING" 
+                ? "Trial" 
+                : user.planTier === PlanType.FREE
+                  ? "Free"
+                  : user.planTier === PlanType.STARTER 
+                    ? "Starter" 
+                    : user.planTier === PlanType.GROWTH
+                      ? "Growth"
+                      : "Pro"
+            }
+            description={
+              <>
+                Managing multiple businesses from a single dashboard is an
+                exclusive feature for <PlanBadge name="Pro" /> users.
+              </>
+            }
+            onUpgrade={() => {
+              window.location.href = currentSlug
+                ? `/${currentSlug}/dashboard/topup`
+                : "/businesses";
+              setShowUpgradeGate(false);
+            }}
+            onClose={() => setShowUpgradeGate(false)}
+            iconType="lock"
+          />
+        </DialogContent>
+      </Dialog>
     </DropdownMenu>
   );
 }

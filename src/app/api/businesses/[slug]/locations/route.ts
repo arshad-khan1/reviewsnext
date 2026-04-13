@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/guard";
 import { getLocations, createLocation } from "@/lib/db/location";
-import { checkBusinessPlan } from "@/lib/db/plan";
+import { checkBusinessPlan, checkPlanLimit } from "@/lib/db/plan";
 import { PlanType } from "@prisma/client";
 
 /**
@@ -14,19 +14,6 @@ export const GET = withAuth(async (req, user, { params }) => {
   const includeStats = searchParams.get("includeStats") === "true";
 
   try {
-    const planCheck = await checkBusinessPlan(slug, PlanType.PRO);
-    if (planCheck.error === "PLAN_REQUIRED") {
-      return NextResponse.json({
-        code: "PLAN_REQUIRED",
-        message: "Location management is available on the PRO plan. Upgrade to access this feature.",
-        requiredPlan: "PRO",
-        upgradeUrl: `/${slug}/dashboard/topup`
-      }, { status: 403 });
-    }
-    if (planCheck.error === "BUSINESS_NOT_FOUND") {
-      return NextResponse.json({ code: "BUSINESS_NOT_FOUND", message: "Business not found" }, { status: 404 });
-    }
-
     const result = await getLocations(slug, includeStats);
     return NextResponse.json(result);
   } catch (error: any) {
@@ -43,12 +30,14 @@ export const POST = withAuth(async (req, user, { params }) => {
   const { slug } = await params;
 
   try {
-    const planCheck = await checkBusinessPlan(slug, PlanType.PRO);
-    if (planCheck.error === "PLAN_REQUIRED") {
+    const limitCheck = await checkPlanLimit(slug, "maxLocations");
+    if (!limitCheck.allowed) {
       return NextResponse.json({
-        code: "PLAN_REQUIRED",
-        message: "Location management is available on the PRO plan.",
-        requiredPlan: "PRO"
+        code: "LIMIT_REACHED",
+        message: limitCheck.limit <= 1 
+          ? "Location management is a premium feature. Upgrade your plan to add more locations."
+          : `Your plan limit of ${limitCheck.limit} locations has been reached. Please upgrade to add more.`,
+        requiredPlan: limitCheck.limit <= 1 ? "GROWTH" : "PRO"
       }, { status: 403 });
     }
 

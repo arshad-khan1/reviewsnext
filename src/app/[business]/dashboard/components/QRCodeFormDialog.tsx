@@ -20,6 +20,8 @@ import {
   Loader2,
   Signal,
   Star,
+  Lock,
+  Zap,
 } from "lucide-react";
 import {
   type QRCode,
@@ -29,6 +31,15 @@ import {
 import { type Location } from "@/hooks/use-locations";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import { useAuthStore } from "@/store/auth-store";
+import { PLAN_LIMITS, hasFeature, getLimit } from "@/config/plan-limits";
+import { PlanType } from "@prisma/client";
+import { FeatureGate } from "@/components/auth/FeatureGate";
+import {
+  SubscriptionGateOverlay,
+  PlanBadge,
+} from "@/components/shared/SubscriptionGateOverlay";
+import { cn } from "@/lib/utils";
 
 const STYLE_MAP: Record<string, CommentStyle> = {
   "Professional & Polite": "PROFESSIONAL_POLITE",
@@ -65,7 +76,23 @@ export function QRCodeFormDialog({
   onSave,
   isPending,
 }: QRCodeFormDialogProps) {
+  const { user } = useAuthStore();
+  const planTier = user?.planTier || PlanType.FREE;
   const isEdit = !!qr;
+
+  // Limits Check
+  const qrLimit = getLimit(
+    planTier,
+    user?.subscriptionStatus,
+    "maxQrCodesTotal",
+  );
+  const planDisplayName = PLAN_LIMITS[planTier].displayName;
+  const isAtLimit = !isEdit && qrs.length >= qrLimit;
+  const canCustomize = hasFeature(
+    planTier,
+    user?.subscriptionStatus,
+    "canCustomAiPrompts",
+  );
 
   const [name, setName] = useState("");
   const [sourceTag, setSourceTag] = useState("");
@@ -217,8 +244,36 @@ export function QRCodeFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg bg-white max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          "sm:max-w-[480px] p-0 overflow-hidden bg-white border-none shadow-2xl rounded-3xl transition-all duration-500 flex flex-col",
+          isAtLimit ? "max-h-[450px]" : "max-h-[90vh]",
+        )}
+      >
+        {isAtLimit && (
+          <SubscriptionGateOverlay
+            title="QR Limit Reached"
+            planDisplayName={planDisplayName}
+            description={
+              <>
+                Your <PlanBadge name={planDisplayName} /> plan allows for up to{" "}
+                <span className="text-slate-900 font-bold">{qrLimit}</span> QR
+                code
+                {qrLimit > 1 ? "s" : ""}.
+                <br />
+                <span className="opacity-75">
+                  Upgrade to Growth or Pro to unlock more tracking points.
+                </span>
+              </>
+            }
+            onUpgrade={() =>
+              (window.location.href = `/${businessSlug}/dashboard/topup`)
+            }
+            onClose={() => onOpenChange(false)}
+          />
+        )}
+
+        <DialogHeader className="px-8 pt-8 pb-4 bg-slate-50/50 border-b border-slate-100">
           <DialogTitle className="text-xl">
             {isEdit ? "Edit QR Settings" : "Create New QR Code"}
           </DialogTitle>
@@ -229,244 +284,275 @@ export function QRCodeFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="qr-name"
-                className={
-                  showError("name")
-                    ? "text-red-500 font-semibold px-0.5"
-                    : "text-slate-700 font-semibold px-0.5"
-                }
-              >
-                QR Name
-              </Label>
-              <Input
-                id="qr-name"
-                placeholder='e.g., "Table 1", "Counter"'
-                value={name}
-                onChange={(e) => {
-                  const newName = e.target.value;
-                  setName(newName);
-                  if (!isSourceEdited && !isEdit) {
-                    setSourceTag(
-                      newName
-                        .toLowerCase()
-                        .trim()
-                        .replace(/\s+/g, "-")
-                        .replace(/[^a-z0-9-]/g, ""),
-                    );
-                  }
-                }}
-                className={`h-11 border-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0 ${showError("name") ? "border-red-500 bg-red-50/30" : ""}`}
-              />
-              {showError("name") && (
-                <p className="text-[11px] font-bold text-red-500 px-1">
-                  {errors.name}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-slate-700 font-semibold px-0.5">
-                Location grouping
-              </Label>
-              <select
-                value={locationId}
-                onChange={(e) => setLocationId(e.target.value)}
-                className="flex h-11 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-              >
-                <option value="unassigned">Unassigned</option>
-                {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {!isEdit && (
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col flex-1 overflow-hidden"
+        >
+          <div className="flex-1 overflow-y-auto p-8 space-y-6">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label
-                    htmlFor="source-tag"
-                    className={
-                      showError("sourceTag")
-                        ? "text-red-500 font-semibold px-0.5"
-                        : "text-slate-700 font-semibold px-0.5"
-                    }
-                  >
-                    Source Tag
-                  </Label>
-                  <span className="text-[10px] uppercase font-bold text-slate-400">
-                    Unique Identifier
-                  </span>
-                </div>
-                <div className="relative group">
-                  <Input
-                    id="source-tag"
-                    placeholder="e.g., table1"
-                    value={sourceTag}
-                    onChange={(e) => {
+                <Label
+                  htmlFor="qr-name"
+                  className={
+                    showError("name")
+                      ? "text-red-500 font-semibold px-0.5"
+                      : "text-slate-700 font-semibold px-0.5"
+                  }
+                >
+                  QR Name
+                </Label>
+                <Input
+                  id="qr-name"
+                  placeholder='e.g., "Table 1", "Counter"'
+                  value={name}
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    setName(newName);
+                    if (!isSourceEdited && !isEdit) {
                       setSourceTag(
-                        e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                        newName
+                          .toLowerCase()
+                          .trim()
+                          .replace(/\s+/g, "-")
+                          .replace(/[^a-z0-9-]/g, ""),
                       );
-                      setIsSourceEdited(true);
-                    }}
-                    className={`h-11 border-slate-200 transition-all font-mono text-sm pr-12 focus-visible:ring-0 focus-visible:ring-offset-0 ${showError("sourceTag") ? "border-red-500 bg-red-50/30" : ""}`}
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Signal className="w-4 h-4" />
-                  </div>
-                </div>
-                {showError("sourceTag") && (
+                    }
+                  }}
+                  className={`h-11 border-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0 ${showError("name") ? "border-red-500 bg-red-50/30" : ""}`}
+                />
+                {showError("name") && (
                   <p className="text-[11px] font-bold text-red-500 px-1">
-                    {errors.sourceTag}
+                    {errors.name}
                   </p>
                 )}
               </div>
-            )}
 
-            <div className="space-y-4 pt-4 border-t border-slate-100">
-              <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-indigo-900 font-bold flex items-center gap-2">
-                    <Signal className="w-4 h-4" />
-                    Use Business Defaults
-                  </Label>
-                  <p className="text-[11px] text-indigo-600/70 font-medium">
-                    Automatically inherit all settings from business profile
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={useDefaultConfig}
-                    onChange={(e) => setUseDefaultConfig(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                </label>
+              <div className="space-y-2">
+                <Label className="text-slate-700 font-semibold px-0.5">
+                  Location grouping
+                </Label>
+                <select
+                  value={locationId}
+                  onChange={(e) => setLocationId(e.target.value)}
+                  className="flex h-11 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                >
+                  <option value="unassigned">Unassigned</option>
+                  {locations.map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div
-                className={`space-y-4 transition-all duration-300 ${useDefaultConfig ? "opacity-50 pointer-events-none grayscale-[0.5]" : "opacity-100"}`}
-              >
+              {!isEdit && (
                 <div className="space-y-2">
-                  <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-slate-400" />
-                    AI Guiding Prompt
-                  </Label>
-                  <textarea
-                    placeholder={
-                      business?.defaultAiPrompt || "Instructions for the AI..."
-                    }
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    disabled={useDefaultConfig}
-                    className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-800 italic"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
-                    <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
-                    Comment Style
-                  </Label>
-                  <select
-                    value={commentStyle}
-                    onChange={(e) => setCommentStyle(e.target.value)}
-                    disabled={useDefaultConfig}
-                    className="flex h-11 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                  >
-                    {Object.keys(STYLE_MAP).map((style) => (
-                      <option key={style} value={style}>
-                        {style}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    Google Maps Link
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder={
-                        business?.defaultGoogleMapsLink ||
-                        "https://g.page/r/..."
+                  <div className="flex items-center justify-between">
+                    <Label
+                      htmlFor="source-tag"
+                      className={
+                        showError("sourceTag")
+                          ? "text-red-500 font-semibold px-0.5"
+                          : "text-slate-700 font-semibold px-0.5"
                       }
-                      value={googleMapsLink}
-                      onChange={(e) => setGoogleMapsLink(e.target.value)}
-                      disabled={useDefaultConfig}
-                      className="h-11 border-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-800 italic"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-11 w-11 shrink-0 bg-slate-50 hover:bg-slate-100 border-slate-200"
-                      onClick={() => {
-                        const effectiveLink = useDefaultConfig
-                          ? business?.defaultGoogleMapsLink
-                          : googleMapsLink || business?.defaultGoogleMapsLink;
-                        if (effectiveLink) window.open(effectiveLink, "_blank");
-                      }}
-                      disabled={
-                        useDefaultConfig
-                          ? !business?.defaultGoogleMapsLink
-                          : !(googleMapsLink || business?.defaultGoogleMapsLink)
-                      }
-                      title="Test Link"
                     >
-                      <ExternalLink className="w-4 h-4 text-slate-800" />
-                    </Button>
+                      Source Tag
+                    </Label>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">
+                      Unique Identifier
+                    </span>
                   </div>
+                  <div className="relative group">
+                    <Input
+                      id="source-tag"
+                      placeholder="e.g., table1"
+                      value={sourceTag}
+                      onChange={(e) => {
+                        setSourceTag(
+                          e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                        );
+                        setIsSourceEdited(true);
+                      }}
+                      className={`h-11 border-slate-200 transition-all font-mono text-sm pr-12 focus-visible:ring-0 focus-visible:ring-offset-0 ${showError("sourceTag") ? "border-red-500 bg-red-50/30" : ""}`}
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Signal className="w-4 h-4" />
+                    </div>
+                  </div>
+                  {showError("sourceTag") && (
+                    <p className="text-[11px] font-bold text-red-500 px-1">
+                      {errors.sourceTag}
+                    </p>
+                  )}
                 </div>
+              )}
 
-                <div className="space-y-3 pt-2 border-t border-slate-50">
-                  <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
-                    <Star className="w-3.5 h-3.5 text-amber-500" />
-                    Review Routing Filter
-                  </Label>
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-3">
-                    <div className="flex items-center justify-between px-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">
-                        Stars required for Google Review
-                      </span>
-                      <span className="text-sm font-black text-amber-600">
-                        {acceptedStarsThreshold === 0
-                          ? business?.acceptedStarsThreshold || 4
-                          : acceptedStarsThreshold}
-                        + Stars
-                      </span>
-                      {useDefaultConfig && (
-                        <span className="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full font-black border border-indigo-100 flex items-center gap-1">
-                          <Signal className="w-2 h-2" /> INHERITED
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100">
+                  <div className="space-y-0.5">
+                    <Label className="text-indigo-900 font-bold text-sm flex items-center gap-2">
+                      Default Settings
+                      {!canCustomize && (
+                        <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full border border-amber-200 uppercase tracking-tighter">
+                          Starter Lock
                         </span>
                       )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {[1, 2, 3, 4, 5].map((stars) => (
-                        <button
-                          key={stars}
-                          type="button"
-                          onClick={() => setAcceptedStarsThreshold(stars)}
-                          disabled={useDefaultConfig}
-                          className={`flex-1 h-10 rounded-lg flex items-center justify-center transition-all border ${
-                            acceptedStarsThreshold === stars
-                              ? "bg-amber-500 border-amber-600 text-white shadow-sm scale-105"
-                              : "bg-white border-slate-200 text-slate-400 hover:border-amber-200 hover:bg-amber-50/30"
-                          }`}
-                        >
-                          <span className="font-bold text-sm tracking-tight">
-                            {stars}
-                          </span>
-                        </button>
+                    </Label>
+                    <p className="text-[11px] text-indigo-600/70 font-medium">
+                      Automatically inherit all settings from business profile
+                    </p>
+                  </div>
+                  <label
+                    className={cn(
+                      "relative inline-flex items-center cursor-pointer",
+                      !canCustomize &&
+                        "opacity-50 cursor-not-allowed pointer-events-none",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!canCustomize ? true : useDefaultConfig}
+                      onChange={(e) => setUseDefaultConfig(e.target.checked)}
+                      className="sr-only peer"
+                      disabled={!canCustomize}
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+
+                {!canCustomize && (
+                  <div className="px-4 py-2 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 text-amber-600" />
+                    <p className="text-[10px] text-amber-700 font-medium leading-tight">
+                      Upgrade to <strong>Growth</strong> to customize AI prompts
+                      and routing filters per QR code.
+                    </p>
+                  </div>
+                )}
+
+                <div
+                  className={`space-y-4 transition-all duration-300 ${useDefaultConfig ? "opacity-50 pointer-events-none grayscale-[0.5]" : "opacity-100"}`}
+                >
+                  <div className="space-y-2">
+                    <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+                      AI Guiding Prompt
+                    </Label>
+                    <textarea
+                      placeholder={
+                        business?.defaultAiPrompt ||
+                        "Instructions for the AI..."
+                      }
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      disabled={useDefaultConfig}
+                      className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-800 italic"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
+                      <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                      Comment Style
+                    </Label>
+                    <select
+                      value={commentStyle}
+                      onChange={(e) => setCommentStyle(e.target.value)}
+                      disabled={useDefaultConfig}
+                      className="flex h-11 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                    >
+                      {Object.keys(STYLE_MAP).map((style) => (
+                        <option key={style} value={style}>
+                          {style}
+                        </option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      Google Maps Link
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder={
+                          business?.defaultGoogleMapsLink ||
+                          "https://g.page/r/..."
+                        }
+                        value={googleMapsLink}
+                        onChange={(e) => setGoogleMapsLink(e.target.value)}
+                        disabled={useDefaultConfig}
+                        className="h-11 border-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-800 italic"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 shrink-0 bg-slate-50 hover:bg-slate-100 border-slate-200"
+                        onClick={() => {
+                          const effectiveLink = useDefaultConfig
+                            ? business?.defaultGoogleMapsLink
+                            : googleMapsLink || business?.defaultGoogleMapsLink;
+                          if (effectiveLink)
+                            window.open(effectiveLink, "_blank");
+                        }}
+                        disabled={
+                          useDefaultConfig
+                            ? !business?.defaultGoogleMapsLink
+                            : !(
+                                googleMapsLink ||
+                                business?.defaultGoogleMapsLink
+                              )
+                        }
+                        title="Test Link"
+                      >
+                        <ExternalLink className="w-4 h-4 text-slate-800" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-2 border-t border-slate-50">
+                    <Label className="text-slate-700 font-semibold px-0.5 flex items-center gap-2">
+                      <Star className="w-3.5 h-3.5 text-amber-500" />
+                      Review Routing Filter
+                    </Label>
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-3">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">
+                          Stars required for Google Review
+                        </span>
+                        <span className="text-sm font-black text-amber-600">
+                          {acceptedStarsThreshold === 0
+                            ? business?.acceptedStarsThreshold || 4
+                            : acceptedStarsThreshold}
+                          + Stars
+                        </span>
+                        {useDefaultConfig && (
+                          <span className="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full font-black border border-indigo-100 flex items-center gap-1">
+                            <Signal className="w-2 h-2" /> INHERITED
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4, 5].map((stars) => (
+                          <button
+                            key={stars}
+                            type="button"
+                            onClick={() => setAcceptedStarsThreshold(stars)}
+                            disabled={useDefaultConfig}
+                            className={`flex-1 h-10 rounded-lg flex items-center justify-center transition-all border ${
+                              acceptedStarsThreshold === stars
+                                ? "bg-amber-500 border-amber-600 text-white shadow-sm scale-105"
+                                : "bg-white border-slate-200 text-slate-400 hover:border-amber-200 hover:bg-amber-50/30"
+                            }`}
+                          >
+                            <span className="font-bold text-sm tracking-tight">
+                              {stars}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -474,18 +560,20 @@ export function QRCodeFormDialog({
             </div>
           </div>
 
-          <Button
-            type="submit"
-            className={`w-full h-12 gap-2 text-base font-bold transition-all ${hasErrors && isAttempted ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}
-            disabled={isPending}
-          >
-            {isPending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <QrCode className="w-5 h-5" />
-            )}
-            {isEdit ? "Save Changes" : "Generate QR Code"}
-          </Button>
+          <div className="p-8 pt-4 bg-slate-50/50 border-t border-slate-100 mt-auto">
+            <Button
+              type="submit"
+              className={`w-full h-12 gap-2 text-base font-bold transition-all ${hasErrors && isAttempted ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}
+              disabled={isPending}
+            >
+              {isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <QrCode className="w-5 h-5" />
+              )}
+              {isEdit ? "Save Changes" : "Generate QR Code"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

@@ -1,23 +1,23 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { 
-  Sparkles, 
-  QrCode, 
-  Zap, 
+import {
+  Sparkles,
+  QrCode,
+  Zap,
   PartyPopper,
   ArrowRight,
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -38,11 +38,17 @@ const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
       // Fire confetti celebration!
       const duration = 3 * 1000;
       const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+      const defaults = {
+        startVelocity: 30,
+        spread: 360,
+        ticks: 60,
+        zIndex: 9999,
+      };
 
-      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+      const randomInRange = (min: number, max: number) =>
+        Math.random() * (max - min) + min;
 
-      const interval: any = setInterval(function() {
+      const interval: any = setInterval(function () {
         const timeLeft = animationEnd - Date.now();
 
         if (timeLeft <= 0) {
@@ -50,8 +56,16 @@ const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
         }
 
         const particleCount = 50 * (timeLeft / duration);
-        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        });
       }, 250);
 
       return () => clearInterval(interval);
@@ -73,29 +87,34 @@ const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", damping: 10, stiffness: 100, delay: 0.2 }}
+              transition={{
+                type: "spring",
+                damping: 10,
+                stiffness: 100,
+                delay: 0.2,
+              }}
               className="relative z-10 w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30"
             >
               <PartyPopper className="w-10 h-10 text-white" />
             </motion.div>
-            
+
             {/* Animated particles in background */}
             {[...Array(6)].map((_, i) => (
               <motion.div
                 key={i}
                 animate={{
                   y: [0, -20, 0],
-                  opacity: [0.2, 0.5, 0.2]
+                  opacity: [0.2, 0.5, 0.2],
                 }}
                 transition={{
                   duration: 2 + i,
                   repeat: Infinity,
-                  ease: "easeInOut"
+                  ease: "easeInOut",
                 }}
                 className="absolute w-2 h-2 bg-white rounded-full"
                 style={{
                   top: `${Math.random() * 100}%`,
-                  left: `${Math.random() * 100}%`
+                  left: `${Math.random() * 100}%`,
                 }}
               />
             ))}
@@ -104,10 +123,12 @@ const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
           <div className="p-8 space-y-6">
             <div className="text-center space-y-2">
               <DialogTitle className="text-3xl font-black text-slate-900 tracking-tight">
-                Welcome to <span className="text-indigo-600">ReviewFunnel!</span>
+                Welcome to{" "}
+                <span className="text-indigo-600">Reviews Next AI</span>
               </DialogTitle>
               <DialogDescription className="text-slate-500 font-bold text-base leading-relaxed">
-                Your business is now ready to explode online. We&apos;ve started you off with some trial perks.
+                Your business is now ready to explode online. We&apos;ve started
+                you off with some trial perks.
               </DialogDescription>
             </div>
 
@@ -117,8 +138,12 @@ const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                   <Zap className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-xl font-black text-emerald-700">10 Credits</p>
-                  <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">AI Generation</p>
+                  <p className="text-xl font-black text-emerald-700">
+                    10 Credits
+                  </p>
+                  <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">
+                    AI Generation
+                  </p>
                 </div>
               </div>
 
@@ -128,31 +153,37 @@ const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                 </div>
                 <div>
                   <p className="text-xl font-black text-indigo-700">1 Asset</p>
-                  <p className="text-[10px] font-bold text-indigo-600/70 uppercase tracking-widest">Active QR Code</p>
+                  <p className="text-[10px] font-bold text-indigo-600/70 uppercase tracking-widest">
+                    Active QR Code
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="space-y-3">
-               <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                 <CheckCircle2 className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-                 <p className="text-xs font-bold text-slate-600">Business profile successfully verified</p>
-               </div>
-               <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                 <CheckCircle2 className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-                 <p className="text-xs font-bold text-slate-600">Reception QR code created & active</p>
-               </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <CheckCircle2 className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                <p className="text-xs font-bold text-slate-600">
+                  Business profile successfully verified
+                </p>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <CheckCircle2 className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                <p className="text-xs font-bold text-slate-600">
+                  Reception QR code created & active
+                </p>
+              </div>
             </div>
 
             <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={onClose}
                 className="w-full sm:flex-1 h-12 rounded-xl font-black text-slate-500 hover:bg-slate-50 active:scale-95 transition-all"
               >
                 Go to Dashboard
               </Button>
-              <Button 
+              <Button
                 onClick={handleSeePlans}
                 className="w-full sm:flex-1 h-12 rounded-xl font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-200 gap-2 active:scale-95 transition-all"
               >

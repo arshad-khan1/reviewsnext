@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { mockScans } from "@/data/mockDashboardData";
 import { mockBusinesses } from "@/data/mockBusinesses";
 import QRScansTable from "../components/QRScansTable";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { QRScan } from "@/data/mockDashboardData";
 import DetailRow from "../components/DetailRow";
 
@@ -48,9 +48,9 @@ export default function ScansPage() {
   if (!business) return null;
 
   return (
-    <div className="min-h-screen bg-background pb-12">
+    <div className="min-h-screen bg-slate-50/30">
       {/* Header */}
-      <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Search & Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-2 relative">
@@ -147,6 +147,9 @@ export default function ScansPage() {
                  </div>
                  Scan Details
                </DialogTitle>
+               <DialogDescription className="sr-only">
+                 Detailed information about this specific QR scan event.
+               </DialogDescription>
              </DialogHeader>
           </div>
           

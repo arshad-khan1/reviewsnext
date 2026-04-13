@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { ReactQueryProvider } from "./query-provider";
 import { useAuthStore } from "@/store/auth-store";
 import { apiClient, setAccessToken } from "@/lib/api-client";

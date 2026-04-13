@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   User,
@@ -107,11 +108,10 @@ export function UserProfileSection({
                 <CreditCard className="w-6 h-6 text-emerald-600" />
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                  Active Subscription
-                </p>
                 <p className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                  {business?.subscription?.plan || "FREE"} PLAN
+                  {business?.subscription?.status === "TRIALING" 
+                    ? `Free Trial - ${business?.subscription?.plan || "Starter"}`
+                    : `${business?.subscription?.plan || "FREE"} Plan`}
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 </p>
               </div>
@@ -132,6 +132,9 @@ export function UserProfileSection({
             <DialogTitle className="text-2xl font-black">
               Account Details
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Update your personal information including name and email address.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 pt-4">
             <div className="space-y-4">

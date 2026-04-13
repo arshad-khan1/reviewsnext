@@ -75,7 +75,7 @@ export default function ReviewsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-12">
-      <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         <DashboardTabSwitcher
           activeTab={activeTab}
           setActiveTab={setActiveTab}

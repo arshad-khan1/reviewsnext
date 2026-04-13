@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -18,10 +18,23 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/auth-store";
+import { PlanType } from "@prisma/client";
+import { hasFeature } from "@/config/plan-limits";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  SubscriptionGateOverlay,
+  PlanBadge,
+} from "@/components/shared/SubscriptionGateOverlay";
 import { useReviews } from "@/hooks/use-reviews";
 import { useScans } from "@/hooks/use-scans";
 import StatCard from "./components/StatCard";
-import DetailRow from "./components/DetailRow";
 import ScansOverTimeChart from "./components/ScansOverTimeChart";
 import RatingDistributionChart from "./components/RatingDistributionChart";
 import ReviewsTable from "./components/ReviewsTable";
@@ -33,12 +46,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useBusiness } from "@/hooks/use-business";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import WelcomeModal from "@/components/dashboard/WelcomeModal";
-import { useEffect } from "react";
 
 const BusinessDashboard = () => {
   const params = useParams();
   const router = useRouter();
   const businessSlug = params.business as string;
+
+  const { user } = useAuthStore();
+  const planTier = user?.planTier || PlanType.FREE;
 
   const {
     data: business,
@@ -51,16 +66,18 @@ const BusinessDashboard = () => {
     error: dashboardError,
   } = useDashboardData(businessSlug);
 
+  const searchParams = useSearchParams();
+
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
-  const [showWelcome, setShowWelcome] = useState(false);
-
-  const searchParams = useSearchParams();
+  const [showWelcome, setShowWelcome] = useState(searchParams.get("welcome") === "1");
+  const [openPremiumDialogId, setOpenPremiumDialogId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (searchParams.get("welcome") === "1") {
-      setShowWelcome(true);
       // Clean up the URL
       const newUrl = window.location.pathname;
       window.history.replaceState({ ...window.history.state }, "", newUrl);
@@ -74,12 +91,12 @@ const BusinessDashboard = () => {
 
   const { data: reviewsData, isLoading: isLoadingReviews } = useReviews(
     businessSlug,
-    { page: reviewsPage, limit: ITEMS_PER_PAGE }
+    { page: reviewsPage, limit: ITEMS_PER_PAGE },
   );
 
   const { data: scansData, isLoading: isLoadingScans } = useScans(
-    businessSlug, 
-    { page: scansPage, limit: ITEMS_PER_PAGE }
+    businessSlug,
+    { page: scansPage, limit: ITEMS_PER_PAGE },
   );
 
   const totalReviewsPages = reviewsData?.pagination.totalPages || 1;
@@ -120,7 +137,7 @@ const BusinessDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-6 space-y-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-10">
         {/* Stat Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
@@ -202,36 +219,102 @@ const BusinessDashboard = () => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {(dashboard?.activeQRCodes || []).map((qr) => (
-              <Link
-                key={qr.id}
-                href={`/${businessSlug}/dashboard/qr-codes/${qr.id}`}
-              >
-                <Card className="hover:shadow-md hover:border-indigo-200 transition-all group cursor-pointer border-none shadow-sm">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 transition-colors">
-                        <QrCode className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900 mb-0.5">
-                          {qr.name}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                          {qr.sourceTag}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-black text-indigo-600">
-                        {qr.scans}
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
-                        Scans
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+              <div key={qr.id}>
+                {!hasFeature(
+                  planTier,
+                  user?.subscriptionStatus,
+                  "canAdvancedAnalytics",
+                ) ? (
+                  <Dialog
+                    open={openPremiumDialogId === qr.id}
+                    onOpenChange={(open) =>
+                      setOpenPremiumDialogId(open ? qr.id : null)
+                    }
+                  >
+                    <DialogTrigger asChild>
+                      <Card className="hover:shadow-md hover:border-indigo-200 transition-all group cursor-pointer border-none shadow-sm h-full">
+                        <CardContent className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 transition-colors">
+                              <QrCode className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-900 mb-0.5">
+                                {qr.name}
+                              </p>
+                              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                                {qr.sourceTag}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-black text-indigo-600">
+                              {qr.scans}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                              Scans
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-white border-none shadow-2xl rounded-3xl min-h-[400px]">
+                      <DialogTitle className="sr-only">
+                        Advanced Analytics Access
+                      </DialogTitle>
+                      <DialogDescription className="sr-only">
+                        Upgrade to Growth or Pro plan to view detailed analytics
+                        for this QR code.
+                      </DialogDescription>
+                      <SubscriptionGateOverlay
+                        title="Advanced Analytics"
+                        planDisplayName="Starter"
+                        description={
+                          <>
+                            Detailed scan analytics, conversion tracking, and
+                            geographic data are available on{" "}
+                            <PlanBadge name="Growth" /> and{" "}
+                            <PlanBadge name="Pro" /> plans.
+                          </>
+                        }
+                        onUpgrade={() =>
+                          (window.location.href = `/${businessSlug}/dashboard/topup`)
+                        }
+                        onClose={() => setOpenPremiumDialogId(null)}
+                        iconType="lock"
+                      />
+                    </DialogContent>
+                  </Dialog>
+                ) : (
+                  <Link href={`/${businessSlug}/dashboard/qr-codes/${qr.id}`}>
+                    <Card className="hover:shadow-md hover:border-indigo-200 transition-all group cursor-pointer border-none shadow-sm h-full">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 transition-colors">
+                            <QrCode className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900 mb-0.5">
+                              {qr.name}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                              {qr.sourceTag}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-black text-indigo-600">
+                            {qr.scans}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                            Scans
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                )}
+              </div>
             ))}
           </div>
         </section>
@@ -289,29 +372,33 @@ const BusinessDashboard = () => {
                 />
                 {/* Pagination Controls */}
                 <div className="p-4 flex items-center justify-between border-t border-border/50 bg-slate-50/50">
-                   <p className="text-xs font-medium text-muted-foreground">
-                     Page {reviewsPage} of {totalReviewsPages}
-                   </p>
-                   <div className="flex items-center gap-2">
-                     <Button 
-                       variant="outline" 
-                       size="sm" 
-                       className="h-8 w-8 p-0" 
-                       onClick={() => setReviewsPage(p => Math.max(1, p - 1))}
-                       disabled={reviewsPage === 1}
-                     >
-                       <ChevronLeft className="h-4 w-4" />
-                     </Button>
-                     <Button 
-                       variant="outline" 
-                       size="sm" 
-                       className="h-8 w-8 p-0" 
-                       onClick={() => setReviewsPage(p => Math.min(totalReviewsPages, p + 1))}
-                       disabled={reviewsPage === totalReviewsPages}
-                     >
-                       <ChevronRight className="h-4 w-4" />
-                     </Button>
-                   </div>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Page {reviewsPage} of {totalReviewsPages}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setReviewsPage((p) => Math.max(1, p - 1))}
+                      disabled={reviewsPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() =>
+                        setReviewsPage((p) =>
+                          Math.min(totalReviewsPages, p + 1),
+                        )
+                      }
+                      disabled={reviewsPage === totalReviewsPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -327,29 +414,31 @@ const BusinessDashboard = () => {
                 />
                 {/* Pagination Controls */}
                 <div className="p-4 flex items-center justify-between border-t border-border/50 bg-slate-50/50">
-                   <p className="text-xs font-medium text-muted-foreground">
-                     Page {scansPage} of {totalScansPages}
-                   </p>
-                   <div className="flex items-center gap-2">
-                     <Button 
-                       variant="outline" 
-                       size="sm" 
-                       className="h-8 w-8 p-0" 
-                       onClick={() => setScansPage(p => Math.max(1, p - 1))}
-                       disabled={scansPage === 1}
-                     >
-                       <ChevronLeft className="h-4 w-4" />
-                     </Button>
-                     <Button 
-                       variant="outline" 
-                       size="sm" 
-                       className="h-8 w-8 p-0" 
-                       onClick={() => setScansPage(p => Math.min(totalScansPages, p + 1))}
-                       disabled={scansPage === totalScansPages}
-                     >
-                       <ChevronRight className="h-4 w-4" />
-                     </Button>
-                   </div>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Page {scansPage} of {totalScansPages}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setScansPage((p) => Math.max(1, p - 1))}
+                      disabled={scansPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() =>
+                        setScansPage((p) => Math.min(totalScansPages, p + 1))
+                      }
+                      disabled={scansPage === totalScansPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

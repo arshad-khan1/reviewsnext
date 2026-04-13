@@ -22,7 +22,7 @@ export async function initiateSubscription(
     where: { userId },
     update: {
       planId: plan.id,
-      plan: plan.planTier || PlanType.STARTER,
+      plan: plan.planTier || PlanType.FREE,
       billingInterval: plan.billingInterval || BillingInterval.YEARLY,
       razorpaySubId,
       status: SubscriptionStatus.TRIALING,
@@ -85,4 +85,13 @@ export async function getPaymentHistory(
       totalPages: Math.ceil(totalCount / limit),
     },
   };
+}
+
+/**
+ * Gets a user's current subscription.
+ */
+export async function getUserSubscription(userId: string) {
+  return await prisma.userSubscription.findUnique({
+    where: { userId },
+  });
 }

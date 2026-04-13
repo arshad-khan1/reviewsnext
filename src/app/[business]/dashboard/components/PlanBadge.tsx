@@ -13,14 +13,14 @@ interface PlanBadgeProps {
 
 const PlanBadge = ({ plan, status, className }: PlanBadgeProps) => {
   const planConfig = {
-    TRIAL: {
-      color: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800",
-      icon: Zap,
-      label: "Trial Mode",
+    FREE: {
+      color: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
+      icon: ShieldCheck,
+      label: "Free Plan",
     },
     STARTER: {
       color:
-        "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
+        "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800",
       icon: ShieldCheck,
       label: "Starter Plan",
     },
@@ -39,8 +39,13 @@ const PlanBadge = ({ plan, status, className }: PlanBadgeProps) => {
   };
 
   const isTrial = status === "TRIALING";
-  const normalizedPlan = isTrial ? "TRIAL" : (plan?.toUpperCase() as keyof typeof planConfig) || "STARTER";
-  const config = planConfig[normalizedPlan as keyof typeof planConfig] || planConfig.STARTER;
+  const normalizedPlan = (plan?.toUpperCase() as keyof typeof planConfig) || "FREE";
+  const config = planConfig[normalizedPlan] || planConfig.FREE;
+  
+  // If in trial, show "Free Trial" or "Trial - [PlanName]"
+  const label = isTrial 
+    ? (normalizedPlan === "FREE" ? "Free Trial" : `Trial - ${config.label.split(' ')[0]}`) 
+    : config.label;
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
@@ -52,7 +57,7 @@ const PlanBadge = ({ plan, status, className }: PlanBadgeProps) => {
         variant="outline"
       >
         <config.icon className="w-3.5 h-3.5" />
-        {config.label}
+        {label}
       </Badge>
     </div>
   );

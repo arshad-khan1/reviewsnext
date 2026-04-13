@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,9 @@ export default function ScanDetailDialog({
               </div>
               Scan Event Details
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Full technical breakdown of a QR scan event including device and location context.
+            </DialogDescription>
           </DialogHeader>
         </div>
 

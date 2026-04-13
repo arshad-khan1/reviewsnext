@@ -20,6 +20,7 @@ datasource db {
 
 /// Subscription plan tiers available on the platform
 enum PlanType {
+  FREE
   STARTER
   GROWTH
   PRO

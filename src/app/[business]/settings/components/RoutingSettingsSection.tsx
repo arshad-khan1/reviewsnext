@@ -12,7 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Settings2,
   Globe,
@@ -64,7 +69,7 @@ export function RoutingSettingsSection({
 
   return (
     <>
-      <Card className="border-slate-200 shadow-sm overflow-hidden group">
+      <Card className="border-slate-200 shadow-sm overflow-hidden group h-full flex flex-col">
         <CardHeader className="border-b border-slate-100 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -91,7 +96,7 @@ export function RoutingSettingsSection({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="pt-10 space-y-10">
+        <CardContent className="pt-10 space-y-10 flex-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             <div className="p-8 rounded-[40px] border border-slate-100 flex items-center justify-center">
               <div className="space-y-6 text-center">
@@ -126,18 +131,23 @@ export function RoutingSettingsSection({
                 <Label className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
                   Direct Review Redirect
                 </Label>
-                <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <Globe className="w-5 h-5 text-indigo-500" />
-                    <span className="text-sm text-slate-600 truncate">
+                <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Globe className="w-5 h-5 text-indigo-500 shrink-0" />
+                    <a
+                      href={business?.defaultGoogleMapsLink || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-slate-600 truncate block w-full hover:text-indigo-600 hover:underline decoration-indigo-300 transition-colors"
+                    >
                       {business?.defaultGoogleMapsLink || "No link configured"}
-                    </span>
+                    </a>
                   </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="h-11 w-11 shrink-0 bg-slate-50 hover:bg-slate-100 border-slate-200"
+                    className="h-10 w-10 shrink-0 bg-slate-50 hover:bg-slate-100 border-slate-200"
                     onClick={() => {
                       const effectiveLink = business?.defaultGoogleMapsLink;
                       if (effectiveLink) window.open(effectiveLink, "_blank");
@@ -168,12 +178,12 @@ export function RoutingSettingsSection({
         <DialogContent className="sm:max-w-2xl bg-white rounded-[40px] p-0 overflow-hidden outline-none border-none max-h-[90vh] flex flex-col">
           <div className="p-8 pb-2 flex items-center justify-between">
             <div className="space-y-1">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">
                 Review Routing Settings
-              </h2>
-              <p className="text-slate-400 text-xs font-bold leading-none">
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-xs font-bold leading-none">
                 Global funnel redirection logic.
-              </p>
+              </DialogDescription>
             </div>
           </div>
 

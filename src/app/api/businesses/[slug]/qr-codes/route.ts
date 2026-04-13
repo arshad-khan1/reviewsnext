@@ -3,6 +3,7 @@ import { z } from "zod";
 import { withAuth } from "@/lib/auth/guard";
 import { isBusinessOwner } from "@/lib/db/business";
 import { getQRCodesByBusiness, createQRCode } from "@/lib/db/qr-code";
+import { checkPlanLimit, getBusinessPlanFeatures } from "@/lib/db/plan";
 
 const createQRCodeSchema = z.object({
   name: z.string().min(1),
@@ -74,7 +75,29 @@ export const POST = withAuth(async (req, payload, context: { params: Promise<{ s
       );
     }
 
-    const qrCode = await createQRCode(slug, validated.data as any);
+    // 1. Check numeric limit
+    const limitCheck = await checkPlanLimit(slug, "maxQrCodesTotal");
+    if (!limitCheck.allowed) {
+      return NextResponse.json({ 
+        code: "LIMIT_REACHED", 
+        message: `Your plan limit of ${limitCheck.limit} QR codes has been reached. Please upgrade to create more.` 
+      }, { status: 403 });
+    }
+
+    // 2. Check feature restrictions (e.g., custom configuration per QR)
+    const planData = await getBusinessPlanFeatures(slug);
+    const data = { ...validated.data };
+    
+    if (planData && !planData.features.canCustomAiPrompts) {
+      // Force defaults for plans that don't support custom overrides
+      data.useDefaultConfig = true;
+      data.aiGuidingPrompt = null;
+      data.googleMapsLink = null;
+      data.commentStyle = null;
+      data.acceptedStarsThreshold = null;
+    }
+
+    const qrCode = await createQRCode(slug, data as any);
 
     const origin = req.nextUrl.origin;
     return NextResponse.json({

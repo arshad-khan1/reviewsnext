@@ -2,7 +2,7 @@ import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 
 // Cloudinary will automatically use CLOUDINARY_URL from environment if available.
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_URL?.split("@")[1] || "dly7lqtr3",
+  cloud_name: process.env.CLOUDINARY_URL?.split("@")[1] || process.env.CLOUDINARY_CLOUD_NAME || "dly7lqtr3",
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
   secure: true,

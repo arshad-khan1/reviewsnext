@@ -7,6 +7,7 @@ import { useUserProfile, useUpdateProfile } from "@/hooks/use-auth";
 import { BusinessProfileSection } from "./components/BusinessProfileSection";
 import { UserProfileSection } from "./components/UserProfileSection";
 import { RoutingSettingsSection } from "./components/RoutingSettingsSection";
+import { AdvancedBrandingSection } from "./components/AdvancedBrandingSection";
 
 export default function SettingsPage() {
   const params = useParams();
@@ -29,7 +30,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 space-y-8 pb-12 pt-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8 pb-12 pt-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
         <BusinessProfileSection
           business={business}
@@ -42,10 +43,17 @@ export default function SettingsPage() {
         />
       </div>
 
-      <RoutingSettingsSection
-        business={business}
-        updateBusinessMutation={updateBusinessMutation}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+        <div className="lg:col-span-1">
+          <AdvancedBrandingSection business={business} />
+        </div>
+        <div className="lg:col-span-2 text-slate-800">
+          <RoutingSettingsSection
+            business={business}
+            updateBusinessMutation={updateBusinessMutation}
+          />
+        </div>
+      </div>
     </div>
   );
 }

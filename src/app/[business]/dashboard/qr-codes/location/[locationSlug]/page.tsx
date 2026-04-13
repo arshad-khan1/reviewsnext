@@ -31,12 +31,16 @@ import {
 import { useReviews } from "@/hooks/use-reviews";
 import { useScans } from "@/hooks/use-scans";
 import { useParams, useRouter } from "next/navigation";
+import { PlanType } from "@prisma/client";
+import { UpgradePrompt } from "@/components/shared/UpgradePrompt";
+import { hasFeature, getLimit } from "@/config/plan-limits";
 import DashboardFilters from "../../../components/DashboardFilters";
 import DashboardTabSwitcher from "../../../components/DashboardTabSwitcher";
 import ReviewsTable from "../../../components/ReviewsTable";
 import QRScansTable from "../../../components/QRScansTable";
 import ReviewDetailDialog from "../../../components/ReviewDetailDialog";
 import ScanDetailDialog from "../../../components/ScanDetailDialog";
+import { useAuthStore } from "@/store/auth-store";
 
 const DEFAULT_LIMIT = 10;
 
@@ -54,7 +58,8 @@ export default function LocationDetailPage() {
   } = useLocationDetail(businessSlug, locationSlug);
   const deleteMutation = useDeleteLocation(businessSlug);
 
-  const loc = lData?.location;
+  const { user } = useAuthStore();
+  const planTier = user?.planTier || PlanType.FREE;
 
   // Analytics State
   const [activeTab, setActiveTab] = useState<"reviews" | "scans">("reviews");
@@ -80,6 +85,8 @@ export default function LocationDetailPage() {
 
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
+
+  const loc = lData?.location;
 
   const { data: reviewsData, isLoading: isLoadingReviews } = useReviews(
     businessSlug,
@@ -112,6 +119,21 @@ export default function LocationDetailPage() {
 
   const totalPages = reviewsData?.pagination.totalPages || 1;
   const totalScansPages = scansData?.pagination.totalPages || 1;
+
+  if (
+    getLimit(planTier, user?.subscriptionStatus, "maxLocations") === 0 &&
+    !isBizLoading
+  ) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <UpgradePrompt
+          requiredPlan={PlanType.PRO}
+          featureName="Location Hub & Multi-location Analytics"
+          description="The Location Hub is a premium feature designed for multi-unit businesses. Upgrade to Pro to manage unlimited locations and view siloed analytics."
+        />
+      </div>
+    );
+  }
 
   const handleDelete = async () => {
     if (!loc) return;
@@ -150,7 +172,7 @@ export default function LocationDetailPage() {
 
   return (
     <div className="min-h-screen pb-20">
-      <main className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-10 space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-900">
@@ -285,7 +307,7 @@ export default function LocationDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm bg-white flex flex-col justify-between">
+          <Card className="h-fit border-none shadow-sm bg-white flex flex-col justify-between">
             <CardHeader>
               <CardTitle className="text-lg">Rating Distribution</CardTitle>
             </CardHeader>

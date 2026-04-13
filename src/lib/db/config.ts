@@ -16,6 +16,15 @@ export async function resolveReviewConfig(businessSlug: string, sourceTag?: stri
       defaultGoogleMapsLink: true,
       defaultAiPrompt: true,
       defaultCommentStyle: true,
+      owner: {
+        select: {
+          activeSubscription: {
+            select: {
+              plan: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -54,5 +63,6 @@ export async function resolveReviewConfig(businessSlug: string, sourceTag?: stri
     googleMapsLink: qrCode?.googleMapsLink ?? business.defaultGoogleMapsLink,
     aiPrompt: qrCode?.aiGuidingPrompt ?? business.defaultAiPrompt,
     commentStyle: qrCode?.commentStyle ?? business.defaultCommentStyle ?? "PROFESSIONAL_POLITE",
+    planTier: business.owner?.activeSubscription?.plan || "STARTER",
   };
 }

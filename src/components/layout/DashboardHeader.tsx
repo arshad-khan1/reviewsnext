@@ -18,6 +18,9 @@ import { UserNav } from "./UserNav";
 import { Button } from "@/components/ui/button";
 import { useBusiness } from "@/hooks/use-business";
 import PlanBadge from "@/app/[business]/dashboard/components/PlanBadge";
+import { FeatureGate } from "@/components/auth/FeatureGate";
+import { PlanType } from "@prisma/client";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function DashboardHeader() {
   const params = useParams();
@@ -25,6 +28,10 @@ export default function DashboardHeader() {
   const router = useRouter();
   const businessSlug = params.business as string;
   const locationSlug = params.locationSlug as string;
+
+  const { user } = useAuthStore();
+  const planTier = user?.planTier || PlanType.FREE;
+
   const { data: business, isLoading: isBizLoading } = useBusiness(businessSlug);
   const { data: locationsData } = useLocations(businessSlug);
   const locations = locationsData?.data || [];
@@ -106,7 +113,7 @@ export default function DashboardHeader() {
 
   return (
     <header className="border-b border-border bg-card sticky top-0 z-50">
-      <div className="max-w-[calc(100vw-20rem)] mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         <Link
           href={`/${businessSlug}/dashboard`}
           className="flex items-center gap-3"
@@ -139,10 +146,10 @@ export default function DashboardHeader() {
                       <h1 className="text-base font-bold text-foreground">
                         {business.name}
                       </h1>
-                    <PlanBadge 
-                      plan={business.subscription?.plan || "STARTER"} 
-                      status={business.subscription?.status} 
-                    />
+                      <PlanBadge
+                        plan={business.subscription?.plan || PlanType.FREE}
+                        status={business.subscription?.status}
+                      />
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {config.title}
@@ -174,9 +181,9 @@ export default function DashboardHeader() {
                   <h1 className="text-base font-bold text-foreground">
                     {business.name}
                   </h1>
-                  <PlanBadge 
-                    plan={business.subscription?.plan || "STARTER"} 
-                    status={business.subscription?.status} 
+                  <PlanBadge
+                    plan={business.subscription?.plan || PlanType.FREE}
+                    status={business.subscription?.status}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -208,6 +215,20 @@ export default function DashboardHeader() {
               <span className="hidden md:inline">QR Codes</span>
             </Button>
           </Link>
+
+          <FeatureGate feature="maxLocations" variant="hide">
+            <Link href={`/${businessSlug}/dashboard/qr-codes/location/hub`}>
+              <Button
+                variant={isLocationHub ? "secondary" : "ghost"}
+                size="sm"
+                className={`gap-2 font-medium ${isLocationHub ? "bg-indigo-50 text-indigo-600 border-none hover:bg-indigo-100" : ""}`}
+              >
+                <MapPin className="w-4 h-4" />
+                <span className="hidden lg:inline">Locations</span>
+              </Button>
+            </Link>
+          </FeatureGate>
+
           <Link href={`/${businessSlug}/settings`}>
             <Button
               variant={isSettingsPage ? "secondary" : "ghost"}

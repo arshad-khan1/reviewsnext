@@ -143,22 +143,54 @@ export const PATCH = withAuth(
         }
 
         // Handle logo upload
-        const logoFile = formData.get("logo") as File | null;
-        if (logoFile && typeof logoFile === "object" && logoFile.size > 0) {
-          const arrayBuffer = await logoFile.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          const mimeType = logoFile.type || "image/png";
+        const logoFile = formData.get("logo");
+        if (logoFile && typeof logoFile === "object" && "size" in logoFile) {
+          const file = logoFile as unknown as {
+            size: number;
+            type: string;
+            arrayBuffer: () => Promise<ArrayBuffer>;
+          };
 
-          const base64Data = `data:${mimeType};base64,${buffer.toString(
-            "base64",
-          )}`;
+          // Enforce 3MB limit
+          const MAX_SIZE = 3 * 1024 * 1024; // 3MB
+          if (file.size > MAX_SIZE) {
+            return NextResponse.json(
+              {
+                code: "FILE_TOO_LARGE",
+                message: "Logo file size must be less than 3MB",
+              },
+              { status: 400 },
+            );
+          }
 
-          const uploadResult = await uploadToCloudinary(
-            base64Data,
-            "business_logo",
-            slug,
-          );
-          updateData.logoUrl = uploadResult.secure_url;
+          if (file.size > 0) {
+            try {
+              const arrayBuffer = await file.arrayBuffer();
+              const buffer = Buffer.from(arrayBuffer);
+              const mimeType = file.type || "image/png";
+
+              const base64Data = `data:${mimeType};base64,${buffer.toString(
+                "base64",
+              )}`;
+
+              const uploadResult = await uploadToCloudinary(
+                base64Data,
+                "business_logo",
+                slug,
+              );
+              updateData.logoUrl = uploadResult.secure_url;
+            } catch (uploadError: any) {
+              console.error("[LOGO_UPLOAD_ERROR]", uploadError);
+              return NextResponse.json(
+                {
+                  code: "UPLOAD_ERROR",
+                  message:
+                    "Failed to upload logo. Please try a different image or skip it.",
+                },
+                { status: 500 },
+              );
+            }
+          }
         }
       } else {
         updateData = await req.json();
