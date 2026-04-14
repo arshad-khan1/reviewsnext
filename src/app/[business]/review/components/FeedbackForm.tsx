@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Sparkles } from "lucide-react";
 import { companyConfig } from "@/config/companyConfig";
 
 const FeedbackForm = () => {
@@ -15,6 +15,20 @@ const FeedbackForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+  };
+
+  const handleEnhance = (field: "wrong" | "improve") => {
+    if (field === "wrong") {
+      const enhanced = whatWentWrong.trim() 
+        ? `I felt that the experience didn't meet my expectations today. Specifically: ${whatWentWrong.trim()}. I'm sharing this in hope of improvement.`
+        : "I found the overall experience to be slightly below expectations and felt some areas needed more attention.";
+      setWhatWentWrong(enhanced);
+    } else {
+      const enhanced = howToImprove.trim()
+        ? `I suggest focusing on ${howToImprove.trim()} to ensure a smoother experience for future guests. Thank you for listening.`
+        : "I would appreciate more attention to detail in service speed and overall communication with guests.";
+      setHowToImprove(enhanced);
+    }
   };
 
   const handleOpenGoogle = () => {
@@ -73,39 +87,63 @@ const FeedbackForm = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 flex flex-col items-stretch">
               <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground ml-1">
                 What went wrong?
               </label>
-              <Textarea
-                value={whatWentWrong}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setWhatWentWrong(e.target.value)
-                }
-                placeholder="Share your thoughts..."
-                className="min-h-[100px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-xl text-sm"
-              />
+              <div className="relative">
+                <Textarea
+                  value={whatWentWrong}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setWhatWentWrong(e.target.value)
+                  }
+                  placeholder="Share your thoughts..."
+                  className="min-h-[100px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-(--brand-radius) text-sm"
+                />
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleEnhance("wrong")}
+                  className="absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-[calc(var(--brand-radius)*0.75)] px-2.5 py-1.5 flex items-center gap-1.5 text-[9px] font-bold text-(--brand-primary) transition-colors cursor-pointer"
+                >
+                  <Sparkles size={11} className="text-(--brand-primary)" />
+                  AI Enhance
+                </motion.button>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 flex flex-col items-stretch">
               <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground ml-1">
                 How can we improve?
               </label>
-              <Textarea
-                value={howToImprove}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setHowToImprove(e.target.value)
-                }
-                placeholder="We are listening..."
-                className="min-h-[100px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-xl text-sm"
-              />
+              <div className="relative">
+                <Textarea
+                  value={howToImprove}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setHowToImprove(e.target.value)
+                  }
+                  placeholder="We are listening..."
+                  className="min-h-[100px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-xl text-sm"
+                />
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleEnhance("improve")}
+                  className="absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-[calc(var(--brand-radius)*0.75)] px-2.5 py-1.5 flex items-center gap-1.5 text-[9px] font-bold text-(--brand-primary) transition-colors cursor-pointer"
+                >
+                  <Sparkles size={11} className="text-(--brand-primary)" />
+                  AI Enhance
+                </motion.button>
+              </div>
             </div>
           </div>
 
           <div className="space-y-4">
             <Button
               type="submit"
-              className="w-full h-12 text-sm font-bold rounded-xl bg-(--brand-primary) hover:opacity-90 transition-all shadow-sm cursor-pointer"
+              className="w-full h-12 text-sm font-bold rounded-(--brand-radius) bg-(--brand-primary) text-(--brand-foreground) hover:opacity-90 transition-all shadow-sm cursor-pointer"
             >
               Submit Feedback
             </Button>

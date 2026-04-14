@@ -74,7 +74,7 @@ const ManualReview = ({ onBack, onComplete }: ManualReviewProps) => {
             setHasCopied(false);
           }}
           placeholder="I had an amazing time because..."
-          className="min-h-[140px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-[1.25rem] p-5 text-sm italic leading-relaxed"
+          className="min-h-[140px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-(--brand-radius) p-5 text-sm italic leading-relaxed"
         />
         <motion.button
           whileHover={{ scale: 1.0 }}
@@ -94,10 +94,10 @@ const ManualReview = ({ onBack, onComplete }: ManualReviewProps) => {
           disabled={!text.trim()}
           variant={hasCopied ? "outline" : "default"}
           className={cn(
-            "w-full h-11 gap-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
+            "w-full h-11 gap-2 rounded-(--brand-radius) text-xs font-bold transition-all cursor-pointer",
             !hasCopied &&
               text.trim() &&
-              "bg-(--brand-primary) text-white animate-pulse-subtle",
+              "bg-(--brand-primary) text-(--brand-foreground) animate-pulse-subtle",
             hasCopied && "border-green-500/50 text-green-600 bg-green-50/50",
             !text.trim() && "opacity-50",
           )}
@@ -125,11 +125,11 @@ const ManualReview = ({ onBack, onComplete }: ManualReviewProps) => {
             onClick={handleOpenGoogle}
             disabled={!hasCopied || isCompleted}
             className={cn(
-              "w-full h-14 gap-2 font-bold rounded-2xl text-sm transition-all shadow-sm cursor-pointer",
+              "w-full h-14 gap-2 font-bold rounded-(--brand-radius) text-sm transition-all shadow-sm cursor-pointer",
               isCompleted
                 ? "bg-green-600 text-white"
                 : hasCopied
-                  ? "bg-slate-900 text-white hover:bg-black"
+                  ? "bg-(--brand-primary) text-(--brand-foreground) hover:opacity-90 shadow-lg shadow-(--brand-primary)/20"
                   : "bg-(--brand-primary)/10 text-(--brand-primary)/50 border border-(--brand-primary)/20 cursor-not-allowed",
             )}
           >
@@ -159,7 +159,7 @@ const ManualReview = ({ onBack, onComplete }: ManualReviewProps) => {
       </div>
 
       {/* Instructions Summary */}
-      <div className="bg-secondary/5 rounded-[1.25rem] p-5 border border-border/20">
+      <div className="bg-secondary/5 rounded-(--brand-radius) p-5 border border-border/20">
         <div className="space-y-3.5">
           {[
             { step: 1, text: "Click Copy (above)" },

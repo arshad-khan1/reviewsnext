@@ -1,18 +1,26 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle2, Sparkles, RefreshCcw } from "lucide-react";
+import { CheckCircle2, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import confetti from "canvas-confetti";
 import { useEffect } from "react";
 
+import { BrandingConfig, EffectiveBranding } from "@/types/branding";
+
 interface CompletionScreenProps {
   businessName: string;
-  primaryColor: string;
+  branding: EffectiveBranding;
   onReset: () => void;
 }
 
-const CompletionScreen = ({ businessName, primaryColor, onReset }: CompletionScreenProps) => {
+const CompletionScreen = ({
+  businessName,
+  branding,
+  onReset,
+}: CompletionScreenProps) => {
+  const primaryColor = branding.primaryColor;
+
   useEffect(() => {
     // Final celebratory confetti burst
     const end = Date.now() + 1000;
@@ -51,14 +59,6 @@ const CompletionScreen = ({ businessName, primaryColor, onReset }: CompletionScr
         >
           <CheckCircle2 size={40} className="text-green-500" />
         </motion.div>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="absolute -top-2 -right-2"
-        >
-          <Sparkles size={24} className="text-yellow-500 animate-pulse" />
-        </motion.div>
       </div>
 
       <div className="space-y-3">
@@ -76,7 +76,7 @@ const CompletionScreen = ({ businessName, primaryColor, onReset }: CompletionScr
           transition={{ delay: 0.3 }}
           className="text-sm text-muted-foreground max-w-[280px] mx-auto leading-relaxed"
         >
-          Thank you so much for your support. Your 5-star review means the world to <strong>{businessName}</strong>.
+          {branding.thankYouMessage}
         </motion.p>
       </div>
 
@@ -88,17 +88,24 @@ const CompletionScreen = ({ businessName, primaryColor, onReset }: CompletionScr
       >
         <Button
           onClick={() => window.close()}
-          className="w-full h-14 bg-slate-900 text-white hover:bg-black font-bold rounded-2xl shadow-xl transition-all"
+          className="w-full h-14 hover:opacity-90 font-bold rounded-(--brand-radius) shadow-xl transition-all"
+          style={{ 
+            backgroundColor: primaryColor,
+            color: 'var(--brand-foreground)'
+          }}
         >
           Close Page
         </Button>
-        
+
         <div className="pt-2">
           <button
             onClick={onReset}
             className="flex items-center gap-2 mx-auto text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60 hover:text-foreground transition-colors group cursor-pointer"
           >
-            <RefreshCcw size={12} className="group-hover:rotate-180 transition-transform duration-500" />
+            <RefreshCcw
+              size={12}
+              className="group-hover:rotate-180 transition-transform duration-500"
+            />
             I haven&apos;t submitted yet
           </button>
         </div>

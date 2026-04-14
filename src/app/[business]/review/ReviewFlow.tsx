@@ -11,7 +11,7 @@ import { PlanType } from "@prisma/client";
 import { BrandingConfig } from "@/types/branding";
 import { resolveEffectiveBranding } from "@/lib/utils/branding";
 import confetti from "canvas-confetti";
-import { cn } from "@/lib/utils";
+import { cn, getContrastColor } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
 type Flow = "idle" | "low" | "high" | "completed";
@@ -38,6 +38,12 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
     () => resolveEffectiveBranding(config.planTier, config.branding),
     [config.planTier, config.branding],
   );
+
+  const borderRadius = useMemo(() => {
+    if (branding.buttonStyle === "sharp") return "0px";
+    if (branding.buttonStyle === "pill") return "9999px";
+    return "1rem"; // rounded (16px)
+  }, [branding.buttonStyle]);
 
   const handleRate = (r: number) => {
     setRating(r);
@@ -92,8 +98,12 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
       className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden"
       style={
         {
-          fontFamily: "var(--font-urbanist), sans-serif",
+          fontFamily: `${branding.fontFamily}, sans-serif`,
           ["--brand-primary" as any]: branding.primaryColor,
+          ["--brand-foreground" as any]: getContrastColor(
+            branding.primaryColor,
+          ),
+          ["--brand-radius" as any]: borderRadius,
           backgroundImage: `radial-gradient(#CBD5E1 1px, transparent 1px)`,
           backgroundSize: "32px 32px",
           backgroundColor: "var(--background)",
@@ -105,19 +115,20 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 z-0"
+            className="absolute inset-0 z-0 bg-slate-950"
           >
-            <Image
-              src={branding.backgroundUrl}
-              alt="Business background"
-              fill
-              className="object-cover"
-              priority
-            />
+            <div className="absolute inset-0 opacity-60">
+              <Image
+                src={branding.backgroundUrl}
+                alt="Business background"
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
             <div
-              className="absolute inset-0"
+              className="absolute inset-0 bg-black/40"
               style={{
-                backgroundColor: "black",
                 opacity: branding.overlayOpacity,
               }}
             />
@@ -133,10 +144,11 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
       >
         <div
           className={cn(
-            "rounded-4xl shadow-sm border transition-all duration-700 overflow-hidden relative",
+            "rounded-4xl shadow-2xl border transition-all duration-700 overflow-hidden relative",
             branding.isGlassmorphismEnabled
               ? "glass-card"
               : "bg-card border-border/50",
+            branding.backgroundUrl && branding.isGlassmorphismEnabled && "bg-white/80 backdrop-blur-3xl"
           )}
         >
           {/* Back Button */}
@@ -235,10 +247,10 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  <CompletionScreen 
+                  <CompletionScreen
                     businessName={config.businessName}
-                    primaryColor={branding.primaryColor}
-                    onReset={handleBack} 
+                    branding={branding}
+                    onReset={handleBack}
                   />
                 </motion.div>
               )}

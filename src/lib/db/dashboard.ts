@@ -13,9 +13,9 @@ export async function getDashboardData(
     where: { slug: businessSlug, isDeleted: false },
     include: {
       owner: {
-        include: { 
+        include: {
           activeSubscription: true,
-          aiCredits: true 
+          aiCredits: true,
         },
       },
     },

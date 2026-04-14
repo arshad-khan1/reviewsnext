@@ -19,7 +19,6 @@ import {
   Save,
   Loader2,
   Edit3,
-  Mail,
   MapPin,
   Sparkles,
   Image as ImageIcon,
@@ -242,7 +241,7 @@ export function BusinessProfileSection({
                     onChange={(e) =>
                       setForm({ ...form, industry: e.target.value })
                     }
-                    className="flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:border-indigo-500 focus-visible:ring-0 transition-all border-slate-200 cursor-pointer"
+                    className="flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:border-indigo-500 focus-visible:ring-0 transition-all cursor-pointer"
                   >
                     <option value="" disabled>
                       Select an industry...

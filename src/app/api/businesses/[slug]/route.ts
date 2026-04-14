@@ -48,6 +48,7 @@ export const GET = withAuth(
           defaultGoogleMapsLink: business.defaultGoogleMapsLink,
           defaultAiPrompt: business.defaultAiPrompt,
           defaultCommentStyle: business.defaultCommentStyle,
+          brandingConfig: business.brandingConfig,
           createdAt: business.createdAt,
           updatedAt: business.updatedAt,
           subscription: business.owner.activeSubscription
@@ -116,6 +117,7 @@ const patchBusinessSchema = z.object({
       "ENTHUSIASTIC_WARM",
     ])
     .optional(),
+  brandingConfig: z.any().optional(),
 });
 
 /**
@@ -233,6 +235,7 @@ export const PATCH = withAuth(
           slug: updatedBusiness.slug,
           name: updatedBusiness.name,
           logoUrl: updatedBusiness.logoUrl,
+          brandingConfig: updatedBusiness.brandingConfig,
           updatedAt: updatedBusiness.updatedAt,
         },
       });

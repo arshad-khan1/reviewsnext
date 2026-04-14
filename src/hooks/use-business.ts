@@ -17,6 +17,7 @@ export interface Business {
   defaultGoogleMapsLink: string | null;
   defaultAiPrompt: string | null;
   defaultCommentStyle: string;
+  brandingConfig: any;
   createdAt: string;
   updatedAt: string;
   subscription: {

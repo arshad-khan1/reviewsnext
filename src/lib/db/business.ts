@@ -177,7 +177,9 @@ export async function createBusiness(
   });
 }
 
-export type UpdateBusinessInput = Partial<CreateBusinessInput>;
+export type UpdateBusinessInput = Partial<CreateBusinessInput> & {
+  brandingConfig?: any;
+};
 
 /**
  * Updates an existing business
@@ -198,6 +200,7 @@ export async function updateBusiness(slug: string, data: UpdateBusinessInput) {
       ...(data.defaultCommentStyle && {
         defaultCommentStyle: data.defaultCommentStyle,
       }),
+      brandingConfig: data.brandingConfig,
     },
   });
 }

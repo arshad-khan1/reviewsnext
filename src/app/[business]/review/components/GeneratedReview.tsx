@@ -119,9 +119,9 @@ const GeneratedReview = ({ onComplete }: { onComplete: () => void }) => {
             onClick={handleCopy}
             variant={hasCopied ? "outline" : "default"}
             className={cn(
-              "flex-2 h-11 gap-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
+              "flex-2 h-11 gap-2 rounded-(--brand-radius) text-xs font-bold transition-all cursor-pointer",
               !hasCopied &&
-                "bg-(--brand-primary) text-white shadow-lg shadow-(--brand-primary)/20 animate-pulse-subtle",
+                "bg-(--brand-primary) text-(--brand-foreground) shadow-lg shadow-(--brand-primary)/20 animate-pulse-subtle",
               hasCopied && "border-green-500/50 text-green-600 bg-green-50/50",
             )}
           >
@@ -136,7 +136,7 @@ const GeneratedReview = ({ onComplete }: { onComplete: () => void }) => {
           <Button
             onClick={() => setShowManual(true)}
             variant="outline"
-            className="flex-1 h-11 gap-2 border-border/50 hover:bg-secondary/50 rounded-xl text-xs font-semibold transition-all cursor-pointer text-muted-foreground"
+            className="flex-1 h-11 gap-2 border-border/50 hover:bg-secondary/50 rounded-(--brand-radius) text-xs font-semibold transition-all cursor-pointer text-muted-foreground"
           >
             <PenLine size={14} />
             Write My Own
@@ -158,11 +158,11 @@ const GeneratedReview = ({ onComplete }: { onComplete: () => void }) => {
             onClick={handleOpenGoogle}
             disabled={!hasCopied || isCompleted}
             className={cn(
-              "w-full h-14 gap-2 font-bold rounded-2xl text-sm transition-all shadow-sm cursor-pointer",
+              "w-full h-14 gap-2 font-bold rounded-(--brand-radius) text-sm transition-all shadow-sm cursor-pointer",
               isCompleted
                 ? "bg-green-600 text-white"
                 : hasCopied
-                  ? "bg-slate-900 text-white hover:bg-black"
+                  ? "bg-(--brand-primary) text-(--brand-foreground) hover:opacity-90 shadow-lg shadow-(--brand-primary)/20"
                   : "bg-(--brand-primary)/10 text-(--brand-primary)/50 border border-(--brand-primary)/20 cursor-not-allowed",
             )}
           >
@@ -190,7 +190,7 @@ const GeneratedReview = ({ onComplete }: { onComplete: () => void }) => {
       )}
 
       {/* Instructions Summary */}
-      <div className="bg-secondary/5 rounded-[1.25rem] p-5 border border-border/20">
+      <div className="bg-secondary/5 rounded-(--brand-radius) p-5 border border-border/20">
         <div className="space-y-3.5">
           {[
             { step: 1, text: "Click Copy (above)" },

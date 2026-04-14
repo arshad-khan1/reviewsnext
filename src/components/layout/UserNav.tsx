@@ -68,7 +68,7 @@ export function UserNav() {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64" align="end" forceMount>
+      <DropdownMenuContent className="w-64 bg-white" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
@@ -133,7 +133,7 @@ export function UserNav() {
           ))}
           {user.planTier === PlanType.PRO || user.isAdmin ? (
             <Link href="/onboard">
-              <DropdownMenuItem className="cursor-pointer text-primary focus:text-primary focus:bg-primary/5 font-bold">
+              <DropdownMenuItem className="cursor-pointer text-primary focus:text-primary focus:bg-primary/5">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 <span>Add Business</span>
               </DropdownMenuItem>
@@ -141,7 +141,7 @@ export function UserNav() {
           ) : (
             <DropdownMenuItem
               onSelect={() => setShowUpgradeGate(true)}
-              className="cursor-pointer text-primary focus:text-primary focus:bg-primary/5 font-bold"
+              className="cursor-pointer text-primary focus:text-primary focus:bg-primary/5"
             >
               <PlusCircle className="mr-2 h-4 w-4" />
               <span>Add Business</span>
@@ -185,12 +185,12 @@ export function UserNav() {
           <SubscriptionGateOverlay
             title="Multi-Business Support"
             planDisplayName={
-              user.subscriptionStatus === "TRIALING" 
-                ? "Trial" 
+              user.subscriptionStatus === "TRIALING"
+                ? "Trial"
                 : user.planTier === PlanType.FREE
                   ? "Free"
-                  : user.planTier === PlanType.STARTER 
-                    ? "Starter" 
+                  : user.planTier === PlanType.STARTER
+                    ? "Starter"
                     : user.planTier === PlanType.GROWTH
                       ? "Growth"
                       : "Pro"

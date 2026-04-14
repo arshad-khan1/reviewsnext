@@ -148,7 +148,11 @@ export default function DashboardHeader() {
                         {business.name}
                       </h1>
                       <PlanBadge
-                        plan={business.subscription?.planTier || business.subscription?.plan || PlanType.FREE}
+                        plan={
+                          business.subscription?.planTier ||
+                          business.subscription?.plan ||
+                          PlanType.FREE
+                        }
                         status={business.subscription?.status}
                       />
                     </div>
@@ -183,7 +187,11 @@ export default function DashboardHeader() {
                     {business.name}
                   </h1>
                   <PlanBadge
-                    plan={business.subscription?.planTier || business.subscription?.plan || PlanType.FREE}
+                    plan={
+                      business.subscription?.planTier ||
+                      business.subscription?.plan ||
+                      PlanType.FREE
+                    }
                     status={business.subscription?.status}
                   />
                 </div>
@@ -230,16 +238,6 @@ export default function DashboardHeader() {
             </Link>
           </FeatureGate>
 
-          <Link href={`/${businessSlug}/settings`}>
-            <Button
-              variant={isSettingsPage ? "secondary" : "ghost"}
-              size="sm"
-              className={`gap-2 font-medium ${isSettingsPage ? "bg-slate-100 text-slate-900" : ""}`}
-            >
-              <Settings className="w-4 h-4" />
-              <span className="hidden md:inline">Settings</span>
-            </Button>
-          </Link>
           <Link href={`/${businessSlug}/review`} target="_blank">
             <Button
               variant="outline"
@@ -257,7 +255,7 @@ export default function DashboardHeader() {
               <Button
                 variant="default"
                 size="sm"
-                className="gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-none shadow-md shadow-amber-500/20 font-bold transition-all px-4 group animate-pulse hover:animate-none"
+                className="gap-2 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-none shadow-md shadow-amber-500/20 font-bold transition-all px-4 group animate-pulse hover:animate-none"
               >
                 <Crown className="w-4 h-4 fill-white group-hover:rotate-12 transition-transform" />
                 <span className="hidden sm:inline">Upgrade Now</span>
