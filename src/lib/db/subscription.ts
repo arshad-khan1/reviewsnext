@@ -72,7 +72,7 @@ export async function getPaymentHistory(
       status: p.status,
       amount: p.amountInPaise / 100,
       currency: p.currency,
-      isTopup: p.isTopup,
+      type: p.type,
       initiatedAt: p.initiatedAt,
       completedAt: p.completedAt,
       razorpayOrderId: p.razorpayOrderId,

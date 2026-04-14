@@ -1,11 +1,3 @@
-// ============================================================
-// ReviewFunnel — Prisma Schema (PostgreSQL)
-// Supports multi-business per user, multi-QR per business,
-// subscription plans with AI credit tracking, and public review funnels.
-// Auth: Phone OTP → JWT access + refresh tokens (no session in DB;
-//       refresh tokens are hashed and stored for revocation support).
-// ============================================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,9 +6,335 @@ datasource db {
   provider = "postgresql"
 }
 
-// ============================================================
-// Enums
-// ============================================================
+model User {
+  id                 String            @id @default(cuid())
+  /// E.164 format — primary auth identifier
+  phone              String            @unique
+  name               String?
+  /// Optional — for receipts / notifications
+  email              String?           @unique
+  avatarUrl          String?
+  /// true after first successful OTP verification
+  isVerified         Boolean           @default(false)
+  /// Platform-level admin flag. Grants access to /api/admin/* routes.
+  isAdmin            Boolean           @default(false)
+  /// Hashed password for admin login
+  password           String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  isDeleted          Boolean           @default(false)
+  aiCredits          AiCredits?
+  businesses         Business[]
+  refreshTokens      RefreshToken[]
+  activeSubscription UserSubscription?
+  subscriptionHistory SubscriptionHistory[]
+
+  @@index([phone])
+}
+
+model RefreshToken {
+  id          String    @id @default(cuid())
+  /// SHA-256 hash of the raw refresh token
+  tokenHash   String    @unique
+  /// 30 days from issuance
+  expiresAt   DateTime
+  /// Set when explicitly revoked (logout)
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  /// Device/client info for displaying active sessions to the user
+  /// e.g. "iPhone 15 • Safari", "Chrome on Windows"
+  deviceLabel String?
+  ipAddress   String?
+  userId      String
+  isDeleted   Boolean   @default(false)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Business {
+  id                     String         @id @default(cuid())
+  /// URL-safe identifier used in routes: /[business]/...
+  slug                   String         @unique
+  name                   String
+  logoUrl                String?
+  industry               String
+  /// Optional business contact email
+  contactEmail           String?
+  description            String?
+  /// City where the business is headquartered (e.g. "Mumbai")
+  city                   String
+  status                 BusinessStatus @default(ACTIVE)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  ownerId                String
+  /// Ratings >= this threshold go to Google. Ratings below are caught internally.
+  acceptedStarsThreshold Int            @default(4)
+  /// Default Google Maps review URL (overridable per QR Code)
+  defaultGoogleMapsLink  String?
+  /// Default AI guiding prompt for all new QR codes
+  defaultAiPrompt        String?
+  /// Default comment style for AI-generated review suggestions
+  defaultCommentStyle    CommentStyle   @default(PROFESSIONAL_POLITE)
+  /// Null = STARTER plan → ReviewFunnel default UI + "Powered by ReviewFunnel" watermark.
+  /// Shape: {
+  /// primaryColor: string,      // e.g. "#4F46E5"
+  /// backgroundColor: string,   // e.g. "#FFFFFF"
+  /// bannerUrl: string | null,  // hero image on review page
+  /// headline: string,          // e.g. "How was your visit?"
+  /// subheadline: string,       // e.g. "Your feedback means a lot"
+  /// thankYouMessage: string,   // shown after submission
+  /// buttonStyle: "rounded" | "sharp" | "pill",
+  /// fontFamily: string         // e.g. "Inter", "Playfair Display"
+  /// }
+  brandingConfig         Json?
+  isDeleted              Boolean        @default(false)
+  aiUsageLogs            AiUsageLog[]
+  owner                  User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  locations              Location[]
+  payments               Payment[]
+  qrCodes                QRCode[]
+  subscriptionHistory    SubscriptionHistory[]
+
+  @@index([slug])
+  @@index([ownerId])
+}
+
+model Location {
+  id         String   @id @default(cuid())
+  /// URL-safe identifier for the location
+  slug       String
+  /// e.g. "Bandra Branch", "Andheri Outlet", "Floor 2"
+  name       String
+  /// Full street address of this branch
+  address    String?
+  /// City of this branch (may differ from business HQ city)
+  city       String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  businessId String
+  isDeleted  Boolean  @default(false)
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  qrCodes    QRCode[]
+
+  @@unique([businessId, slug])
+  @@index([businessId])
+}
+
+model QRCode {
+  id                     String        @id @default(cuid())
+  /// Human-readable label e.g. "Table 5", "Main Entrance"
+  name                   String
+  /// Slug-safe unique identifier for tracking source: e.g. "table-5"
+  sourceTag              String
+  isActive               Boolean       @default(true)
+  isDefault              Boolean       @default(false)
+  useDefaultConfig       Boolean       @default(true)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  /// If set, overrides the business default
+  googleMapsLink         String?
+  /// If set, overrides the business default
+  aiGuidingPrompt        String?
+  /// If set, overrides the business default
+  commentStyle           CommentStyle?
+  /// If set, overrides the business default
+  acceptedStarsThreshold Int?
+  businessId             String
+  /// Optional. Assign to a Location for per-branch analytics. Null = unassigned.
+  locationId             String?
+  /// Partial override of business.brandingConfig for this QR code.
+  /// Only the keys present here override the business-level config.
+  /// Use case: seasonal campaigns, location-specific themes.
+  /// Shape: same keys as Business.brandingConfig, all optional.
+  brandingOverride       Json?
+  isDeleted              Boolean       @default(false)
+  business               Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  location               Location?     @relation(fields: [locationId], references: [id])
+  reviews                Review[]
+  scans                  Scan[]
+
+  @@unique([businessId, sourceTag])
+  @@index([businessId])
+  @@index([locationId])
+}
+
+model Scan {
+  id               String   @id @default(cuid())
+  scannedAt        DateTime @default(now())
+  /// e.g. "iPhone 15 Pro"
+  device           String?
+  /// e.g. "Safari 18"
+  browser          String?
+  /// e.g. "iOS 19"
+  os               String?
+  ipAddress        String?
+  city             String?
+  country          String?
+  resultedInReview Boolean  @default(false)
+  qrCodeId         String
+  isDeleted        Boolean  @default(false)
+  review           Review?
+  qrCode           QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@index([qrCodeId])
+  @@index([scannedAt])
+}
+
+model Review {
+  id                String      @id @default(cuid())
+  type              ReviewType
+  /// 1–5
+  rating            Int
+  /// Final review text (edited by user or from AI suggestion)
+  reviewText        String?
+  /// Whether the review started as an AI draft
+  reviewWasAiDraft  Boolean     @default(false)
+  submittedToGoogle Boolean     @default(false)
+  whatWentWrong     String?
+  howToImprove      String?
+  submittedAt       DateTime    @default(now())
+  qrCodeId          String
+  /// One-to-one link back to the originating scan
+  scanId            String?     @unique
+  isDeleted         Boolean     @default(false)
+  aiUsageLog        AiUsageLog?
+  qrCode            QRCode      @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  scan              Scan?       @relation(fields: [scanId], references: [id])
+
+  @@index([qrCodeId])
+  @@index([submittedAt])
+  @@index([type])
+}
+
+model UserSubscription {
+  id                 String             @id @default(cuid())
+  plan               PlanType           @default(STARTER)
+  status             SubscriptionStatus @default(TRIALING)
+  billingInterval    BillingInterval    @default(YEARLY)
+  planId             String?
+  trialStartsAt      DateTime?
+  trialEndsAt        DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  /// AI credits included in this subscription period
+  monthlyAiCredits   Int                @default(100)
+  /// Razorpay subscription ID
+  razorpaySubId      String?            @unique
+  /// Razorpay customer ID
+  razorpayCustomerId String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  userId             String             @unique
+  isDeleted          Boolean            @default(false)
+  planDetails        Plan?              @relation(fields: [planId], references: [id])
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([planId])
+}
+
+model Plan {
+  id                String             @id @default(cuid())
+  name              String
+  description       String?
+  type              PlanCategory
+  /// in paise
+  price             Int
+  currency          String             @default("INR")
+  /// YEARLY for subscriptions, null for topups
+  billingInterval   BillingInterval?
+  /// AI credits granted per period or one-time
+  credits           Int
+  /// Optional: for mapping to feature constraints
+  planTier          PlanType?
+  isActive          Boolean            @default(true)
+  /// Razorpay plan_id or similar
+  externalId        String?            @unique
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  isDeleted         Boolean            @default(false)
+  payments          Payment[]
+  userSubscriptions UserSubscription[]
+  subscriptionHistory SubscriptionHistory[]
+
+  @@index([type])
+}
+
+model AiCredits {
+  id                String       @id @default(cuid())
+  /// The monthly allowance from the subscription plan
+  monthlyAllocation Int          @default(100)
+  /// How many monthly credits have been used this billing period
+  monthlyUsed       Int          @default(0)
+  /// Accumulation of all top-up credits ever purchased
+  topupAllocation   Int          @default(0)
+  /// How many top-up credits have been used overall
+  topupUsed         Int          @default(0)
+  updatedAt         DateTime     @updatedAt
+  userId            String       @unique
+  isDeleted         Boolean      @default(false)
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usageLogs         AiUsageLog[]
+}
+
+model AiUsageLog {
+  id          String    @id @default(cuid())
+  /// How many credits this operation consumed
+  creditsUsed Int
+  /// e.g. "REVIEW_DRAFT", "REVIEW_ENHANCE"
+  operation   String
+  usedAt      DateTime  @default(now())
+  aiCreditsId String
+  /// The business that consumed these credits
+  businessId  String?
+  /// If this usage was for generating a review draft, link to the review
+  reviewId    String?   @unique
+  isDeleted   Boolean   @default(false)
+  aiCredits   AiCredits @relation(fields: [aiCreditsId], references: [id], onDelete: Cascade)
+  business    Business? @relation(fields: [businessId], references: [id])
+  review      Review?   @relation(fields: [reviewId], references: [id])
+
+  @@index([aiCreditsId])
+  @@index([businessId])
+  @@index([usedAt])
+}
+
+model Payment {
+  id                String          @id @default(cuid())
+  status            PaymentStatus   @default(PENDING)
+  /// Amount in smallest currency unit (paise for INR)
+  amountInPaise     Int
+  currency          String          @default("INR")
+  type              PaymentType     @default(SUBSCRIPTION)
+  intent            PaymentIntent   @default(SUBSCRIBE)
+  packageId         String?
+  /// Credits granted from this topup payment
+  creditsAdded      Int?
+  razorpayOrderId   String?         @unique
+  razorpayPaymentId String?         @unique
+  razorpaySignature String?
+  initiatedAt       DateTime        @default(now())
+  completedAt       DateTime?
+  businessId        String
+  planId            String?
+  metadata          Json?
+  isDeleted         Boolean         @default(false)
+  business          Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  plan              Plan?           @relation(fields: [planId], references: [id])
+  subscriptionHistory SubscriptionHistory?
+
+  @@index([businessId])
+  @@index([status])
+  @@index([initiatedAt])
+  @@index([planId])
+  @@index([packageId])
+  @@index([intent])
+}
 
 /// Subscription plan tiers available on the platform
 enum PlanType {
@@ -51,8 +369,10 @@ enum CommentStyle {
 
 /// The end-user's experience type after rating
 enum ReviewType {
-  POSITIVE /// Rating >= acceptedStarsThreshold → directed to Google
-  NEGATIVE /// Rating <  acceptedStarsThreshold → captured internally
+  /// Rating >= acceptedStarsThreshold → directed to Google
+  POSITIVE
+  /// Rating <  acceptedStarsThreshold → captured internally
+  NEGATIVE
 }
 
 /// Payment transaction state
@@ -60,14 +380,15 @@ enum PaymentStatus {
   PENDING
   SUCCESS
   FAILED
+  CANCELLED
   REFUNDED
 }
 
 /// Categories for the AI credit topup topup packages
 enum TopupPackageId {
-  BOOSTER // Small Booster   — 200 credits
-  ACCELERATOR // Growth Booster  — 450 credits
-  MEGA // Power Bundle    — 1000 credits
+  BOOSTER
+  ACCELERATOR
+  MEGA
 }
 
 enum BusinessStatus {
@@ -81,468 +402,49 @@ enum PlanCategory {
   TOPUP
 }
 
-// ============================================================
-// User
-// Auth is phone-number based (OTP). The phone number in E.164
-// format (e.g. "+919876543210") is the unique login identifier.
-// ============================================================
-
-model User {
-  id         String   @id @default(cuid())
-  phone      String   @unique /// E.164 format — primary auth identifier
-  name       String?
-  email      String?  @unique /// Optional — for receipts / notifications
-  avatarUrl  String?
-  isVerified Boolean  @default(false) /// true after first successful OTP verification
-  isAdmin    Boolean  @default(false) /// Platform-level admin flag. Grants access to /api/admin/* routes.
-  password   String?  /// Hashed password for admin login
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  businesses          Business[]
-  activeSubscription  UserSubscription?
-  aiCredits           AiCredits?
-  refreshTokens RefreshToken[]
-
-  isDeleted Boolean @default(false)
-
-  @@index([phone])
+enum PaymentType {
+  SUBSCRIPTION
+  TOPUP
 }
 
-// ============================================================
-// RefreshToken
-// JWT refresh tokens are long-lived (30 days) and stored as
-// SHA-256 hashes — never plain text. Storing them enables:
-//   - Logout (single device): mark one token as revoked
-//   - Logout all devices: revoke all tokens for a user
-//   - Rotation: revoke old token and issue new one on each refresh
-// Access tokens are short-lived (15 min) and NOT stored in DB.
-// ============================================================
+enum PaymentIntent {
+  SUBSCRIBE
+  UPGRADE
+  RENEWAL
+  TOPUP
+}
 
-model RefreshToken {
-  id        String    @id @default(cuid())
-  tokenHash String    @unique /// SHA-256 hash of the raw refresh token
-  expiresAt DateTime /// 30 days from issuance
-  revokedAt DateTime? /// Set when explicitly revoked (logout)
-  createdAt DateTime  @default(now())
-
-  /// Device/client info for displaying active sessions to the user
-  deviceLabel String? /// e.g. "iPhone 15 • Safari", "Chrome on Windows"
-  ipAddress   String?
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  isDeleted Boolean @default(false)
+model SubscriptionHistory {
+  id           String        @id @default(cuid())
+  userId       String
+  businessId   String
+  type         PaymentType
+  intent       PaymentIntent
+  amountPaid   Int           // in paise
+  currency     String        @default("INR")
+  method       String        @default("RAZORPAY")
+  
+  // Subscription timing (Optional for top-ups)
+  startDate    DateTime?
+  endDate      DateTime?
+  
+  creditsAdded Int           // Total credits granted in this transaction
+  
+  planId       String?
+  planName     String?       // Denormalized name for history
+  
+  paymentId    String?       @unique // Link to the original payment record
+  
+  createdAt    DateTime      @default(now())
+  metadata     Json?
+  
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  plan         Plan?         @relation(fields: [planId], references: [id])
+  payment      Payment?      @relation(fields: [paymentId], references: [id])
 
   @@index([userId])
-  @@index([expiresAt])
-}
-
-// ============================================================
-// Business
-// Each business belongs to a user and has its own slug,
-// branding, AI defaults, review routing rules, and subscription.
-// A user can own multiple businesses with different names/brands.
-// ============================================================
-
-model Business {
-  id           String         @id @default(cuid())
-  slug         String         @unique /// URL-safe identifier used in routes: /[business]/...
-  name         String
-  logoUrl      String?
-  industry     String
-  contactEmail String? /// Optional business contact email
-  description  String?
-  city         String /// City where the business is headquartered (e.g. "Mumbai")
-  status       BusinessStatus @default(ACTIVE)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  // ── Ownership ──────────────────────────────────────────────
-  ownerId String
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  // ── Review Routing Config ──────────────────────────────────
-  /// Ratings >= this threshold go to Google. Ratings below are caught internally.
-  acceptedStarsThreshold Int @default(4)
-
-  // ── Default QR Config ─────────────────────────────────────
-  /// Default Google Maps review URL (overridable per QR Code)
-  defaultGoogleMapsLink String?
-  /// Default AI guiding prompt for all new QR codes
-  defaultAiPrompt       String?
-  /// Default comment style for AI-generated review suggestions
-  defaultCommentStyle   CommentStyle @default(PROFESSIONAL_POLITE)
-
-  // ── Branding Config (GROWTH + PRO) ────────────────────────
-  /// Null = STARTER plan → ReviewFunnel default UI + "Powered by ReviewFunnel" watermark.
-  /// Shape: {
-  ///   primaryColor: string,      // e.g. "#4F46E5"
-  ///   backgroundColor: string,   // e.g. "#FFFFFF"
-  ///   bannerUrl: string | null,  // hero image on review page
-  ///   headline: string,          // e.g. "How was your visit?"
-  ///   subheadline: string,       // e.g. "Your feedback means a lot"
-  ///   thankYouMessage: string,   // shown after submission
-  ///   buttonStyle: "rounded" | "sharp" | "pill",
-  ///   fontFamily: string         // e.g. "Inter", "Playfair Display"
-  /// }
-  brandingConfig Json?
-
-  // ── Relations ─────────────────────────────────────────────
-  qrCodes      QRCode[]
-  locations    Location[] /// PRO plan only — physical branch locations
-  payments     Payment[]
-  aiUsageLogs  AiUsageLog[]
-
-  isDeleted Boolean @default(false)
-
-  @@index([slug])
-  @@index([ownerId])
-}
-
-// ============================================================
-// Location  (PRO plan only)
-// Represents a physical branch of a business.
-// QR codes can be assigned to a location for per-branch analytics.
-// A QR code belongs to at most one location.
-// Visibility and management is restricted to PRO subscribers.
-// ============================================================
-
-model Location {
-  id        String   @id @default(cuid())
-  slug      String   /// URL-safe identifier for the location
-  name      String /// e.g. "Bandra Branch", "Andheri Outlet", "Floor 2"
-  address   String? /// Full street address of this branch
-  city      String? /// City of this branch (may differ from business HQ city)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // ── Ownership ──────────────────────────────────────────────
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  // ── Relations ─────────────────────────────────────────────
-  qrCodes QRCode[]
-
-  isDeleted Boolean @default(false)
-
-  @@unique([businessId, slug]) /// Location slugs must be unique within a business
   @@index([businessId])
-}
-
-// ============================================================
-// QR Code
-// A Business can have many QR codes, each targeting a specific
-// physical placement (table, counter, packaging, etc.).
-// The public review URL pattern is: /[businessSlug]/review?source=[sourceTag]
-// Optionally grouped under a Location (PRO plan only) for per-branch analytics.
-// One QR code belongs to at most one Location.
-// ============================================================
-
-model QRCode {
-  id        String   @id @default(cuid())
-  name      String /// Human-readable label e.g. "Table 5", "Main Entrance"
-  sourceTag String /// Slug-safe unique identifier for tracking source: e.g. "table-5"
-  isActive  Boolean  @default(true)
-  isDefault Boolean  @default(false)
-  useDefaultConfig Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // ── Per-QR Override Settings ───────────────────────────────
-  googleMapsLink         String? /// If set, overrides the business default
-  aiGuidingPrompt        String? /// If set, overrides the business default
-  commentStyle           CommentStyle? /// If set, overrides the business default
-  acceptedStarsThreshold Int? /// If set, overrides the business default
-
-  // ── Ownership ──────────────────────────────────────────────
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  // ── Location (PRO only) ────────────────────────────────────
-  /// Optional. Assign to a Location for per-branch analytics. Null = unassigned.
-  locationId String?
-  location   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
-
-  // ── Branding Override (PRO only) ──────────────────────────
-  /// Partial override of business.brandingConfig for this QR code.
-  /// Only the keys present here override the business-level config.
-  /// Use case: seasonal campaigns, location-specific themes.
-  /// Shape: same keys as Business.brandingConfig, all optional.
-  brandingOverride Json?
-
-  // ── Relations ─────────────────────────────────────────────
-  scans   Scan[]
-  reviews Review[]
-
-  isDeleted Boolean @default(false)
-
-  @@unique([businessId, sourceTag]) /// Source tags must be unique within a business
-  @@index([businessId])
-  @@index([locationId])
-}
-
-// ============================================================
-// Scan
-// Every time a customer scans a QR code, a Scan event is recorded.
-// Tracks device/geo metadata and whether it resulted in a review.
-// ============================================================
-
-model Scan {
-  id        String   @id @default(cuid())
-  scannedAt DateTime @default(now())
-
-  // ── Device & Browser Info ─────────────────────────────────
-  device    String? /// e.g. "iPhone 15 Pro"
-  browser   String? /// e.g. "Safari 18"
-  os        String? /// e.g. "iOS 19"
-  ipAddress String?
-
-  // ── Geo Info ────────────────────────────────────────────
-  city    String?
-  country String?
-
-  // ── Outcome ───────────────────────────────────────────────
-  resultedInReview Boolean @default(false)
-
-  // ── Relations ─────────────────────────────────────────────
-  qrCodeId String
-  qrCode   QRCode @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
-
-  /// If this scan resulted in a review, the review is linked here
-  review Review?
-
-  isDeleted Boolean @default(false)
-
-  @@index([qrCodeId])
-  @@index([scannedAt])
-}
-
-// ============================================================
-// Review
-// Captures the end-user's input after a QR scan.
-// If type=POSITIVE: stores the (optionally AI-generated) review text
-//                   and whether they submitted to Google.
-// If type=NEGATIVE: stores private feedback (whatWentWrong, howToImprove).
-// ============================================================
-
-model Review {
-  id   String     @id @default(cuid())
-  type ReviewType
-
-  // ── Rating ────────────────────────────────────────────────
-  rating Int /// 1–5
-
-  // ── Positive Review Fields ────────────────────────────────
-  reviewText        String? /// Final review text (edited by user or from AI suggestion)
-  reviewWasAiDraft  Boolean @default(false) /// Whether the review started as an AI draft
-  submittedToGoogle Boolean @default(false)
-
-  // ── Negative Feedback Fields ──────────────────────────────
-  whatWentWrong String?
-  howToImprove  String?
-
-  submittedAt DateTime @default(now())
-
-  // ── Relations ─────────────────────────────────────────────
-  qrCodeId String
-  qrCode   QRCode @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
-
-  /// One-to-one link back to the originating scan
-  scanId String? @unique
-  scan   Scan?   @relation(fields: [scanId], references: [id], onDelete: SetNull)
-
-  /// If AI generated a draft for this review, track the usage
-  aiUsageLog AiUsageLog?
-
-  isDeleted Boolean @default(false)
-
-  @@index([qrCodeId])
-  @@index([submittedAt])
+  @@index([createdAt])
   @@index([type])
-}
-
-// ============================================================
-// Subscription
-// Each Business has at most one active subscription.
-// Billing is handled externally (Razorpay / Stripe); we store
-// the external IDs for webhook reconciliation.
-// ============================================================
-
-model UserSubscription {
-  id              String             @id @default(cuid())
-  plan            PlanType           @default(STARTER)
-  status          SubscriptionStatus @default(TRIALING)
-  billingInterval BillingInterval    @default(YEARLY)
-
-  // ── Plan Reference ────────────────────────────────────────
-  planId      String?
-  planDetails Plan?   @relation(fields: [planId], references: [id])
-
-  // ── Trial ──────────────────────────────────────────────────
-  trialStartsAt DateTime?
-  trialEndsAt   DateTime?
-
-  // ── Billing Period ────────────────────────────────────────
-  currentPeriodStart DateTime?
-  currentPeriodEnd   DateTime?
-
-  // ── Plan Limits (denormalized for fast access) ─────────────
-  /// AI credits included in this subscription period
-  monthlyAiCredits Int @default(100)
-
-  // ── External Payment Gateway IDs ─────────────────────────
-  razorpaySubId      String? @unique /// Razorpay subscription ID
-  razorpayCustomerId String? /// Razorpay customer ID
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // ── Ownership ──────────────────────────────────────────────
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  isDeleted Boolean @default(false)
-
-  @@index([userId])
-  @@index([status])
-  @@index([planId])
-}
-
-// ============================================================
-// Plan
-// Centralized table for all available subscription plans and
-// top-up packages.
-// ============================================================
-
-model Plan {
-  id              String           @id @default(cuid())
-  name            String
-  description     String?
-  type            PlanCategory
-  price           Int              /// in paise
-  currency        String           @default("INR")
-  billingInterval BillingInterval? /// YEARLY for subscriptions, null for topups
-  credits         Int              /// AI credits granted per period or one-time
-  planTier        PlanType?        /// Optional: for mapping to feature constraints
-  isActive        Boolean          @default(true)
-  externalId      String?          @unique /// Razorpay plan_id or similar
-  metadata        Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userSubscriptions UserSubscription[]
-  payments      Payment[]
-
-  isDeleted Boolean @default(false)
-
-  @@index([type])
-}
-
-// ============================================================
-// AiCredits
-// Tracks the running credit balance for a business.
-// Credits come from subscription allocations + manual topups.
-// ============================================================
-
-model AiCredits {
-  id String @id @default(cuid())
-
-  // -- Monthly Subscription Credits --
-  /// The monthly allowance from the subscription plan
-  monthlyAllocation Int @default(100)
-  /// How many monthly credits have been used this billing period
-  monthlyUsed       Int @default(0)
-
-  // -- Topup Credits --
-  /// Accumulation of all top-up credits ever purchased
-  topupAllocation Int @default(0)
-  /// How many top-up credits have been used overall
-  topupUsed       Int @default(0)
-
-  updatedAt DateTime @updatedAt
-
-  // ── Ownership ──────────────────────────────────────────────
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // ── Relations ─────────────────────────────────────────────
-  usageLogs AiUsageLog[]
-
-  isDeleted Boolean @default(false)
-}
-
-// ============================================================
-// AiUsageLog
-// Fine-grained log of each AI credit consumption event.
-// Useful for auditing and monthly usage reports.
-// ============================================================
-
-model AiUsageLog {
-  id          String   @id @default(cuid())
-  creditsUsed Int /// How many credits this operation consumed
-  operation   String /// e.g. "REVIEW_DRAFT", "REVIEW_ENHANCE"
-  usedAt      DateTime @default(now())
-
-  // ── Relations ─────────────────────────────────────────────
-  aiCreditsId String
-  aiCredits   AiCredits @relation(fields: [aiCreditsId], references: [id], onDelete: Cascade)
-
-  /// The business that consumed these credits
-  businessId String?
-  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
-
-  /// If this usage was for generating a review draft, link to the review
-  reviewId String? @unique
-  review   Review? @relation(fields: [reviewId], references: [id], onDelete: SetNull)
-
-  isDeleted Boolean @default(false)
-
-  @@index([aiCreditsId])
-  @@index([businessId])
-  @@index([usedAt])
-}
-
-// ============================================================
-// Payment
-// Records every payment transaction (subscription or topup).
-// ============================================================
-
-model Payment {
-  id            String        @id @default(cuid())
-  status        PaymentStatus @default(PENDING)
-  amountInPaise Int /// Amount in smallest currency unit (paise for INR)
-  currency      String        @default("INR")
-
-  // ── Topup Metadata ────────────────────────────────────────
-  isTopup        Boolean         @default(false)
-  topupPackageId TopupPackageId?
-  creditsAdded   Int? /// Credits granted from this topup payment
-
-  // ── External Gateway IDs ──────────────────────────────────
-  razorpayOrderId   String? @unique
-  razorpayPaymentId String? @unique
-  razorpaySignature String?
-
-  // ── Timestamps ────────────────────────────────────────────
-  initiatedAt DateTime  @default(now())
-  completedAt DateTime?
-
-  // ── Ownership ──────────────────────────────────────────────
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  // ── Plan Reference ────────────────────────────────────────
-  planId String?
-  plan   Plan?   @relation(fields: [planId], references: [id])
-
-  isDeleted Boolean @default(false)
-
-  @@index([businessId])
-  @@index([status])
-  @@index([initiatedAt])
-  @@index([planId])
 }

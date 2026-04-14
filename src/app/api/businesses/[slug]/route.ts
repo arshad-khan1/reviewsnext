@@ -52,10 +52,26 @@ export const GET = withAuth(
           updatedAt: business.updatedAt,
           subscription: business.owner.activeSubscription
             ? {
-                plan: business.owner.activeSubscription.plan,
+                plan:
+                  business.owner.activeSubscription.planDetails?.name ||
+                  business.owner.activeSubscription.plan,
                 status: business.owner.activeSubscription.status,
                 currentPeriodEnd:
                   business.owner.activeSubscription.currentPeriodEnd,
+                // Full plan metadata for renewal/upgrade
+                planId: business.owner.activeSubscription.planId,
+                price: business.owner.activeSubscription.planDetails?.price || 0,
+                currency:
+                  business.owner.activeSubscription.planDetails?.currency ||
+                  "INR",
+                credits:
+                  business.owner.activeSubscription.planDetails?.credits || 0,
+                planTier:
+                  business.owner.activeSubscription.planDetails?.planTier ||
+                  business.owner.activeSubscription.plan,
+                type:
+                  business.owner.activeSubscription.planDetails?.type ||
+                  "SUBSCRIPTION",
               }
             : null,
           aiCredits: business.owner.aiCredits

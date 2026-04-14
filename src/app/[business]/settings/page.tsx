@@ -29,6 +29,14 @@ export default function SettingsPage() {
     );
   }
 
+  if (!business) {
+    return (
+      <div className="flex h-[400px] items-center justify-center text-slate-500">
+        Business not found.
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8 pb-12 pt-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">

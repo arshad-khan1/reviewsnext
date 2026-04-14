@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { format, differenceInDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckoutDialog, type CheckoutPlan } from "@/components/shared/pricing/checkout-dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,7 +25,11 @@ import {
   CreditCard,
   BadgeCheck,
   CheckCircle2,
+  ArrowRight,
+  AlertCircle,
+  CalendarDays,
 } from "lucide-react";
+import PlanBadge from "@/app/[business]/dashboard/components/PlanBadge";
 
 interface UserProfileSectionProps {
   user: any;
@@ -36,6 +43,7 @@ export function UserProfileSection({
   updateProfileMutation,
 }: UserProfileSectionProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -55,6 +63,31 @@ export function UserProfileSection({
     await updateProfileMutation.mutateAsync(form);
     setIsOpen(false);
   };
+
+  const expiryDate = business?.subscription?.currentPeriodEnd
+    ? new Date(business.subscription.currentPeriodEnd)
+    : null;
+  const daysRemaining = expiryDate
+    ? Math.max(0, differenceInDays(expiryDate, new Date()))
+    : null;
+  const showWarning =
+    daysRemaining !== null &&
+    daysRemaining <= 10 &&
+    business?.subscription?.status === "ACTIVE";
+  const formattedExpiry = expiryDate ? format(expiryDate, "MMM dd, yyyy") : null;
+
+  // Prepare plan metadata for CheckoutDialog
+  const currentPlan: CheckoutPlan | null = business?.subscription
+    ? {
+        id: business.subscription.planId,
+        name: business.subscription.plan,
+        price: business.subscription.price,
+        currency: business.subscription.currency,
+        credits: business.subscription.credits,
+        planTier: business.subscription.planTier,
+        type: business.subscription.type,
+      }
+    : null;
 
   return (
     <>
@@ -107,22 +140,66 @@ export function UserProfileSection({
               <div className="p-3 bg-white rounded-2xl shadow-sm border border-emerald-100 flex items-center justify-center">
                 <CreditCard className="w-6 h-6 text-emerald-600" />
               </div>
-              <div className="space-y-1">
-                <p className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                  {business?.subscription?.status === "TRIALING" 
-                    ? `Free Trial - ${business?.subscription?.plan || "Starter"}`
-                    : `${business?.subscription?.plan || "FREE"} Plan`}
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                </p>
-              </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <PlanBadge 
+                      plan={business?.subscription?.planTier || business?.subscription?.plan || "FREE"} 
+                      status={business?.subscription?.status}
+                    />
+                    {business?.subscription?.status === "ACTIVE" && (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    )}
+                  </div>
+                  {formattedExpiry && (
+                    <p className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                      <CalendarDays className="w-3 h-3" />
+                      Valid till: {formattedExpiry}
+                    </p>
+                  )}
+                </div>
             </div>
-            <div className="text-right">
+            <div className="flex flex-col items-end gap-2">
               <div className="flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-emerald-100 font-black text-[10px] text-emerald-600 shadow-sm">
                 <BadgeCheck className="w-3 h-3" />
                 {business?.subscription?.status || "ACTIVE"}
               </div>
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-7 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2"
+              >
+                <Link href={`/${business?.slug}/pricing`}>
+                  Upgrade
+                  <ArrowRight className="w-3 h-3 ml-1" />
+                </Link>
+              </Button>
             </div>
           </div>
+
+          {showWarning && (
+            <div className="mt-2 p-4 rounded-2xl border border-red-100 bg-red-50 flex items-start justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-500">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-white rounded-lg shadow-sm border border-red-100 shrink-0">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                </div>
+                <p className="text-xs font-bold text-red-900 leading-relaxed">
+                  Your subscription is going to end in{" "}
+                  <span className="text-red-600">
+                    {daysRemaining} {daysRemaining === 1 ? "day" : "days"}
+                  </span>
+                  . Please make a payment to keep your system and QR&apos;s running.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setIsCheckoutOpen(true)}
+                className="h-8 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-[10px] uppercase tracking-wider px-4 shrink-0 shadow-sm"
+              >
+                Renew Now
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -194,6 +271,17 @@ export function UserProfileSection({
           </div>
         </DialogContent>
       </Dialog>
+
+      {currentPlan && (
+        <CheckoutDialog
+          open={isCheckoutOpen}
+          onOpenChange={setIsCheckoutOpen}
+          plan={currentPlan}
+          businessId={business?.id}
+          businessSlug={business?.slug}
+          businessName={business?.name}
+        />
+      )}
     </>
   );
 }

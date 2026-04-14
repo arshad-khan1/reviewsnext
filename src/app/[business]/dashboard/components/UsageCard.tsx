@@ -77,8 +77,8 @@ const UsageCard = ({ monthlyUsed, monthlyTotal, topupUsed, topupTotal, className
 
           <div className="space-y-2.5">
             <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-              <span>Monthly Progress</span>
-              <span>{total - used} remaining</span>
+              <span>Credit Balance</span>
+              <span className="text-slate-900">{total - used} Total Available</span>
             </div>
             <Progress 
               value={percentage} 

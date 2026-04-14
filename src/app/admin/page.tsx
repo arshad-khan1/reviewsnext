@@ -3,9 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Lock, Mail, ArrowRight, Building2, Terminal, ArrowLeft } from "lucide-react";
+import {
+  Lock,
+  Mail,
+  ArrowRight,
+  Building2,
+  Terminal,
+  ArrowLeft,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import Link from "next/link";
 
 import { useAdminLoginMutation } from "@/hooks/use-auth";
@@ -14,16 +28,19 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
+
   const adminLogin = useAdminLoginMutation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    adminLogin.mutate({ email, password }, {
-      onSuccess: () => {
-        router.push("/admin/dashboard");
-      }
-    });
+    adminLogin.mutate(
+      { email, password },
+      {
+        onSuccess: () => {
+          router.push("/admin/dashboard");
+        },
+      },
+    );
   };
 
   return (
@@ -40,18 +57,20 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <div className="mb-6">
+        {/* <div className="mb-6">
           <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Back to Home
           </Link>
-        </div>
+        </div> */}
 
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
             <Building2 className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">ReviewFunnel</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            ReviewFunnel
+          </h1>
         </div>
 
         <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
@@ -64,7 +83,10 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="email">
+                <label
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  htmlFor="email"
+                >
                   Email address
                 </label>
                 <div className="relative">
@@ -82,10 +104,17 @@ export default function LoginPage() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="password">
+                  <label
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    htmlFor="password"
+                  >
                     Password
                   </label>
-                  <Button variant="link" className="px-0 font-normal text-xs h-auto" type="button">
+                  <Button
+                    variant="link"
+                    className="px-0 font-normal text-xs h-auto"
+                    type="button"
+                  >
                     Forgot password?
                   </Button>
                 </div>
@@ -102,9 +131,9 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-              <Button 
-                type="submit" 
-                className="w-full h-11 transition-all" 
+              <Button
+                type="submit"
+                className="w-full h-11 transition-all"
                 disabled={adminLogin.isPending}
               >
                 {adminLogin.isPending ? (

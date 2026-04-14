@@ -88,7 +88,7 @@ Every payment (topup or subscription) creates a `Payment` record in the database
 | `status` | `PENDING \| SUCCESS \| FAILED \| REFUNDED` | Payment state |
 | `amountInPaise` | `number` | Amount in smallest currency unit |
 | `currency` | `string` | Always `INR` |
-| `isTopup` | `boolean` | `true` for credit purchases |
+| `type` | `string` | `"SUBSCRIPTION"` or `"TOPUP"` |
 | `topupPackageId` | `BOOSTER \| ACCELERATOR \| MEGA \| null` | Set for topup payments |
 | `creditsAdded` | `number \| null` | Credits granted on success |
 | `razorpayOrderId` | `string` | Razorpay order ID |

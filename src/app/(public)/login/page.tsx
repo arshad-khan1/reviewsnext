@@ -3,14 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowRight,
-  Building2,
-  Terminal,
-  ArrowLeft,
-  ShieldCheck,
-  CheckCircle2,
-} from "lucide-react";
+import { ArrowRight, Terminal, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { PhoneInput } from "react-international-phone";
 import { Button } from "@/components/ui/button";
 import {
@@ -93,7 +86,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="flex grow flex-col items-center justify-center p-4 min-h-[calc(100vh-64px)] relative overflow-hidden">
       {/* Abstract Background elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
@@ -104,27 +97,8 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md pt-12"
       >
-        <div className="mb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Home
-          </Link>
-        </div>
-
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
-            <Building2 className="w-6 h-6" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Reviews Next
-          </h1>
-        </div>
-
         <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm relative overflow-hidden">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl">Business Login</CardTitle>

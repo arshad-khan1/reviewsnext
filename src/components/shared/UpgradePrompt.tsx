@@ -28,9 +28,9 @@ export function UpgradePrompt({
   const targetPlan = PLAN_LIMITS[requiredPlan];
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center bg-indigo-50/30 border border-indigo-100 rounded-3xl animate-in fade-in zoom-in duration-500">
+    <div className="flex flex-col items-center justify-center p-8 text-center bg-orange-50/30 border border-orange-100 rounded-3xl animate-in fade-in zoom-in duration-500">
       <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-6">
-        <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
+        <div className="w-12 h-12 bg-orange-600 rounded-xl flex items-center justify-center text-white">
           <Lock className="w-6 h-6" />
         </div>
       </div>
@@ -53,7 +53,7 @@ export function UpgradePrompt({
           text={`${PLAN_LIMITS[requiredPlan].maxLocations} Locations Support`} 
         />
         <Benefit 
-          icon={<Sparkles className="w-4 h-4 text-indigo-500" />} 
+          icon={<Sparkles className="w-4 h-4 text-orange-500" />} 
           text="Custom Branding Control" 
         />
         <Benefit 
@@ -64,7 +64,7 @@ export function UpgradePrompt({
 
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
         <Button 
-          className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12"
+          className="flex-1 bg-orange-600 hover:bg-orange-700 text-white rounded-xl h-12"
           onClick={() => {
             // This would normally open a billing modal or redirect to /settings/billing
             console.log("Redirecting to upgrade flow...");

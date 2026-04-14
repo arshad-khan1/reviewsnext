@@ -14,7 +14,8 @@ interface PlanBadgeProps {
 const PlanBadge = ({ plan, status, className }: PlanBadgeProps) => {
   const planConfig = {
     FREE: {
-      color: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
+      color:
+        "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
       icon: ShieldCheck,
       label: "Free Plan",
     },
@@ -39,12 +40,19 @@ const PlanBadge = ({ plan, status, className }: PlanBadgeProps) => {
   };
 
   const isTrial = status === "TRIALING";
-  const normalizedPlan = (plan?.toUpperCase() as keyof typeof planConfig) || "FREE";
+
+  // Robust normalization: take first word, remove non-alphanumeric, uppercase
+  const firstWord = plan
+    ?.split(/\s+/)[0]
+    ?.replace(/[^a-zA-Z0-9]/g, "")
+    ?.toUpperCase();
+  const normalizedPlan = (firstWord as keyof typeof planConfig) || "FREE";
   const config = planConfig[normalizedPlan] || planConfig.FREE;
-  
-  // If in trial, show "Free Trial" or "Trial - [PlanName]"
-  const label = isTrial 
-    ? (normalizedPlan === "FREE" ? "Free Trial" : `Trial - ${config.label.split(' ')[0]}`) 
+
+  const label = isTrial
+    ? normalizedPlan === "FREE"
+      ? "Free Trial"
+      : `Trial - ${config.label.split(" ")[0]}`
     : config.label;
 
   return (

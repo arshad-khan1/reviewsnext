@@ -22,9 +22,11 @@ export async function findBusinessBySlug(slug: string) {
     where: { slug, isDeleted: false },
     include: {
       owner: {
-        include: { 
-          activeSubscription: true,
-          aiCredits: true 
+        include: {
+          activeSubscription: {
+            include: { planDetails: true },
+          },
+          aiCredits: true,
         },
       },
     },

@@ -12,7 +12,6 @@ import {
   Wand2,
   MapPin,
   CheckCircle2,
-  Sparkles,
   Phone,
   Star,
   Lock,
@@ -38,7 +37,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { PlanType } from "@prisma/client";
 
 const INDUSTRIES = [
   "Restaurants & Cafes",
@@ -67,8 +68,12 @@ const COMMENT_STYLES = [
 import { useAuthStore } from "@/store/auth-store";
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { step1Schema, step2Schema, step3Schema } from "./validation";
 import { setAccessToken } from "@/lib/api-client";
+import {
+  step1Schema,
+  step2Schema,
+  step3Schema,
+} from "@/app/onboard/validation";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -86,6 +91,7 @@ export default function OnboardingPage() {
     aiPrompt: "",
     commentStyle: "Professional & Polite",
     location: "",
+    plan: PlanType.FREE as string,
   });
 
   const [otpSent, setOtpSent] = useState(false);
@@ -144,20 +150,6 @@ export default function OnboardingPage() {
     }
   };
 
-  const isStepValid = () => {
-    if (step === 1)
-      return (
-        formData.name &&
-        formData.industry &&
-        formData.phone &&
-        formData.location &&
-        isPhoneVerified
-      );
-    if (step === 2) return true; // Threshold always has default
-    if (step === 3) return formData.googleMapsUrl && formData.aiPrompt;
-    return true;
-  };
-
   const handleSendOtp = async () => {
     if (!formData.phone) return;
     setIsSendingOtp(true);
@@ -210,9 +202,11 @@ export default function OnboardingPage() {
     const step3Result = step3Schema.safeParse(formData);
     if (!step3Result.success) {
       const errors: Record<string, string> = {};
-      step3Result.error.issues.forEach((issue) => {
-        errors[String(issue.path[0])] = issue.message;
-      });
+      step3Result.error.issues.forEach(
+        (issue: { path: any[]; message: string }) => {
+          errors[String(issue.path[0])] = issue.message;
+        },
+      );
       setFormErrors(errors);
       toast.error("Please fix the errors before finishing.");
       return;
@@ -229,6 +223,7 @@ export default function OnboardingPage() {
       body.append("defaultGoogleMapsLink", formData.googleMapsUrl);
       body.append("defaultAiPrompt", formData.aiPrompt);
       body.append("defaultCommentStyle", formData.commentStyle);
+      body.append("plan", formData.plan);
 
       if (formData.logoFile) {
         body.append("logo", formData.logoFile);
@@ -556,8 +551,8 @@ export default function OnboardingPage() {
                             <Lock className="w-3 h-3" />
                           </div>
                           <div className="w-full space-y-[2px] px-1">
-                            <div className="w-full h-[1px] bg-muted-foreground/20" />
-                            <div className="w-3/4 h-[1px] bg-muted-foreground/20" />
+                            <div className="w-full h-px bg-muted-foreground/20" />
+                            <div className="w-3/4 h-px bg-muted-foreground/20" />
                             <div className="w-full h-1 bg-primary/20 rounded-[1px]" />
                           </div>
                           <span
@@ -741,7 +736,7 @@ export default function OnboardingPage() {
                 <Label htmlFor="style">AI Voice Style</Label>
                 <select
                   id="style"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all border-border/50"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all"
                   value={formData.commentStyle}
                   onChange={(e) =>
                     updateFormData({ commentStyle: e.target.value })
@@ -757,28 +752,27 @@ export default function OnboardingPage() {
             </div>
           </motion.div>
         );
+
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center py-12 px-4 relative overflow-hidden">
+    <div className="grow flex flex-col items-center justify-center p-4 pt-20 pb-20 min-h-[calc(100vh-64px)] relative overflow-hidden">
       {/* Background Decor */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full -z-10 opacity-30 pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[120px] rounded-full" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/30 blur-[120px] rounded-full" />
       </div>
 
-      <div className="w-full max-w-xl">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight">
-            Onboard Your Business
-          </h1>
-        </div>
+      <div
+        className={cn(
+          "w-full transition-all duration-500",
+          step === 4 ? "max-w-6xl" : "max-w-xl",
+        )}
+      >
+        {/* Progress Section */}
 
         <div className="mb-8 space-y-2">
           <div className="flex justify-between text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -828,7 +822,7 @@ export default function OnboardingPage() {
                 className="gap-2 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Finishing..." : "Finish Onboarding"}
+                {isSubmitting ? "Finishing..." : "Finish & Start Free Trial"}
                 <CheckCircle2 className="w-4 h-4" />
               </Button>
             )}

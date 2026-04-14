@@ -46,7 +46,9 @@ export async function getAdminDashboardStats() {
     }),
   ]);
 
-  const totalCredits = (totalAiCreditsConsumedAggregation._sum.monthlyUsed || 0) + (totalAiCreditsConsumedAggregation._sum.topupUsed || 0);
+  const totalCredits =
+    (totalAiCreditsConsumedAggregation._sum.monthlyUsed || 0) +
+    (totalAiCreditsConsumedAggregation._sum.topupUsed || 0);
 
   return {
     stats: {
@@ -55,7 +57,12 @@ export async function getAdminDashboardStats() {
       activeSubscriptions,
       totalScansAllTime,
       totalReviewsAllTime,
-      platformConversionRate: totalScansAllTime > 0 ? parseFloat(((totalReviewsAllTime / totalScansAllTime) * 100).toFixed(1)) : 0,
+      platformConversionRate:
+        totalScansAllTime > 0
+          ? parseFloat(
+              ((totalReviewsAllTime / totalScansAllTime) * 100).toFixed(1),
+            )
+          : 0,
       totalAiCreditsConsumed: totalCredits,
       totalRevenue: {
         allTime: revenueAllTime._sum.amountInPaise || 0,
@@ -63,8 +70,14 @@ export async function getAdminDashboardStats() {
         currency: "INR",
       },
     },
-    planBreakdown: planBreakdown.map(p => ({ plan: p.plan, count: p._count._all })),
-    subscriptionStatusBreakdown: statusBreakdown.map(s => ({ status: s.status, count: s._count._all })),
+    planBreakdown: planBreakdown.map((p) => ({
+      plan: p.plan,
+      count: p._count._all,
+    })),
+    subscriptionStatusBreakdown: statusBreakdown.map((s) => ({
+      status: s.status,
+      count: s._count._all,
+    })),
   };
 }
 
@@ -88,23 +101,32 @@ export async function getAdminRecentActivity() {
   ]);
 
   const activity = [
-    ...newBusinesses.map(b => ({
+    ...newBusinesses.map((b) => ({
       type: "NEW_BUSINESS",
       businessName: b.name,
       businessSlug: b.slug,
       ownerPhone: b.owner.phone,
       timestamp: b.createdAt,
     })),
-    ...newPayments.map(p => ({
-      type: p.isTopup ? "TOPUP_PURCHASED" : "PLAN_RENEWED",
+    ...newPayments.map((p) => ({
+      type:
+        p.intent === "TOPUP"
+          ? "TOPUP_PURCHASED"
+          : p.intent === "UPGRADE"
+            ? "PLAN_UPGRADED"
+            : p.intent === "RENEWAL"
+              ? "PLAN_RENEWED"
+              : "NEW_SUBSCRIPTION",
       businessName: p.business.name,
       businessSlug: p.business.slug,
-      package: p.topupPackageId,
+      package: p.packageId,
       amountINR: p.amountInPaise / 100,
       creditsAdded: p.creditsAdded,
       timestamp: p.completedAt,
     })),
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 10);
+  ]
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .slice(0, 10);
 
   return activity;
 }
@@ -122,7 +144,7 @@ export async function getAllBusinesses(options: {
   sortOrder?: "asc" | "desc";
 }) {
   const skip = (options.page - 1) * options.limit;
-  
+
   const where: Prisma.BusinessWhereInput = {
     isDeleted: false,
     ...(options.search && {
@@ -132,22 +154,26 @@ export async function getAllBusinesses(options: {
         { owner: { phone: { contains: options.search } } },
       ],
     }),
-    ...(options.plan && { owner: { activeSubscription: { plan: options.plan as any } } }),
-    ...(options.status && { owner: { activeSubscription: { status: options.status as any } } }),
+    ...(options.plan && {
+      owner: { activeSubscription: { plan: options.plan as any } },
+    }),
+    ...(options.status && {
+      owner: { activeSubscription: { status: options.status as any } },
+    }),
   };
 
   const [businesses, total] = await Promise.all([
-        prisma.business.findMany({
+    prisma.business.findMany({
       where,
       skip,
       take: options.limit,
       orderBy: { [options.sortBy || "createdAt"]: options.sortOrder || "desc" },
       include: {
         owner: {
-          include: { 
+          include: {
             activeSubscription: true,
             aiCredits: true,
-          }
+          },
         },
         _count: {
           select: { qrCodes: true }, // Scans/Reviews are on QRCode
@@ -157,14 +183,13 @@ export async function getAllBusinesses(options: {
     prisma.business.count({ where }),
   ]);
 
-  const data = businesses.map(b => {
+  const data = businesses.map((b) => {
     return {
       id: b.id,
       slug: b.slug,
       name: b.name,
       logoUrl: (b.brandingConfig as any)?.logoUrl,
       industry: b.industry,
-      location: b.location,
       createdAt: b.createdAt,
       owner: {
         id: b.owner.id,
@@ -181,8 +206,12 @@ export async function getAllBusinesses(options: {
         totalScans: 0,
         totalReviews: 0,
         conversionRate: 0,
-        aiCreditsUsed: (b.owner.aiCredits?.monthlyUsed || 0) + (b.owner.aiCredits?.topupUsed || 0),
-        aiCreditsTotal: (b.owner.aiCredits?.monthlyAllocation || 0) + (b.owner.aiCredits?.topupAllocation || 0),
+        aiCreditsUsed:
+          (b.owner.aiCredits?.monthlyUsed || 0) +
+          (b.owner.aiCredits?.topupUsed || 0),
+        aiCreditsTotal:
+          (b.owner.aiCredits?.monthlyAllocation || 0) +
+          (b.owner.aiCredits?.topupAllocation || 0),
       },
       qrCodeCount: b._count.qrCodes,
     };
@@ -202,7 +231,11 @@ export async function getAllBusinesses(options: {
 /**
  * Businesses with expiring subscriptions.
  */
-export async function getExpiringSubscriptions(options: { withinDays: number; page: number; limit: number }) {
+export async function getExpiringSubscriptions(options: {
+  withinDays: number;
+  page: number;
+  limit: number;
+}) {
   const expiryDate = new Date();
   expiryDate.setDate(expiryDate.getDate() + options.withinDays);
 
@@ -226,12 +259,15 @@ export async function getExpiringSubscriptions(options: { withinDays: number; pa
     prisma.userSubscription.count({ where }),
   ]);
 
-  const data = subs.map(s => {
+  const data = subs.map((s) => {
     const now = new Date();
-    const daysUntilExpiry = s.currentPeriodEnd 
-      ? Math.ceil((new Date(s.currentPeriodEnd).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    const daysUntilExpiry = s.currentPeriodEnd
+      ? Math.ceil(
+          (new Date(s.currentPeriodEnd).getTime() - now.getTime()) /
+            (1000 * 60 * 60 * 24),
+        )
       : 0;
-    
+
     // For admin UI, just pick the first business or generic user info
     const primaryBusiness = s.user.businesses[0];
 
@@ -270,7 +306,11 @@ export async function getExpiringSubscriptions(options: { withinDays: number; pa
 /**
  * Manual AI credit adjustment.
  */
-export async function adjustBusinessCredits(businessSlug: string, amount: number, reason: string) {
+export async function adjustBusinessCredits(
+  businessSlug: string,
+  amount: number,
+  reason: string,
+) {
   const business = await prisma.business.findFirst({
     where: { slug: businessSlug, isDeleted: false },
     include: { owner: { include: { aiCredits: true } } },

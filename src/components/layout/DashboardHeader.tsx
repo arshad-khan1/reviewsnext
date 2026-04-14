@@ -12,6 +12,7 @@ import {
   BarChart3,
   Zap,
   MapPin,
+  Crown,
 } from "lucide-react";
 import { useLocations } from "@/hooks/use-locations";
 import { UserNav } from "./UserNav";
@@ -147,7 +148,7 @@ export default function DashboardHeader() {
                         {business.name}
                       </h1>
                       <PlanBadge
-                        plan={business.subscription?.plan || PlanType.FREE}
+                        plan={business.subscription?.planTier || business.subscription?.plan || PlanType.FREE}
                         status={business.subscription?.status}
                       />
                     </div>
@@ -182,7 +183,7 @@ export default function DashboardHeader() {
                     {business.name}
                   </h1>
                   <PlanBadge
-                    plan={business.subscription?.plan || PlanType.FREE}
+                    plan={business.subscription?.planTier || business.subscription?.plan || PlanType.FREE}
                     status={business.subscription?.status}
                   />
                 </div>
@@ -250,6 +251,20 @@ export default function DashboardHeader() {
               <span className="md:hidden">View</span>
             </Button>
           </Link>
+
+          {business.subscription?.plan === PlanType.FREE && (
+            <Link href={`/${businessSlug}/pricing`}>
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-none shadow-md shadow-amber-500/20 font-bold transition-all px-4 group animate-pulse hover:animate-none"
+              >
+                <Crown className="w-4 h-4 fill-white group-hover:rotate-12 transition-transform" />
+                <span className="hidden sm:inline">Upgrade Now</span>
+                <span className="sm:hidden">Upgrade</span>
+              </Button>
+            </Link>
+          )}
 
           <UserNav />
         </div>

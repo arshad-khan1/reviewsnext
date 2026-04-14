@@ -23,6 +23,12 @@ export interface Business {
     plan: string;
     status: string;
     currentPeriodEnd: string | null;
+    planId: string;
+    price: number;
+    currency: string;
+    credits: number;
+    planTier: string;
+    type: "SUBSCRIPTION" | "TOPUP";
   } | null;
   aiCredits: {
     monthlyAllocation: number;
