@@ -27,7 +27,7 @@ export default function DashboardTabSwitcher({
         />
         <button
           onClick={() => setActiveTab("reviews")}
-          className={`relative z-10 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 ${
+          className={`relative cursor-pointer z-10 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 ${
             activeTab === "reviews"
               ? "text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
@@ -38,7 +38,7 @@ export default function DashboardTabSwitcher({
         </button>
         <button
           onClick={() => setActiveTab("scans")}
-          className={`relative z-10 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 ${
+          className={`relative cursor-pointer z-10 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 ${
             activeTab === "scans"
               ? "text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"

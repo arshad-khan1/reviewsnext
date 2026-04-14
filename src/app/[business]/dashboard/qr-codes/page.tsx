@@ -356,7 +356,7 @@ export default function QRCodeManager() {
                 <DialogContent
                   className={cn(
                     "sm:max-w-md bg-white border-none shadow-2xl rounded-3xl p-0 overflow-hidden transition-all duration-500",
-                    isLocationAtLimit ? "min-h-[450px]" : "min-h-[auto]",
+                    isLocationAtLimit ? "min-h-[450px]" : "min-h-auto",
                   )}
                 >
                   {isLocationAtLimit && (

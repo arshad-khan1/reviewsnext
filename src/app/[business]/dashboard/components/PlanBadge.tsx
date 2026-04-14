@@ -59,7 +59,7 @@ const PlanBadge = ({ plan, status, className }: PlanBadgeProps) => {
     <div className={cn("flex items-center gap-2", className)}>
       <Badge
         className={cn(
-          "px-2.5 py-1 font-bold text-[11px] flex gap-1.5 items-center border shadow-sm transition-all hover:scale-105 cursor-default",
+          "px-2.5 py-1 rounded-sm font-bold text-[11px] flex gap-1.5 items-center border shadow-sm transition-all hover:scale-105 cursor-default",
           config.color,
         )}
         variant="outline"

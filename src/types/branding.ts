@@ -1,4 +1,5 @@
 export type BrandingConfig = {
+  canRemoveWatermark: boolean;
   isBrandingEnabled?: boolean;
   primaryColor?: string;
   backgroundColor?: string;
@@ -9,7 +10,8 @@ export type BrandingConfig = {
   overlayOpacity?: number;
   fontFamily?: string;
   buttonStyle?: "rounded" | "sharp" | "pill";
-  canRemoveWatermark?: boolean;
+  starHeadlines?: Record<number, string>;
+  starSubheadlines?: Record<number, string>;
 };
 
 export type EffectiveBranding = {
@@ -24,5 +26,7 @@ export type EffectiveBranding = {
   fontFamily: string;
   buttonStyle: "rounded" | "sharp" | "pill";
   canRemoveWatermark: boolean;
+  starHeadlines: Record<number, string>;
+  starSubheadlines: Record<number, string>;
   isGlassmorphismEnabled: boolean;
 };

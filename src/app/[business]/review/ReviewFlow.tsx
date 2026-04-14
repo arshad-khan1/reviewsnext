@@ -77,20 +77,13 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
   const getHeadline = () => {
     const r = tempRating || rating;
     if (r === 0) return branding.headline;
-    if (r === 1) return "We're deeply sorry for your experience.";
-    if (r === 2) return "We regret that we missed the mark.";
-    if (r === 3) return "We're striving for better.";
-    if (r === 4) return "We're so glad you enjoyed it!";
-    return "Excellent! We're thrilled!";
+    return branding.starHeadlines[r] || branding.headline;
   };
 
   const getSubheadline = () => {
     const r = tempRating || rating;
     if (r === 0) return branding.subheadline;
-    if (r <= 2)
-      return "Making you comfortable is our priority. We truly regret the inconvenience caused.";
-    if (r === 3) return "Your feedback helps us close the gap to excellence.";
-    return "Your support helps others discover our business!";
+    return branding.starSubheadlines[r] || branding.subheadline;
   };
 
   return (

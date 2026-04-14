@@ -19,6 +19,7 @@ import {
   ImageIcon,
   ShieldCheck,
   Layout,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +66,11 @@ export function AdvancedBrandingSection({
   const [backgroundUrl, setBackgroundUrl] = useState("");
   const [overlayOpacity, setOverlayOpacity] = useState(0.1);
   const [canRemoveWatermark, setCanRemoveWatermark] = useState(false);
+  const [starHeadlines, setStarHeadlines] = useState<Record<number, string>>({});
+  const [starSubheadlines, setStarSubheadlines] = useState<Record<number, string>>(
+    {},
+  );
+  const [activeStarTab, setActiveStarTab] = useState(5);
 
   const planTier = business.subscription?.planTier || "FREE";
   const isEligible = planTier === "GROWTH" || planTier === "PRO";
@@ -81,6 +87,8 @@ export function AdvancedBrandingSection({
     setBackgroundUrl(branding.backgroundUrl || "");
     setOverlayOpacity(branding.overlayOpacity ?? 0.1);
     setCanRemoveWatermark(branding.canRemoveWatermark || false);
+    setStarHeadlines(branding.starHeadlines || {});
+    setStarSubheadlines(branding.starSubheadlines || {});
     setIsOpen(true);
   };
 
@@ -97,6 +105,8 @@ export function AdvancedBrandingSection({
         thankYouMessage,
         backgroundUrl,
         overlayOpacity,
+        starHeadlines,
+        starSubheadlines,
         canRemoveWatermark: isPro ? canRemoveWatermark : false,
       },
     });
@@ -420,62 +430,159 @@ export function AdvancedBrandingSection({
                       className="min-h-[80px] rounded-md bg-slate-50 border-slate-200 text-sm font-medium p-4 resize-none"
                     />
                   </div>
+
+                  <div className="pt-6 border-t border-slate-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <Label className="text-slate-900 font-black text-sm">
+                          Sentiment Messaging
+                        </Label>
+                        <p className="text-[11px] text-slate-500 font-medium tracking-tight">
+                          Customize text based on the star rating selected
+                        </p>
+                      </div>
+                      <div className="flex bg-slate-100 p-1 rounded-lg">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => setActiveStarTab(s)}
+                            className={cn(
+                              "w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer",
+                              activeStarTab === s
+                                ? "bg-white shadow-sm text-amber-500"
+                                : "text-slate-400 hover:text-slate-600",
+                            )}
+                          >
+                            <span className="text-xs font-black">{s}</span>
+                            <Star
+                              className={cn(
+                                "w-2.5 h-2.5 ml-0.5",
+                                activeStarTab === s ? "fill-amber-500" : "",
+                              )}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 p-5 rounded-3xl bg-slate-50 border border-slate-100 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Star className="w-20 h-20 fill-slate-900" />
+                      </div>
+                      <div className="space-y-2 relative z-10">
+                        <Label className="text-[10px] font-black uppercase text-indigo-600 ml-1">
+                          Headline for {activeStarTab} Star
+                          {activeStarTab === 1 ? "" : "s"}
+                        </Label>
+                        <Input
+                          value={starHeadlines[activeStarTab] || ""}
+                          onChange={(e) =>
+                            setStarHeadlines({
+                              ...starHeadlines,
+                              [activeStarTab]: e.target.value,
+                            })
+                          }
+                          placeholder="Override main headline..."
+                          className="h-10 rounded-md bg-white border-slate-200 text-sm font-bold"
+                        />
+                      </div>
+                      <div className="space-y-2 relative z-10">
+                        <Label className="text-[10px] font-black uppercase text-indigo-600 ml-1">
+                          Subheadline for {activeStarTab} Star
+                          {activeStarTab === 1 ? "" : "s"}
+                        </Label>
+                        <Textarea
+                          value={starSubheadlines[activeStarTab] || ""}
+                          onChange={(e) =>
+                            setStarSubheadlines({
+                              ...starSubheadlines,
+                              [activeStarTab]: e.target.value,
+                            })
+                          }
+                          placeholder="Override subheadline prompt..."
+                          className="min-h-[60px] rounded-md bg-white border-slate-200 text-sm font-medium p-3 resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="visuals" className="space-y-6 mt-0">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-[11px] font-black uppercase text-slate-500 ml-1 leading-none">
-                      Banner Background URL
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={backgroundUrl}
-                        onChange={(e) => setBackgroundUrl(e.target.value)}
-                        placeholder="https://images.unsplash.com/..."
-                        className="h-12 rounded-md bg-slate-50 border-slate-200 text-xs font-medium"
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-12 w-12 rounded-md border-slate-200"
-                      >
-                        <ImageIcon className="w-4 h-4 text-slate-400" />
-                      </Button>
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-medium italic ml-1">
-                      * Landscape images work best for funnel backgrounds.
-                    </p>
-                  </div>
-
-                  <div className="p-5 rounded-3xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label className="text-slate-900 font-black text-sm">
-                        Overlay Contrast
+                {isPro ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-black uppercase text-slate-500 ml-1 leading-none">
+                        Banner Background URL
                       </Label>
-                      <p className="text-[11px] font-medium text-slate-500">
-                        Darkness intensity of the background overlay
+                      <div className="flex gap-2">
+                        <Input
+                          value={backgroundUrl}
+                          onChange={(e) => setBackgroundUrl(e.target.value)}
+                          placeholder="https://images.unsplash.com/..."
+                          className="h-12 rounded-md bg-slate-50 border-slate-200 text-xs font-medium"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-12 w-12 rounded-md border-slate-200"
+                        >
+                          <ImageIcon className="w-4 h-4 text-slate-400" />
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium italic ml-1">
+                        * Landscape images work best for funnel backgrounds.
                       </p>
                     </div>
-                    <div className="flex items-center gap-3 w-1/2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={overlayOpacity}
-                        onChange={(e) =>
-                          setOverlayOpacity(parseFloat(e.target.value))
-                        }
-                        className="flex-1 accent-indigo-600 h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer"
-                      />
-                      <span className="text-[10px] font-black text-slate-900 w-10 text-right">
-                        {Math.round(overlayOpacity * 100)}%
-                      </span>
+
+                    <div className="p-5 rounded-md bg-slate-50 border border-slate-100 flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-slate-900 font-black text-sm">
+                          Overlay Contrast
+                        </Label>
+                        <p className="text-[11px] font-medium text-slate-500">
+                          Darkness intensity of the background overlay
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 w-1/2">
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={overlayOpacity}
+                          onChange={(e) =>
+                            setOverlayOpacity(parseFloat(e.target.value))
+                          }
+                          className="flex-1 accent-indigo-600 h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer"
+                        />
+                        <span className="text-[10px] font-black text-slate-900 w-10 text-right">
+                          {Math.round(overlayOpacity * 100)}%
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="relative overflow-hidden p-6 rounded-xl bg-slate-900 text-white min-h-[200px] flex flex-col justify-center gap-3">
+                    <div className="absolute -top-4 -right-4 w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl" />
+                    <div className="space-y-1">
+                      <h4 className="font-black text-lg tracking-tight flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-indigo-400" />
+                        Custom Visual Backgrounds
+                      </h4>
+                      <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                        Transform your review funnel with custom hero images and 
+                        adjustable contrast overlays for a truly immersive experience.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-fit bg-white text-slate-900 hover:bg-white/90 rounded-full h-8 text-[10px] font-black px-6 shadow-xl"
+                    >
+                      UPGRADE TO PRO
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="premium" className="space-y-6 mt-0">
