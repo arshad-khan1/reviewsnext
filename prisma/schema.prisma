@@ -7,27 +7,27 @@ datasource db {
 }
 
 model User {
-  id                 String            @id @default(cuid())
+  id                  String                @id @default(cuid())
   /// E.164 format — primary auth identifier
-  phone              String            @unique
-  name               String?
+  phone               String                @unique
+  name                String?
   /// Optional — for receipts / notifications
-  email              String?           @unique
-  avatarUrl          String?
+  email               String?               @unique
+  avatarUrl           String?
   /// true after first successful OTP verification
-  isVerified         Boolean           @default(false)
+  isVerified          Boolean               @default(false)
   /// Platform-level admin flag. Grants access to /api/admin/* routes.
-  isAdmin            Boolean           @default(false)
+  isAdmin             Boolean               @default(false)
   /// Hashed password for admin login
-  password           String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  isDeleted          Boolean           @default(false)
-  aiCredits          AiCredits?
-  businesses         Business[]
-  refreshTokens      RefreshToken[]
-  activeSubscription UserSubscription?
+  password            String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  isDeleted           Boolean               @default(false)
+  aiCredits           AiCredits?
+  businesses          Business[]
+  refreshTokens       RefreshToken[]
   subscriptionHistory SubscriptionHistory[]
+  activeSubscription  UserSubscription?
 
   @@index([phone])
 }
@@ -54,9 +54,9 @@ model RefreshToken {
 }
 
 model Business {
-  id                     String         @id @default(cuid())
+  id                     String                @id @default(cuid())
   /// URL-safe identifier used in routes: /[business]/...
-  slug                   String         @unique
+  slug                   String                @unique
   name                   String
   logoUrl                String?
   industry               String
@@ -65,18 +65,18 @@ model Business {
   description            String?
   /// City where the business is headquartered (e.g. "Mumbai")
   city                   String
-  status                 BusinessStatus @default(ACTIVE)
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
+  status                 BusinessStatus        @default(ACTIVE)
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
   ownerId                String
   /// Ratings >= this threshold go to Google. Ratings below are caught internally.
-  acceptedStarsThreshold Int            @default(4)
+  acceptedStarsThreshold Int                   @default(4)
   /// Default Google Maps review URL (overridable per QR Code)
   defaultGoogleMapsLink  String?
   /// Default AI guiding prompt for all new QR codes
   defaultAiPrompt        String?
   /// Default comment style for AI-generated review suggestions
-  defaultCommentStyle    CommentStyle   @default(PROFESSIONAL_POLITE)
+  defaultCommentStyle    CommentStyle          @default(PROFESSIONAL_POLITE)
   /// Null = STARTER plan → ReviewFunnel default UI + "Powered by ReviewFunnel" watermark.
   /// Shape: {
   /// primaryColor: string,      // e.g. "#4F46E5"
@@ -89,9 +89,9 @@ model Business {
   /// fontFamily: string         // e.g. "Inter", "Playfair Display"
   /// }
   brandingConfig         Json?
-  isDeleted              Boolean        @default(false)
+  isDeleted              Boolean               @default(false)
   aiUsageLogs            AiUsageLog[]
-  owner                  User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner                  User                  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   locations              Location[]
   payments               Payment[]
   qrCodes                QRCode[]
@@ -238,29 +238,29 @@ model UserSubscription {
 }
 
 model Plan {
-  id                String             @id @default(cuid())
-  name              String
-  description       String?
-  type              PlanCategory
+  id                  String                @id @default(cuid())
+  name                String
+  description         String?
+  type                PlanCategory
   /// in paise
-  price             Int
-  currency          String             @default("INR")
+  price               Int
+  currency            String                @default("INR")
   /// YEARLY for subscriptions, null for topups
-  billingInterval   BillingInterval?
+  billingInterval     BillingInterval?
   /// AI credits granted per period or one-time
-  credits           Int
+  credits             Int
   /// Optional: for mapping to feature constraints
-  planTier          PlanType?
-  isActive          Boolean            @default(true)
+  planTier            PlanType?
+  isActive            Boolean               @default(true)
   /// Razorpay plan_id or similar
-  externalId        String?            @unique
-  metadata          Json?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  isDeleted         Boolean            @default(false)
-  payments          Payment[]
-  userSubscriptions UserSubscription[]
+  externalId          String?               @unique
+  metadata            Json?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  isDeleted           Boolean               @default(false)
+  payments            Payment[]
   subscriptionHistory SubscriptionHistory[]
+  userSubscriptions   UserSubscription[]
 
   @@index([type])
 }
@@ -292,6 +292,8 @@ model AiUsageLog {
   aiCreditsId String
   /// The business that consumed these credits
   businessId  String?
+  /// Metadata about the operation
+  metadata    Json?
   /// If this usage was for generating a review draft, link to the review
   reviewId    String?   @unique
   isDeleted   Boolean   @default(false)
@@ -305,27 +307,27 @@ model AiUsageLog {
 }
 
 model Payment {
-  id                String          @id @default(cuid())
-  status            PaymentStatus   @default(PENDING)
+  id                  String               @id @default(cuid())
+  status              PaymentStatus        @default(PENDING)
   /// Amount in smallest currency unit (paise for INR)
-  amountInPaise     Int
-  currency          String          @default("INR")
-  type              PaymentType     @default(SUBSCRIPTION)
-  intent            PaymentIntent   @default(SUBSCRIBE)
-  packageId         String?
+  amountInPaise       Int
+  currency            String               @default("INR")
+  type                PaymentType          @default(SUBSCRIPTION)
   /// Credits granted from this topup payment
-  creditsAdded      Int?
-  razorpayOrderId   String?         @unique
-  razorpayPaymentId String?         @unique
-  razorpaySignature String?
-  initiatedAt       DateTime        @default(now())
-  completedAt       DateTime?
-  businessId        String
-  planId            String?
-  metadata          Json?
-  isDeleted         Boolean         @default(false)
-  business          Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  plan              Plan?           @relation(fields: [planId], references: [id])
+  creditsAdded        Int?
+  razorpayOrderId     String?              @unique
+  razorpayPaymentId   String?              @unique
+  razorpaySignature   String?
+  initiatedAt         DateTime             @default(now())
+  completedAt         DateTime?
+  businessId          String
+  planId              String?
+  metadata            Json?
+  isDeleted           Boolean              @default(false)
+  intent              PaymentIntent        @default(SUBSCRIBE)
+  packageId           String?
+  business            Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  plan                Plan?                @relation(fields: [planId], references: [id])
   subscriptionHistory SubscriptionHistory?
 
   @@index([businessId])
@@ -334,6 +336,34 @@ model Payment {
   @@index([planId])
   @@index([packageId])
   @@index([intent])
+}
+
+model SubscriptionHistory {
+  id           String        @id @default(cuid())
+  userId       String
+  businessId   String
+  type         PaymentType
+  intent       PaymentIntent
+  amountPaid   Int
+  currency     String        @default("INR")
+  method       String        @default("RAZORPAY")
+  startDate    DateTime?
+  endDate      DateTime?
+  creditsAdded Int
+  planId       String?
+  planName     String?
+  paymentId    String?       @unique
+  createdAt    DateTime      @default(now())
+  metadata     Json?
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  payment      Payment?      @relation(fields: [paymentId], references: [id])
+  plan         Plan?         @relation(fields: [planId], references: [id])
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([createdAt])
+  @@index([type])
 }
 
 /// Subscription plan tiers available on the platform
@@ -412,39 +442,4 @@ enum PaymentIntent {
   UPGRADE
   RENEWAL
   TOPUP
-}
-
-model SubscriptionHistory {
-  id           String        @id @default(cuid())
-  userId       String
-  businessId   String
-  type         PaymentType
-  intent       PaymentIntent
-  amountPaid   Int           // in paise
-  currency     String        @default("INR")
-  method       String        @default("RAZORPAY")
-  
-  // Subscription timing (Optional for top-ups)
-  startDate    DateTime?
-  endDate      DateTime?
-  
-  creditsAdded Int           // Total credits granted in this transaction
-  
-  planId       String?
-  planName     String?       // Denormalized name for history
-  
-  paymentId    String?       @unique // Link to the original payment record
-  
-  createdAt    DateTime      @default(now())
-  metadata     Json?
-  
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  plan         Plan?         @relation(fields: [planId], references: [id])
-  payment      Payment?      @relation(fields: [paymentId], references: [id])
-
-  @@index([userId])
-  @@index([businessId])
-  @@index([createdAt])
-  @@index([type])
 }

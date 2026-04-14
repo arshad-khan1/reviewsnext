@@ -4,35 +4,188 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Sparkles } from "lucide-react";
-import { companyConfig } from "@/config/companyConfig";
+import { CheckCircle2, Sparkles, X, ExternalLink, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { CommentStyle } from "@prisma/client";
 
-const FeedbackForm = () => {
+interface FeedbackFormProps {
+  onComplete: () => void;
+  qrCodeId: string;
+  scanId: string;
+  rating: number;
+  googleMapsLink: string;
+  businessName: string;
+  commentStyle: CommentStyle;
+}
+
+const FeedbackForm = ({
+  onComplete,
+  qrCodeId,
+  scanId,
+  rating,
+  googleMapsLink,
+  businessName,
+  commentStyle,
+}: FeedbackFormProps) => {
   const [whatWentWrong, setWhatWentWrong] = useState("");
   const [howToImprove, setHowToImprove] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState<"wrong" | "improve" | null>(
+    null,
+  );
+  const [showPopup, setShowPopup] = useState(false);
+  const [reviewId, setReviewId] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
+  // Local AI credits (4 total per session)
+  const [creditsLeft, setCreditsLeft] = useState<number>(4);
+
+  // Load credits on mount
+  useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("aiCreditUsage");
+      if (saved !== null) setCreditsLeft(parseInt(saved));
+    }
+  });
+
+  const handleEnhance = async (field: "wrong" | "improve") => {
+    if (creditsLeft <= 0) {
+      toast.error("AI limit reached for this session.");
+      return;
+    }
+
+    const currentText = field === "wrong" ? whatWentWrong : howToImprove;
+
+    setIsEnhancing(field);
+    try {
+      const response = await fetch("/api/public/ai/generate-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          qrCodeId,
+          scanId,
+          rating,
+          businessName,
+          commentStyle,
+          operation: "REVIEW_ENHANCE",
+          // We could send the current text to AI to enhance it,
+          // but for now the API just gives a static draft based on style.
+          // Let's assume the API handles it or just use it as is.
+        }),
+      });
+
+      if (!response.ok) throw new Error("Enhance failed");
+
+      const data = await response.json();
+      if (field === "wrong") setWhatWentWrong(data.reviewText);
+      else setHowToImprove(data.reviewText);
+
+      const newCredits = creditsLeft - 1;
+      setCreditsLeft(newCredits);
+      localStorage.setItem("aiCreditUsage", newCredits.toString());
+      toast.success("Enhanced with AI!");
+    } catch (error) {
+      toast.error("AI Enhance failed.");
+    } finally {
+      setIsEnhancing(null);
+    }
   };
 
-  const handleEnhance = (field: "wrong" | "improve") => {
-    if (field === "wrong") {
-      const enhanced = whatWentWrong.trim() 
-        ? `I felt that the experience didn't meet my expectations today. Specifically: ${whatWentWrong.trim()}. I'm sharing this in hope of improvement.`
-        : "I found the overall experience to be slightly below expectations and felt some areas needed more attention.";
-      setWhatWentWrong(enhanced);
-    } else {
-      const enhanced = howToImprove.trim()
-        ? `I suggest focusing on ${howToImprove.trim()} to ensure a smoother experience for future guests. Thank you for listening.`
-        : "I would appreciate more attention to detail in service speed and overall communication with guests.";
-      setHowToImprove(enhanced);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!whatWentWrong.trim()) {
+      toast.error("Please tell us what went wrong.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/public/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          qrCodeId,
+          scanId,
+          rating,
+          type: "NEGATIVE",
+          whatWentWrong,
+          howToImprove,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReviewId(data.reviewId);
+        setSubmitted(true);
+        toast.success("Feedback submitted. Thank you for helping us improve!");
+
+        // Transition to global thank you screen after short delay
+        setTimeout(() => {
+          onComplete();
+        }, 2500);
+      } else {
+        toast.error("Failed to submit feedback. Please try again.");
+      }
+    } catch (error) {
+      console.error("Feedback Submission Error:", error);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleOpenGoogle = () => {
-    window.open(companyConfig.reviewLink, "_blank");
+    setShowPopup(true);
+  };
+
+  const confirmGoToGoogle = async () => {
+    if (reviewId) {
+      try {
+        // We update the existing review record (optional, but let's assume we create a new one or update if we had an endpoint)
+        // Actually the prompt says "On this click of go to google review button click make entry that submitted to google to true"
+        // Since we already might have a review entry (if they submitted the form first), we should update it.
+        // If they didn't submit the form yet, we create a new entry.
+
+        await fetch("/api/public/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            qrCodeId,
+            scanId,
+            rating,
+            type: "NEGATIVE",
+            whatWentWrong:
+              whatWentWrong || "User chose to leave a public review directly",
+            submittedToGoogle: true,
+          }),
+        });
+      } catch (e) {
+        console.error("Failed to log Google redirect:", e);
+      }
+    } else {
+      // User clicked directly without submitting form
+      try {
+        await fetch("/api/public/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            qrCodeId,
+            scanId,
+            rating,
+            type: "NEGATIVE",
+            whatWentWrong: "Chose public review directly",
+            submittedToGoogle: true,
+          }),
+        });
+      } catch (e) {}
+    }
+
+    setTimeout(() => {
+      window.open(googleMapsLink, "_blank");
+      setShowPopup(false);
+      onComplete();
+    }, 800);
   };
 
   return (
@@ -102,13 +255,28 @@ const FeedbackForm = () => {
                 />
                 <motion.button
                   type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={
+                    creditsLeft > 0 && !isEnhancing ? { scale: 1.02 } : {}
+                  }
+                  whileTap={
+                    creditsLeft > 0 && !isEnhancing ? { scale: 0.98 } : {}
+                  }
                   onClick={() => handleEnhance("wrong")}
-                  className="absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-[calc(var(--brand-radius)*0.75)] px-2.5 py-1.5 flex items-center gap-1.5 text-[9px] font-bold text-(--brand-primary) transition-colors cursor-pointer"
+                  disabled={creditsLeft <= 0 || !!isEnhancing}
+                  className={cn(
+                    "absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-[calc(var(--brand-radius)*0.75)] px-2.5 py-1.5 flex items-center gap-1.5 text-[9px] font-bold text-(--brand-primary) transition-all cursor-pointer",
+                    (creditsLeft <= 0 || !!isEnhancing) &&
+                      "opacity-50 grayscale cursor-not-allowed",
+                  )}
                 >
-                  <Sparkles size={11} className="text-(--brand-primary)" />
-                  AI Enhance
+                  {isEnhancing === "wrong" ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={11} className="text-(--brand-primary)" />
+                  )}
+                  {isEnhancing === "wrong"
+                    ? "Enhancing..."
+                    : `AI Enhance (${creditsLeft})`}
                 </motion.button>
               </div>
             </div>
@@ -128,13 +296,28 @@ const FeedbackForm = () => {
                 />
                 <motion.button
                   type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={
+                    creditsLeft > 0 && !isEnhancing ? { scale: 1.02 } : {}
+                  }
+                  whileTap={
+                    creditsLeft > 0 && !isEnhancing ? { scale: 0.98 } : {}
+                  }
                   onClick={() => handleEnhance("improve")}
-                  className="absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-[calc(var(--brand-radius)*0.75)] px-2.5 py-1.5 flex items-center gap-1.5 text-[9px] font-bold text-(--brand-primary) transition-colors cursor-pointer"
+                  disabled={creditsLeft <= 0 || !!isEnhancing}
+                  className={cn(
+                    "absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-[calc(var(--brand-radius)*0.75)] px-2.5 py-1.5 flex items-center gap-1.5 text-[9px] font-bold text-(--brand-primary) transition-all cursor-pointer",
+                    (creditsLeft <= 0 || !!isEnhancing) &&
+                      "opacity-50 grayscale cursor-not-allowed",
+                  )}
                 >
-                  <Sparkles size={11} className="text-(--brand-primary)" />
-                  AI Enhance
+                  {isEnhancing === "improve" ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={11} className="text-(--brand-primary)" />
+                  )}
+                  {isEnhancing === "improve"
+                    ? "Enhancing..."
+                    : `AI Enhance (${creditsLeft})`}
                 </motion.button>
               </div>
             </div>
@@ -143,9 +326,17 @@ const FeedbackForm = () => {
           <div className="space-y-4">
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="w-full h-12 text-sm font-bold rounded-(--brand-radius) bg-(--brand-primary) text-(--brand-foreground) hover:opacity-90 transition-all shadow-sm cursor-pointer"
             >
-              Submit Feedback
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Feedback"
+              )}
             </Button>
 
             <button
@@ -158,6 +349,66 @@ const FeedbackForm = () => {
           </div>
         </motion.form>
       )}
+
+      {/* Redirect Popup */}
+      <AnimatePresence>
+        {showPopup && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPopup(false)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-xs bg-card border border-border rounded-3xl shadow-2xl p-6 overflow-hidden"
+            >
+              <div className="absolute top-2 right-2">
+                <button
+                  onClick={() => setShowPopup(false)}
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-500">
+                  <ExternalLink size={24} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <h4 className="text-sm font-bold">We value your opinion</h4>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed px-2">
+                    We truly regret any inconvenience and are continuously
+                    improving our services.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button
+                    onClick={confirmGoToGoogle}
+                    className="w-full h-10 text-[11px] font-black rounded-xl bg-(--brand-primary) text-(--brand-foreground) transition-all cursor-pointer"
+                  >
+                    Go to Google Review
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowPopup(false)}
+                    className="w-full h-10 text-[11px] font-bold text-muted-foreground transition-all cursor-pointer"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 };

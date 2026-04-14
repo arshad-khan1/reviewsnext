@@ -100,7 +100,10 @@ export type CreateQRCodeInput = {
  * Creates a new QR code for a business.
  * Ensures the sourceTag is unique within the business.
  */
-export async function createQRCode(businessSlug: string, data: CreateQRCodeInput) {
+export async function createQRCode(
+  businessSlug: string,
+  data: CreateQRCodeInput,
+) {
   const business = await prisma.business.findUnique({
     where: { slug: businessSlug },
     select: { id: true },
@@ -165,21 +168,22 @@ export async function getQRCodeDetails(id: string, businessSlug: string) {
   if (!qrCode) return null;
 
   // Aggregate stats
-  const [ratingStats, positiveCount, negativeCount, googleSubmissions] = await Promise.all([
-    prisma.review.aggregate({
-      where: { qrCodeId: id, isDeleted: false },
-      _avg: { rating: true },
-    }),
-    prisma.review.count({
-      where: { qrCodeId: id, type: "POSITIVE", isDeleted: false },
-    }),
-    prisma.review.count({
-      where: { qrCodeId: id, type: "NEGATIVE", isDeleted: false },
-    }),
-    prisma.review.count({
-      where: { qrCodeId: id, submittedToGoogle: true, isDeleted: false },
-    }),
-  ]);
+  const [ratingStats, positiveCount, negativeCount, googleSubmissions] =
+    await Promise.all([
+      prisma.review.aggregate({
+        where: { qrCodeId: id, isDeleted: false },
+        _avg: { rating: true },
+      }),
+      prisma.review.count({
+        where: { qrCodeId: id, type: "POSITIVE", isDeleted: false },
+      }),
+      prisma.review.count({
+        where: { qrCodeId: id, type: "NEGATIVE", isDeleted: false },
+      }),
+      prisma.review.count({
+        where: { qrCodeId: id, submittedToGoogle: true, isDeleted: false },
+      }),
+    ]);
 
   const totalScans = qrCode._count.scans;
   const totalReviews = qrCode._count.reviews;
@@ -191,7 +195,9 @@ export async function getQRCodeDetails(id: string, businessSlug: string) {
       totalScans,
       totalReviews,
       conversionRate: parseFloat(conversionRate.toFixed(1)),
-      avgRating: ratingStats._avg.rating ? parseFloat(ratingStats._avg.rating.toFixed(1)) : 0,
+      avgRating: ratingStats._avg.rating
+        ? parseFloat(ratingStats._avg.rating.toFixed(1))
+        : 0,
       positiveCount,
       negativeCount,
       googleSubmissions,
@@ -205,7 +211,10 @@ export async function getQRCodeDetails(id: string, businessSlug: string) {
 export async function updateQRCode(
   id: string,
   businessSlug: string,
-  data: Partial<CreateQRCodeInput> & { isActive?: boolean; locationId?: string | null },
+  data: Partial<CreateQRCodeInput> & {
+    isActive?: boolean;
+    locationId?: string | null;
+  },
 ) {
   // Use findFirst to ensure it belongs to the business
   const existing = await prisma.qRCode.findFirst({
@@ -244,5 +253,39 @@ export async function deleteQRCode(id: string, businessSlug: string) {
   return await prisma.qRCode.update({
     where: { id },
     data: { isDeleted: true },
+  });
+}
+
+/**
+ * Get default QR code for a business.
+ */
+export async function getDefaultQr(businessSlug: string) {
+  const business = await prisma.business.findUnique({
+    where: { slug: businessSlug },
+    select: { id: true },
+  });
+
+  if (!business) throw new Error("BUSINESS_NOT_FOUND");
+
+  // 1. Try to find the one explicitly marked as default
+  const explicitlyDefault = await prisma.qRCode.findFirst({
+    where: {
+      businessId: business.id,
+      isDeleted: false,
+      isDefault: true,
+    },
+    select: { sourceTag: true },
+  });
+
+  if (explicitlyDefault) return explicitlyDefault;
+
+  // 2. Fallback: Return the oldest non-deleted QR code for this business
+  return await prisma.qRCode.findFirst({
+    where: {
+      businessId: business.id,
+      isDeleted: false,
+    },
+    orderBy: { createdAt: "asc" },
+    select: { sourceTag: true },
   });
 }

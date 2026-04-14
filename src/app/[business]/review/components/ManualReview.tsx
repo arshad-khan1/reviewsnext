@@ -12,40 +12,131 @@ import {
   ChevronLeft,
   CheckCircle2,
   Lock,
+  Loader2,
 } from "lucide-react";
-import { companyConfig } from "@/config/companyConfig";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CommentStyle } from "@prisma/client";
 
 interface ManualReviewProps {
   onBack: () => void;
   onComplete: () => void;
+  qrCodeId: string;
+  scanId: string;
+  rating: number;
+  businessName: string;
+  googleMapsLink: string;
+  commentStyle: CommentStyle;
+  aiGuidingPrompt: string;
 }
 
-const ManualReview = ({ onBack, onComplete }: ManualReviewProps) => {
+const ManualReview = ({ 
+  onBack, 
+  onComplete,
+  qrCodeId,
+  scanId,
+  rating,
+  businessName,
+  googleMapsLink,
+  commentStyle,
+  aiGuidingPrompt,
+}: ManualReviewProps) => {
   const [text, setText] = useState("");
   const [hasCopied, setHasCopied] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [wasCopiedBeforeSubmission, setWasCopiedBeforeSubmission] = useState(false);
 
-  const handleGenerate = () => {
-    const enhanced = text.trim()
-      ? `${text.trim()} - Exceptional service and a truly wonderful atmosphere. Highly recommended!`
-      : "I had a wonderful experience! The service was top-notch and everything was perfect. I will definitely be back.";
-    setText(enhanced);
-    setHasCopied(false);
+  // Local AI credits (4 total per session)
+  const [creditsLeft, setCreditsLeft] = useState<number>(4);
+
+  // Load credits on mount
+  useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("aiCreditUsage");
+      if (saved !== null) setCreditsLeft(parseInt(saved));
+    }
+  });
+
+  const handleGenerate = async () => {
+    if (creditsLeft <= 0) {
+      toast.error("AI limit reached for this session.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/public/ai/generate-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          qrCodeId,
+          scanId,
+          rating,
+          businessName,
+          aiGuidingPrompt,
+          commentStyle,
+          operation: "REVIEW_ENHANCE",
+        }),
+      });
+
+      if (!response.ok) throw new Error("Enhance failed");
+
+      const data = await response.json();
+      setText(data.reviewText);
+      setHasCopied(false);
+
+      const newCredits = creditsLeft - 1;
+      setCreditsLeft(newCredits);
+      localStorage.setItem("aiCreditUsage", newCredits.toString());
+      toast.success("Enhanced with AI!");
+
+    } catch (error) {
+      toast.error("AI Enhance failed.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCopy = async () => {
+    if (!text.trim()) return;
     await navigator.clipboard.writeText(text);
     setHasCopied(true);
+    setWasCopiedBeforeSubmission(true);
     toast.success("Review copied! Now you can post it.");
   };
 
-  const handleOpenGoogle = () => {
+  const handleOpenGoogle = async () => {
+    if (!wasCopiedBeforeSubmission) {
+      toast.error("Please copy the review text first!");
+      return;
+    }
+
     setIsCompleted(true);
+
+    try {
+      // Create review entry in DB
+      await fetch("/api/public/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          qrCodeId,
+          scanId,
+          rating,
+          type: "POSITIVE",
+          reviewText: text,
+          reviewWasAiDraft: true,
+          submittedToGoogle: true,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save review:", error);
+    }
+
     toast.success("Step 2 completed! Opening Google Review...");
+    
     setTimeout(() => {
-      window.open(companyConfig.reviewLink, "_blank");
+      window.open(googleMapsLink, "_blank");
       setTimeout(() => setIsCompleted(false), 2000);
       onComplete(); // Transition to thank you screen
     }, 800);
@@ -77,13 +168,21 @@ const ManualReview = ({ onBack, onComplete }: ManualReviewProps) => {
           className="min-h-[140px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-(--brand-radius) p-5 text-sm italic leading-relaxed"
         />
         <motion.button
-          whileHover={{ scale: 1.0 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={creditsLeft > 0 && !isLoading ? { scale: 1.02 } : {}}
+          whileTap={creditsLeft > 0 && !isLoading ? { scale: 0.98 } : {}}
           onClick={handleGenerate}
-          className="absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-[10px] font-bold text-(--brand-primary) transition-colors cursor-pointer"
+          disabled={creditsLeft <= 0 || isLoading}
+          className={cn(
+            "absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-[10px] font-bold text-(--brand-primary) transition-all cursor-pointer",
+            (creditsLeft <= 0 || isLoading) && "opacity-50 grayscale cursor-not-allowed"
+          )}
         >
-          <Sparkles size={12} className="text-(--brand-primary)" />
-          AI Enhance
+          {isLoading ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <Sparkles size={12} className="text-(--brand-primary)" />
+          )}
+          {isLoading ? "Enhancing..." : `AI Enhance (${creditsLeft})`}
         </motion.button>
       </div>
 

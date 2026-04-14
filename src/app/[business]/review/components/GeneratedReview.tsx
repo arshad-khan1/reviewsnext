@@ -11,46 +11,154 @@ import {
   CheckCircle2,
   PenLine,
   Lock,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
-import { companyConfig } from "@/config/companyConfig";
 import ManualReview from "./ManualReview";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useEffect, useCallback } from "react";
+import { CommentStyle } from "@prisma/client";
 
-const GeneratedReview = ({ onComplete }: { onComplete: () => void }) => {
-  const [reviewIndex, setReviewIndex] = useState(0);
-  const [reviewText, setReviewText] = useState(
-    companyConfig.suggestedReviews[0],
-  );
+interface GeneratedReviewProps {
+  onComplete: () => void;
+  qrCodeId: string;
+  scanId: string;
+  rating: number;
+  businessName: string;
+  googleMapsLink: string;
+  commentStyle: CommentStyle;
+  aiGuidingPrompt: string;
+}
+
+const GeneratedReview = ({ 
+  onComplete, 
+  qrCodeId, 
+  scanId, 
+  rating, 
+  businessName, 
+  googleMapsLink,
+  commentStyle,
+  aiGuidingPrompt,
+}: GeneratedReviewProps) => {
+  const [reviewText, setReviewText] = useState("");
   const [hasCopied, setHasCopied] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showManual, setShowManual] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [wasCopiedBeforeSubmission, setWasCopiedBeforeSubmission] = useState(false);
+  
+  // Local AI credits (4 total per session)
+  const [creditsLeft, setCreditsLeft] = useState<number>(4);
+
+  const generateReview = useCallback(async (isRegeneration = false) => {
+    if (creditsLeft <= 0) {
+      toast.error("AI generation limit reached for this session.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/public/ai/generate-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          qrCodeId,
+          scanId,
+          rating,
+          businessName,
+          aiGuidingPrompt,
+          commentStyle,
+          operation: isRegeneration ? "REVIEW_REGENERATE" : "REVIEW_DRAFT",
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        if (error.code === "INSUFFICIENT_CREDITS") {
+          toast.error("Monthly AI limit reached for this business.");
+        } else {
+          toast.error("Failed to generate review. Please try again.");
+        }
+        return;
+      }
+
+      const data = await response.json();
+      setReviewText(data.reviewText);
+      setHasCopied(false);
+      
+      const newCredits = creditsLeft - 1;
+      setCreditsLeft(newCredits);
+      localStorage.setItem("aiCreditUsage", newCredits.toString());
+
+    } catch (error) {
+      console.error("AI Generation Error:", error);
+      toast.error("Something went wrong. Please check your connection.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [qrCodeId, scanId, rating, businessName, aiGuidingPrompt, commentStyle, creditsLeft]);
+
+  // Initial generation
+  useEffect(() => {
+    const savedCredits = localStorage.getItem("aiCreditUsage");
+    if (savedCredits !== null) {
+      const left = parseInt(savedCredits);
+      setCreditsLeft(left);
+      // If we already have credits left and review is empty, let's not auto-generate if we're out
+    }
+    
+    if (reviewText === "") {
+      generateReview(false);
+    }
+  }, []);
 
   const handleCopy = async () => {
+    if (!reviewText) return;
     await navigator.clipboard.writeText(reviewText);
     setHasCopied(true);
+    setWasCopiedBeforeSubmission(true);
     toast.success("Review copied! Now you can post it.", {
       description: "Step 1 complete. Proceed to Step 2.",
     });
   };
 
   const handleRegenerate = () => {
-    const nextIndex = (reviewIndex + 1) % companyConfig.suggestedReviews.length;
-    setReviewIndex(nextIndex);
-    setReviewText(companyConfig.suggestedReviews[nextIndex]);
-    setHasCopied(false); // Reset copy state on change
+    generateReview(true);
   };
 
   const handleOpenGoogle = async () => {
-    // Safety net: Always copy on click
-    await navigator.clipboard.writeText(reviewText);
+    if (!wasCopiedBeforeSubmission) {
+      toast.error("Please copy the review text first!");
+      return;
+    }
+
     setIsCompleted(true);
+
+    try {
+      // Create review entry in DB
+      await fetch("/api/public/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          qrCodeId,
+          scanId,
+          rating,
+          type: "POSITIVE",
+          reviewText,
+          reviewWasAiDraft: true,
+          submittedToGoogle: true,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save review:", error);
+    }
+
     toast.success("Step 2 completed! Opening Google Review...");
 
     setTimeout(() => {
-      window.open(companyConfig.reviewLink, "_blank");
-      // Optional: Reset state after some time if they come back
+      window.open(googleMapsLink, "_blank");
       setTimeout(() => setIsCompleted(false), 2000);
       onComplete(); // Transition to thank you screen
     }, 800);
@@ -61,6 +169,13 @@ const GeneratedReview = ({ onComplete }: { onComplete: () => void }) => {
       <ManualReview
         onBack={() => setShowManual(false)}
         onComplete={onComplete}
+        qrCodeId={qrCodeId}
+        scanId={scanId}
+        rating={rating}
+        businessName={businessName}
+        googleMapsLink={googleMapsLink}
+        commentStyle={commentStyle}
+        aiGuidingPrompt={aiGuidingPrompt}
       />
     );
   }
@@ -99,13 +214,21 @@ const GeneratedReview = ({ onComplete }: { onComplete: () => void }) => {
           />
           <div className="absolute bottom-2 right-2">
             <motion.button
-              whileHover={{ scale: 1.0 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={creditsLeft > 0 && !isLoading ? { scale: 1.02 } : {}}
+              whileTap={creditsLeft > 0 && !isLoading ? { scale: 0.98 } : {}}
               onClick={handleRegenerate}
-              className="bg-background border border-border/60 shadow-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-[10px] font-bold text-(--brand-primary) transition-colors cursor-pointer"
+              disabled={creditsLeft <= 0 || isLoading}
+              className={cn(
+                "bg-background border border-border/60 shadow-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-[10px] font-bold text-(--brand-primary) transition-all cursor-pointer",
+                (creditsLeft <= 0 || isLoading) && "opacity-50 cursor-not-allowed grayscale"
+              )}
             >
-              <RotateCcw size={12} className="text-(--brand-primary)" />
-              Regenerate
+              {isLoading ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Sparkles size={12} className="text-(--brand-primary)" />
+              )}
+              {isLoading ? "Generating..." : `Regenerate: ${creditsLeft} left`}
             </motion.button>
           </div>
         </div>
@@ -134,7 +257,11 @@ const GeneratedReview = ({ onComplete }: { onComplete: () => void }) => {
           </Button>
 
           <Button
-            onClick={() => setShowManual(true)}
+            onClick={() => {
+              // Redirect to a manual flow or just show it
+              // For now we keep existing setShowManual but pass necessary context if needed
+              setShowManual(true);
+            }}
             variant="outline"
             className="flex-1 h-11 gap-2 border-border/50 hover:bg-secondary/50 rounded-(--brand-radius) text-xs font-semibold transition-all cursor-pointer text-muted-foreground"
           >

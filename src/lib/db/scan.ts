@@ -16,7 +16,7 @@ export async function createScan(data: {
   ipAddress?: string;
 }) {
   // 1. Find the QR Code and its Business
-  const qrCode = await prisma.qRCode.findFirst({
+  let qrCode = await prisma.qRCode.findFirst({
     where: {
       sourceTag: data.sourceTag,
       business: { slug: data.businessSlug, isDeleted: false },
@@ -26,6 +26,34 @@ export async function createScan(data: {
       business: true,
     },
   });
+
+  // Fallback: If tag provided but not found, try finding the "default" QR code
+  if (!qrCode) {
+    qrCode = await prisma.qRCode.findFirst({
+      where: {
+        business: { slug: data.businessSlug, isDeleted: false },
+        isDeleted: false,
+        isDefault: true,
+      },
+      include: {
+        business: true,
+      },
+    });
+  }
+
+  // Final Fallback: Just return any QR code for this business so the scan doesn't fail
+  if (!qrCode) {
+    qrCode = await prisma.qRCode.findFirst({
+      where: {
+        business: { slug: data.businessSlug, isDeleted: false },
+        isDeleted: false,
+      },
+      orderBy: { createdAt: "asc" },
+      include: {
+        business: true,
+      },
+    });
+  }
 
   if (!qrCode) {
     throw new Error("QR_NOT_FOUND");

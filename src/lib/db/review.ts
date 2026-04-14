@@ -18,6 +18,29 @@ export async function createReview(data: {
   howToImprove?: string;
 }) {
   return await prisma.$transaction(async (tx) => {
+    // 1. Check if a review already exists for this scanId
+    if (data.scanId) {
+      const existing = await tx.review.findUnique({
+        where: { scanId: data.scanId },
+      });
+
+      if (existing) {
+        // Update existing record (priority: submittedToGoogle flag)
+        return await tx.review.update({
+          where: { id: existing.id },
+          data: {
+            submittedToGoogle: data.submittedToGoogle ?? existing.submittedToGoogle,
+            // If new feedback text is provided, we can update it too
+            reviewText: data.reviewText ?? existing.reviewText,
+            whatWentWrong: data.whatWentWrong ?? existing.whatWentWrong,
+            howToImprove: data.howToImprove ?? existing.howToImprove,
+            rating: data.rating ?? existing.rating,
+          },
+        });
+      }
+    }
+
+    // 2. Create new entry
     const review = await tx.review.create({
       data: {
         qrCodeId: data.qrCodeId,

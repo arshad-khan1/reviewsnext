@@ -45,6 +45,7 @@ export async function resolveReviewConfig(businessSlug: string, sourceTag?: stri
       },
       select: {
         id: true,
+        useDefaultConfig: true,
         acceptedStarsThreshold: true,
         googleMapsLink: true,
         aiGuidingPrompt: true,
@@ -54,18 +55,29 @@ export async function resolveReviewConfig(businessSlug: string, sourceTag?: stri
     });
   }
 
-  // 3. Resolve the config using precedence (QR > Business > System Default)
+  // 3. Resolve the config using strict precedence rules
+  const useDefaults = qrCode?.useDefaultConfig ?? true;
+
   return {
     businessId: business.id,
     businessName: business.name,
     logoUrl: business.logoUrl,
     qrCodeId: qrCode?.id || null,
-    // Threshold defaults to 4 if not set anywhere
-    threshold: qrCode?.acceptedStarsThreshold ?? business.acceptedStarsThreshold ?? 4,
-    googleMapsLink: qrCode?.googleMapsLink ?? business.defaultGoogleMapsLink,
-    aiPrompt: qrCode?.aiGuidingPrompt ?? business.defaultAiPrompt,
-    commentStyle: qrCode?.commentStyle ?? business.defaultCommentStyle ?? "PROFESSIONAL_POLITE",
+    // If useDefaultConfig is true, take business defaults. Otherwise QR value > Business value.
+    threshold: useDefaults 
+      ? (business.acceptedStarsThreshold ?? 4) 
+      : (qrCode?.acceptedStarsThreshold ?? business.acceptedStarsThreshold ?? 4),
+    googleMapsLink: useDefaults 
+      ? business.defaultGoogleMapsLink 
+      : (qrCode?.googleMapsLink ?? business.defaultGoogleMapsLink),
+    aiGuidingPrompt: useDefaults 
+      ? business.defaultAiPrompt 
+      : (qrCode?.aiGuidingPrompt ?? business.defaultAiPrompt),
+    commentStyle: useDefaults 
+      ? business.defaultCommentStyle 
+      : (qrCode?.commentStyle ?? business.defaultCommentStyle ?? "PROFESSIONAL_POLITE"),
     planTier: business.owner?.activeSubscription?.plan || "STARTER",
     branding: (qrCode?.brandingOverride || business.brandingConfig || {}) as any,
+    sourceTag: sourceTag || null,
   };
 }

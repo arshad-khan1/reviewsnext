@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import ReviewStars from "./components/ReviewStars";
@@ -12,7 +12,7 @@ import { BrandingConfig } from "@/types/branding";
 import { resolveEffectiveBranding } from "@/lib/utils/branding";
 import confetti from "canvas-confetti";
 import { cn, getContrastColor } from "@/lib/utils";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 type Flow = "idle" | "low" | "high" | "completed";
 
@@ -23,20 +23,92 @@ interface ReviewFlowProps {
     logoUrl: string | null;
     threshold: number;
     qrCodeId: string | null;
+    sourceTag: string | null;
+    googleMapsLink: string | null;
+    aiGuidingPrompt: string | null;
+    commentStyle: any;
     planTier: PlanType;
     branding: BrandingConfig;
   };
 }
 
-const ReviewFlow = ({ config }: ReviewFlowProps) => {
+const ReviewFlow = ({
+  businessSlug,
+  config: initialConfig,
+}: ReviewFlowProps) => {
   const [flow, setFlow] = useState<Flow>("idle");
   const [rating, setRating] = useState<number>(0);
   const [tempRating, setTempRating] = useState<number>(0);
+  const [scanId, setScanId] = useState<string | null>(null);
+  const [qrCodeId, setQrCodeId] = useState<string | null>(
+    initialConfig.qrCodeId,
+  );
+  const [activeConfig, setActiveConfig] = useState(initialConfig);
+  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
+
+  // Track scan on mount and fetch fresh config
+  useEffect(() => {
+    const trackScan = async () => {
+      try {
+        const ua = window.navigator.userAgent;
+        // Simple UA parsing
+        let browser = "Unknown";
+        if (ua.includes("Chrome")) browser = "Chrome";
+        else if (ua.includes("Safari")) browser = "Safari";
+        else if (ua.includes("Firefox")) browser = "Firefox";
+        else if (ua.includes("Edge")) browser = "Edge";
+
+        let os = "Unknown";
+        if (ua.includes("Win")) os = "Windows";
+        else if (ua.includes("Mac")) os = "MacOS";
+        else if (ua.includes("Linux")) os = "Linux";
+        else if (ua.includes("Android")) os = "Android";
+        else if (ua.includes("iOS")) os = "iOS";
+
+        const response = await fetch("/api/public/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            businessSlug,
+            sourceTag: initialConfig.sourceTag,
+            device: /Mobile|Android|iPhone/i.test(ua) ? "Mobile" : "Desktop",
+            browser,
+            os,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setScanId(data.scanId);
+          if (data.qrCodeId) setQrCodeId(data.qrCodeId);
+
+          // Update active config with values from API (database source of truth)
+          setActiveConfig((prev) => ({
+            ...prev,
+            threshold: data.acceptedStarsThreshold ?? prev.threshold,
+            googleMapsLink: data.googleMapsLink ?? prev.googleMapsLink,
+            aiGuidingPrompt: data.aiGuidingPrompt ?? prev.aiGuidingPrompt,
+            commentStyle: data.commentStyle ?? prev.commentStyle,
+          }));
+          setIsConfigLoaded(true);
+        } else {
+          // Even if tracking fails, allow the user to proceed with initial config
+          setIsConfigLoaded(true);
+        }
+      } catch (error) {
+        console.error("Failed to track scan:", error);
+        setIsConfigLoaded(true);
+      }
+    };
+
+    trackScan();
+  }, [businessSlug, initialConfig.sourceTag]);
 
   // Resolve branding based on tier and config
   const branding = useMemo(
-    () => resolveEffectiveBranding(config.planTier, config.branding),
-    [config.planTier, config.branding],
+    () =>
+      resolveEffectiveBranding(activeConfig.planTier, activeConfig.branding),
+    [activeConfig.planTier, activeConfig.branding],
   );
 
   const borderRadius = useMemo(() => {
@@ -57,7 +129,7 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
       });
     }
 
-    if (r <= config.threshold) {
+    if (r < activeConfig.threshold) {
       setFlow("low");
     } else {
       setFlow("high");
@@ -141,7 +213,9 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
             branding.isGlassmorphismEnabled
               ? "glass-card"
               : "bg-card border-border/50",
-            branding.backgroundUrl && branding.isGlassmorphismEnabled && "bg-white/80 backdrop-blur-3xl"
+            branding.backgroundUrl &&
+              branding.isGlassmorphismEnabled &&
+              "bg-white/80 backdrop-blur-3xl",
           )}
         >
           {/* Back Button */}
@@ -163,52 +237,67 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
                 layoutId="logo"
                 className="w-16 h-16 mx-auto rounded-2xl bg-secondary/30 flex items-center justify-center p-3 border border-border/50 overflow-hidden relative"
               >
-                {config.logoUrl ? (
+                {activeConfig.logoUrl ? (
                   <Image
-                    src={config.logoUrl}
-                    alt={`${config.businessName} logo`}
+                    src={activeConfig.logoUrl}
+                    alt={`${activeConfig.businessName} logo`}
                     fill
                     className="object-contain p-3"
                   />
                 ) : (
                   <div className="text-xl font-bold text-muted-foreground">
-                    {config.businessName[0]}
+                    {activeConfig.businessName[0]}
                   </div>
                 )}
               </motion.div>
               <h1 className="text-sm font-bold tracking-widest uppercase text-muted-foreground/80">
-                {config.businessName}
+                {activeConfig.businessName}
               </h1>
             </div>
 
             <AnimatePresence mode="wait">
-              {flow === "idle" && (
+              {!isConfigLoaded ? (
                 <motion.div
-                  key="idle"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="space-y-6"
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="py-12 flex flex-col items-center justify-center space-y-4"
                 >
-                  <div className="text-center space-y-2">
-                    <motion.h2
-                      key={getHeadline()}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-lg font-semibold text-foreground"
-                    >
-                      {getHeadline()}
-                    </motion.h2>
-                    <p className="text-xs text-muted-foreground max-w-[240px] mx-auto leading-relaxed">
-                      {getSubheadline()}
-                    </p>
-                  </div>
-
-                  <ReviewStars
-                    onRate={handleRate}
-                    onHoverChange={setTempRating}
-                  />
+                  <Loader2 className="w-8 h-8 animate-spin text-(--brand-primary)" />
+                  <p className="text-xs text-muted-foreground animate-pulse font-medium">
+                    Initializing your experience...
+                  </p>
                 </motion.div>
+              ) : (
+                flow === "idle" && (
+                  <motion.div
+                    key="idle"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="space-y-6"
+                  >
+                    <div className="text-center space-y-2">
+                      <motion.h2
+                        key={getHeadline()}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-lg font-semibold text-foreground"
+                      >
+                        {getHeadline()}
+                      </motion.h2>
+                      <p className="text-xs text-muted-foreground max-w-[240px] mx-auto leading-relaxed">
+                        {getSubheadline()}
+                      </p>
+                    </div>
+
+                    <ReviewStars
+                      onRate={handleRate}
+                      onHoverChange={setTempRating}
+                    />
+                  </motion.div>
+                )
               )}
 
               {flow === "low" && (
@@ -218,7 +307,15 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                 >
-                  <FeedbackForm />
+                  <FeedbackForm
+                    onComplete={handleComplete}
+                    qrCodeId={qrCodeId || ""}
+                    scanId={scanId || ""}
+                    rating={rating}
+                    googleMapsLink={activeConfig.googleMapsLink || ""}
+                    businessName={activeConfig.businessName}
+                    commentStyle={activeConfig.commentStyle}
+                  />
                 </motion.div>
               )}
 
@@ -229,7 +326,16 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                 >
-                  <GeneratedReview onComplete={handleComplete} />
+                  <GeneratedReview
+                    onComplete={handleComplete}
+                    qrCodeId={qrCodeId || ""}
+                    scanId={scanId || ""}
+                    rating={rating}
+                    businessName={activeConfig.businessName}
+                    googleMapsLink={activeConfig.googleMapsLink || ""}
+                    commentStyle={activeConfig.commentStyle}
+                    aiGuidingPrompt={activeConfig.aiGuidingPrompt || ""}
+                  />
                 </motion.div>
               )}
 
@@ -241,7 +347,7 @@ const ReviewFlow = ({ config }: ReviewFlowProps) => {
                   exit={{ opacity: 0 }}
                 >
                   <CompletionScreen
-                    businessName={config.businessName}
+                    businessName={activeConfig.businessName}
                     branding={branding}
                     onReset={handleBack}
                   />

@@ -95,10 +95,10 @@ export default function ScanDetailDialog({
                 <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">
                   QR Source
                 </span>
-                <p className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                <div className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-indigo-400" />
                   {scan.qrCode?.name || "Global QR"}
-                </p>
+                </div>
               </div>
             </div>
 

@@ -3,7 +3,9 @@ import { prisma } from "../prisma";
 /**
  * Checks if a business has credits remaining.
  */
-export async function hasRemainingCredits(businessId: string): Promise<boolean> {
+export async function hasRemainingCredits(
+  businessId: string,
+): Promise<boolean> {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
   });
@@ -35,51 +37,63 @@ export async function deductAiCredit(options: {
   const { businessId, qrCodeId, scanId, operation } = options;
 
   return await prisma.$transaction(async (tx) => {
-    const business = await tx.business.findUnique({
-      where: { id: businessId },
-    });
+    try {
+      const business = await tx.business.findUnique({
+        where: { id: businessId },
+      });
 
-    if (!business) throw new Error("BUSINESS_NOT_FOUND");
+      if (!business) throw new Error("BUSINESS_NOT_FOUND");
 
-    const credits = await tx.aiCredits.findUnique({
-      where: { userId: business.ownerId },
-      lock: { mode: 'update' } // Row-level lock for safety
-    });
+      // Row-level lock for safety during credit deduction
+      await tx.$executeRaw`SELECT id FROM "AiCredits" WHERE "userId" = ${business.ownerId} FOR UPDATE`;
 
-    if (!credits) throw new Error("CREDITS_NOT_FOUND");
+      const credits = await tx.aiCredits.findUnique({
+        where: { userId: business.ownerId },
+      });
 
-    const monthlyRemaining = credits.monthlyAllocation - credits.monthlyUsed;
-    const topupRemaining = credits.topupAllocation - credits.topupUsed;
+      if (!credits) throw new Error("CREDITS_NOT_FOUND");
 
-    let updateData: any = {};
-    if (monthlyRemaining > 0) {
-      updateData.monthlyUsed = { increment: 1 };
-    } else if (topupRemaining > 0) {
-      updateData.topupUsed = { increment: 1 };
-    } else {
-      throw new Error("INSUFFICIENT_CREDITS");
+      const monthlyRemaining = credits.monthlyAllocation - credits.monthlyUsed;
+      const topupRemaining = credits.topupAllocation - credits.topupUsed;
+
+      const updateData: any = {};
+      if (monthlyRemaining > 0) {
+        updateData.monthlyUsed = { increment: 1 };
+      } else if (topupRemaining > 0) {
+        updateData.topupUsed = { increment: 1 };
+      } else {
+        throw new Error("INSUFFICIENT_CREDITS");
+      }
+
+      // 1. Update Balance
+      const updatedCredits = await tx.aiCredits.update({
+        where: { id: credits.id },
+        data: updateData,
+      });
+
+      // 2. Log Usage
+      await tx.aiUsageLog.create({
+        data: {
+          aiCreditsId: credits.id,
+          businessId: businessId, // Track which business used it
+          creditsUsed: 1,
+          operation,
+          metadata: { qrCodeId, scanId } as any,
+        },
+      });
+
+      return {
+        creditsRemaining:
+          updatedCredits.monthlyAllocation +
+          updatedCredits.topupAllocation -
+          (updatedCredits.monthlyUsed + updatedCredits.topupUsed),
+      };
+    } catch (error) {
+      console.error("[DEDUCT_AI_CREDIT_ERROR]", error);
+      throw error;
     }
-
-    // 1. Update Balance
-    const updatedCredits = await tx.aiCredits.update({
-      where: { id: credits.id },
-      data: updateData,
-    });
-
-    // 2. Log Usage
-    await tx.aiUsageLog.create({
-      data: {
-        aiCreditsId: credits.id,
-        businessId: businessId, // Track which business used it
-        creditsUsed: 1,
-        operation,
-        metadata: { qrCodeId, scanId } as any,
-      },
-    });
-
-    return {
-      creditsRemaining: (updatedCredits.monthlyAllocation + updatedCredits.topupAllocation) - (updatedCredits.monthlyUsed + updatedCredits.topupUsed),
-    };
+  }, {
+    timeout: 10000, // 10 seconds to handle transient latency/concurrency
   });
 }
 
@@ -102,7 +116,7 @@ export const STATIC_DRAFTS: Record<string, string[]> = {
   ENTHUSIASTIC_WARM: [
     "OH MY GOSH! {businessName} was absolutely incredible! ❤️ The energy there is just fantastic and I felt so taken care of. You HAVE to try them out! ✨",
     "I am so happy with my visit to {businessName}! Everything exceeded my expectations and the staff are just the sweetest. Five stars all the way! 🌟🌟🌟🌟🌟",
-  ]
+  ],
 };
 
 export function getStaticDraft(businessName: string, style: string): string {

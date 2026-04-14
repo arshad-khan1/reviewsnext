@@ -9,10 +9,13 @@ import { deductAiCredit, hasRemainingCredits, getStaticDraft } from "@/lib/db/ai
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { qrCodeId, scanId, rating, businessName, aiGuidingPrompt, commentStyle, operation } = body;
+    console.log("[AI_GENERATE_REQUEST_BODY]", body);
+    const { qrCodeId, scanId: reqScanId, rating, businessName, aiGuidingPrompt, commentStyle, operation } = body;
+    const scanId = reqScanId || "anonymous-scan";
 
     // 1. Basic Validation
-    if (!qrCodeId || !scanId || !rating || !businessName || !commentStyle || !operation) {
+    if (!qrCodeId || rating === undefined || !businessName || !commentStyle || !operation) {
+      console.log("[AI_GENERATE_MISSING_FIELDS]", { qrCodeId, scanId, rating, businessName, commentStyle, operation });
       return NextResponse.json({ code: "MISSING_FIELDS", message: "Missing required fields" }, { status: 400 });
     }
 
@@ -37,11 +40,8 @@ export async function POST(req: NextRequest) {
       }, { status: 402 });
     }
 
-    // 4. Generate Review (Static for now)
-    // We simulate a small delay to feel like AI
-    // await new Promise(resolve => setTimeout(resolve, 800)); 
-    
-    const reviewText = getStaticDraft(businessName, commentStyle);
+    // 4. Generate Review (Returning constant for now)
+    const reviewText = "This is a constant AI-generated review for testing. The service at " + businessName + " was absolutely exceptional and I would highly recommend it to everyone!";
 
     // 5. Deduct Credit & Log
     const { creditsRemaining } = await deductAiCredit({
