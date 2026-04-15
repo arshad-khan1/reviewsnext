@@ -21,7 +21,6 @@ import {
   Signal,
   Star,
   Lock,
-  Zap,
 } from "lucide-react";
 import {
   type QRCode,
@@ -34,7 +33,6 @@ import { useParams } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { PLAN_LIMITS, hasFeature, getLimit } from "@/config/plan-limits";
 import { PlanType } from "@prisma/client";
-import { FeatureGate } from "@/components/auth/FeatureGate";
 import {
   SubscriptionGateOverlay,
   PlanBadge,
@@ -46,6 +44,8 @@ const STYLE_MAP: Record<string, CommentStyle> = {
   "Friendly & Casual": "FRIENDLY_CASUAL",
   "Concise & Direct": "CONCISE_DIRECT",
   "Enthusiastic & Warm": "ENTHUSIASTIC_WARM",
+  "Witty & Fun": "WITTY_FUN",
+  "Hinglish (Hindi + English)": "HINGLISH",
 };
 
 const REVERSE_STYLE_MAP: Record<CommentStyle, string> = {
@@ -53,6 +53,8 @@ const REVERSE_STYLE_MAP: Record<CommentStyle, string> = {
   FRIENDLY_CASUAL: "Friendly & Casual",
   CONCISE_DIRECT: "Concise & Direct",
   ENTHUSIASTIC_WARM: "Enthusiastic & Warm",
+  WITTY_FUN: "Witty & Fun",
+  HINGLISH: "Hinglish (Hindi + English)",
 };
 
 interface QRCodeFormDialogProps {

@@ -395,6 +395,8 @@ enum CommentStyle {
   FRIENDLY_CASUAL
   CONCISE_DIRECT
   ENTHUSIASTIC_WARM
+  WITTY_FUN
+  HINGLISH
 }
 
 /// The end-user's experience type after rating

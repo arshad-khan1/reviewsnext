@@ -8,7 +8,9 @@ export type CommentStyle =
   | "PROFESSIONAL_POLITE"
   | "FRIENDLY_CASUAL"
   | "CONCISE_DIRECT"
-  | "ENTHUSIASTIC_WARM";
+  | "ENTHUSIASTIC_WARM"
+  | "WITTY_FUN"
+  | "HINGLISH";
 
 export interface QRCode {
   useDefaultConfig: boolean;

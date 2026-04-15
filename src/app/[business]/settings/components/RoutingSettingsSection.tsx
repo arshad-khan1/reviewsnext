@@ -320,6 +320,8 @@ export function RoutingSettingsSection({
                     <option value="FRIENDLY_CASUAL">Friendly</option>
                     <option value="CONCISE_DIRECT">Concise</option>
                     <option value="ENTHUSIASTIC_WARM">Warm</option>
+                    <option value="WITTY_FUN">Witty & Fun</option>
+                    <option value="HINGLISH">Hinglish</option>
                   </select>
                 </div>
               </div>

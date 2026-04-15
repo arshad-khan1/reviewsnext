@@ -13,14 +13,13 @@ import {
   MapPin,
   CheckCircle2,
   Phone,
-  Star,
   Lock,
-  QrCode,
-  ArrowRightCircle,
   Building2,
   LayoutGrid,
   Contact,
   ExternalLink,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 
 import { PhoneInput } from "react-international-phone";
@@ -59,10 +58,11 @@ const INDUSTRIES = [
 ];
 
 const COMMENT_STYLES = [
-  "Professional & Polite",
-  "Friendly & Casual",
-  "Concise & Direct",
-  "Enthusiastic & Warm",
+  { label: "Professional & Polite", icon: "🏢" },
+  { label: "Friendly & Casual", icon: "😊" },
+  { label: "Witty & Fun", icon: "🎉" },
+  { label: "Enthusiastic & Warm", icon: "❤️" },
+  { label: "Hinglish (Hindi + English)", icon: "🇮🇳" },
 ];
 
 import { useAuthStore } from "@/store/auth-store";
@@ -86,7 +86,7 @@ export default function OnboardingPage() {
     phone: "+91",
     logo: null as string | null,
     logoFile: null as File | null,
-    minRatingToExternal: "4",
+    minRatingToExternal: "3",
     googleMapsUrl: "",
     aiPrompt: "",
     commentStyle: "Professional & Polite",
@@ -182,6 +182,8 @@ export default function OnboardingPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Verification failed");
 
+      setFormErrors({});
+      updateFormData({ ownerName: data.user.name || "" });
       setIsPhoneVerified(true);
       // Store the access token in localStorage (the shared store used everywhere in the app)
       if (data.accessToken) {
@@ -194,6 +196,41 @@ export default function OnboardingPage() {
       toast.error(error.message);
     } finally {
       setIsVerifyingOtp(false);
+    }
+  };
+
+  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
+
+  const handleGeneratePrompt = async () => {
+    const wordCount = formData.aiPrompt
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean).length;
+    if (wordCount < 10) {
+      toast.error(
+        "Please provide at least 10 words about your business first.",
+      );
+      return;
+    }
+
+    setIsGeneratingPrompt(true);
+    try {
+      const res = await fetch("/api/public/ai/generate-system-prompt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ keywords: formData.aiPrompt }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to generate prompt");
+
+      updateFormData({ aiPrompt: data.prompt });
+      toast.success("Prompt refined with AI! ✨");
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsGeneratingPrompt(false);
     }
   };
 
@@ -466,199 +503,178 @@ export default function OnboardingPage() {
           </motion.div>
         );
       case 2:
+        const routingCutoff = Number(formData.minRatingToExternal);
         return (
           <motion.div
             key="step2"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-8"
+            className="space-y-10"
           >
             {/* The Customer Journey Visualization */}
             <div className="space-y-6">
-              <div className="text-center space-y-1">
-                <h3 className="text-lg font-bold tracking-tight">
-                  The Customer Journey
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  See exactly what your customer experiences
-                </p>
+              {/* Interactive Sensitivity Bar */}
+              <div className="space-y-8 p-8 rounded-[40px] bg-slate-50/50 border border-slate-100 shadow-inner">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-1 gap-4">
+                  <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">
+                    Routing Sensitivity
+                  </span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-3 py-1 px-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-orange-600 flex items-center justify-center text-white font-black text-[10px]">
+                          !
+                        </div>
+                        <span className="text-slate-600 font-bold text-xs uppercase tracking-tight">
+                          {routingCutoff} Stars & Below
+                        </span>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
+                      <span className="text-orange-600 text-[10px] font-black uppercase tracking-wider">
+                        Internal
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 py-1 px-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white font-black text-[10px]">
+                          <CheckCircle2 className="w-3 h-3" />
+                        </div>
+                        <span className="text-slate-600 font-bold text-xs uppercase tracking-tight">
+                          Above {routingCutoff} Stars
+                        </span>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-slate-300" />
+                      <span className="text-emerald-600 text-[10px] font-black uppercase tracking-wider">
+                        Google
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative px-4">
+                  {/* Background Track */}
+                  <div className="absolute top-1/2 left-0 w-full h-[6px] -translate-y-1/2 bg-emerald-600/20 rounded-full" />
+                  {/* Selection Track */}
+                  <div
+                    className="absolute top-1/2 left-0 h-[6px] -translate-y-1/2 bg-orange-600 rounded-full transition-all duration-500 z-0 shadow-[0_0_10px_rgba(234,88,12,0.3)]"
+                    style={{ width: `${(routingCutoff - 1) * 25}%` }}
+                  />
+
+                  <div className="relative flex w-full justify-between px-1">
+                    {[1, 2, 3, 4, 5].map((s) => {
+                      const isInternal = s <= routingCutoff;
+                      const isSelected =
+                        s === Number(formData.minRatingToExternal);
+                      return (
+                        <button
+                          key={s}
+                          onClick={() =>
+                            updateFormData({ minRatingToExternal: String(s) })
+                          }
+                          className={`relative w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 font-black border-2 z-10 text-base shadow-lg ring-8 ring-white
+                            ${
+                              isInternal
+                                ? "bg-orange-600 border-orange-600 text-white shadow-orange-200"
+                                : "bg-emerald-600 border-emerald-600 text-white shadow-emerald-200"
+                            }
+                            ${isSelected ? "scale-125 z-20" : "scale-100"}
+                            hover:scale-110
+                          `}
+                        >
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex justify-between w-full text-[10px] font-black text-slate-400 uppercase mt-2 px-1">
+                  <span>Critical</span>
+                  <span>Perfect</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Outcome Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div
+                className={cn(
+                  "p-6 rounded-[32px] border transition-all duration-500 flex flex-col gap-3",
+                  "bg-orange-50/50 border-orange-100 shadow-orange-50/50 shadow-lg",
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white font-black text-xs">
+                    !
+                  </div>
+                  <span className="text-orange-900 font-black text-[10px] uppercase tracking-wider">
+                    {routingCutoff} Stars & Below
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 leading-tight">
+                    Internal Feedback
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
+                    Customers can tell you what went wrong and how you can
+                    improve. This feedback is handled internally so you can
+                    resolve issues privately.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 mt-auto pt-2 text-orange-600">
+                  <Lock className="w-3 h-3" />
+                  <span className="text-[10px] font-bold italic">
+                    Private Channel
+                  </span>
+                </div>
               </div>
 
-              <div className="relative flex justify-between items-center px-4 max-w-sm mx-auto">
-                {/* Step 1: Scan */}
-                <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                    <QrCode className="w-5 h-5" />
+              <div
+                className={cn(
+                  "p-6 rounded-[32px] border transition-all duration-500 flex flex-col gap-3",
+                  "bg-emerald-50/50 border-emerald-100 shadow-emerald-50/50 shadow-lg",
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[10px] font-black italic">
+                    ★
                   </div>
-                  <span className="text-[9px] font-bold uppercase tracking-tighter">
-                    1. Scan QR
+                  <span className="text-emerald-800 font-black text-[10px] uppercase tracking-wider">
+                    Above {routingCutoff} Stars
                   </span>
                 </div>
-
-                <div className="flex-1 h-px border-t border-dashed border-muted-foreground/30 mx-2 relative top-[-8px]">
-                  <ArrowRightCircle className="absolute right-0 -top-1.5 w-3 h-3 text-muted-foreground/30" />
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 leading-tight">
+                    Google Review
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
+                    AI generates a positive comment for the customer, which they
+                    can then post directly to Google Maps to boost your ranking.
+                  </p>
                 </div>
-
-                {/* Step 2: Rate */}
-                <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-600 shadow-inner">
-                    <Star className="w-5 h-5 fill-yellow-500/20" />
-                  </div>
-                  <span className="text-[9px] font-bold uppercase tracking-tighter">
-                    2. Leave Rating
-                  </span>
-                </div>
-
-                <div className="flex-1 h-px border-t border-dashed border-muted-foreground/30 mx-2 relative top-[-8px]">
-                  <ArrowRightCircle className="absolute right-0 -top-1.5 w-3 h-3 text-muted-foreground/30" />
-                </div>
-
-                {/* Step 3: Result (Mockup) */}
-                <div className="flex flex-col items-center gap-2 z-10">
-                  <div className="w-14 h-24 rounded-xl border-[3px] border-muted bg-card shadow-xl flex flex-col items-center p-1 relative overflow-hidden ring-1 ring-border">
-                    <div className="w-3 h-1 bg-muted rounded-full mb-1" />
-
-                    {/* Dynamic Content inside Mockup */}
-                    <AnimatePresence mode="wait">
-                      {Number(formData.minRatingToExternal) <= 4 ? (
-                        <motion.div
-                          key="google-result"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="flex flex-col items-center justify-center h-full gap-1 w-full"
-                        >
-                          <div className="w-5 h-5 rounded bg-green-500/10 flex items-center justify-center text-green-600">
-                            <MapPin className="w-3 h-3" />
-                          </div>
-                          <span
-                            className="text-center font-bold text-green-600"
-                            style={{ fontSize: "4px", lineHeight: "1.2" }}
-                          >
-                            TO GOOGLE MAPS
-                          </span>
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="form-result"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="flex flex-col items-center justify-center h-full gap-1 w-full"
-                        >
-                          <div className="w-5 h-5 rounded bg-orange-500/10 flex items-center justify-center text-orange-600">
-                            <Lock className="w-3 h-3" />
-                          </div>
-                          <div className="w-full space-y-[2px] px-1">
-                            <div className="w-full h-px bg-muted-foreground/20" />
-                            <div className="w-3/4 h-px bg-muted-foreground/20" />
-                            <div className="w-full h-1 bg-primary/20 rounded-[1px]" />
-                          </div>
-                          <span
-                            className="text-center font-bold uppercase"
-                            style={{ fontSize: "4px", lineHeight: "1.2" }}
-                          >
-                            INTERNAL FEEDBACK
-                          </span>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                  <span className="text-[9px] font-bold uppercase tracking-tighter">
-                    3. Outcome
+                <div className="flex items-center gap-2 mt-auto pt-2 text-emerald-600">
+                  <Globe className="w-3 h-3" />
+                  <span className="text-[10px] font-bold italic">
+                    Public Reputation
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Threshold Selector with intuitive labels */}
-            <div className="space-y-4 pt-4 border-t border-border/50">
-              <div className="flex justify-between items-center px-1">
-                <div className="space-y-1">
-                  <Label className="text-base font-bold">
-                    Route Rating to Google if:
-                  </Label>
-                  <p className="text-[10px] text-muted-foreground font-medium italic">
-                    Ratings below this will be caught by our internal form.
-                  </p>
-                </div>
-                <div className="px-2 py-1 rounded-full bg-orange-500/10 text-orange-600 text-[10px] font-bold uppercase tracking-widest border border-orange-500/20">
-                  Recommended: 4
-                </div>
+            {/* Infographic Summary */}
+            <div className="bg-white/50 border border-slate-100 rounded-[32px] p-6 text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest">
+                <ShieldCheck className="w-3 h-3" />
+                Smart Filtering Active
               </div>
-
-              <div className="grid grid-cols-5 gap-2 text-center">
-                {["1", "2", "3", "4", "5"].map((val) => {
-                  const isPublic =
-                    Number(val) >= Number(formData.minRatingToExternal);
-                  const isSelected = formData.minRatingToExternal === val;
-
-                  return (
-                    <button
-                      key={val}
-                      onClick={() =>
-                        updateFormData({ minRatingToExternal: val })
-                      }
-                      className={`group relative p-3 rounded-xl border-2 transition-all duration-300 ${
-                        isSelected
-                          ? "border-orange-500 bg-orange-500/5 ring-4 ring-orange-500/10 scale-[1.05] shadow-lg shadow-orange-500/5"
-                          : "border-border hover:border-primary/50 bg-card/30"
-                      }`}
-                    >
-                      <div
-                        className={`text-lg font-black mb-0.5 transition-colors ${
-                          isSelected
-                            ? isPublic
-                              ? "text-green-500"
-                              : "text-red-500"
-                            : isPublic
-                              ? "text-green-500/50 group-hover:text-green-500"
-                              : "text-red-500/50 group-hover:text-red-500"
-                        }`}
-                      >
-                        {val} ★
-                      </div>
-                      {isSelected && (
-                        <div
-                          className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-white shadow-lg animate-in zoom-in-50 duration-300 ${
-                            isPublic ? "bg-green-500" : "bg-red-500"
-                          }`}
-                        >
-                          <CheckCircle2 className="w-2.5 h-2.5" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Dynamic Summary Note */}
-              <motion.div
-                key={formData.minRatingToExternal}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`p-4 rounded-2xl border text-[13px] font-medium flex items-start gap-3 shadow-sm ${
-                  Number(formData.minRatingToExternal) <= 3
-                    ? "bg-red-500/5 border-red-500/10 text-red-600"
-                    : "bg-green-500/5 border-green-500/10 text-green-600"
-                }`}
-              >
-                <div
-                  className={`p-1.5 rounded-lg mt-0.5 shrink-0 ${Number(formData.minRatingToExternal) <= 3 ? "bg-red-500/10" : "bg-green-500/10"}`}
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <p className="leading-relaxed">
-                  Currently, ratings from{" "}
-                  <span className="font-bold underline text-foreground">
-                    {formData.minRatingToExternal} to 5 stars
-                  </span>{" "}
-                  will go directly to your Google listing. All lower ratings
-                  will stay private for you to resolve internally and will be
-                  visible only to you in dashboard.
-                </p>
-              </motion.div>
+              <p className="text-sm font-medium text-slate-600 leading-relaxed max-w-sm mx-auto">
+                By filtering out lower ratings, you maintain a{" "}
+                <span className="text-emerald-600 font-bold italic">
+                  higher average score
+                </span>{" "}
+                while still receiving the feedback you need to improve.
+              </p>
             </div>
           </motion.div>
         );
@@ -712,19 +728,73 @@ export default function OnboardingPage() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Wand2 className="w-4 h-4 text-primary" />
-                  <Label htmlFor="prompt">AI Custom Guiding Prompt</Label>
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <Wand2 className="w-4 h-4 text-primary" />
+                    <Label htmlFor="prompt" className="font-bold">
+                      AI Custom Guiding Prompt
+                    </Label>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium">
+                    Tell us about your business and what the AI should emphasize
+                    (e.g., your specialty, ambiance, or service) to generate
+                    more personalized and authentic review suggestions.
+                  </p>
                 </div>
-                <Textarea
-                  id="prompt"
-                  placeholder="Tell the AI what to focus on (e.g. 'Mention the fresh beans' or 'Highlight our friendly staff')"
-                  rows={4}
-                  value={formData.aiPrompt}
-                  onChange={(e) => updateFormData({ aiPrompt: e.target.value })}
-                  className={formErrors.aiPrompt ? "border-destructive" : ""}
-                />
+                <div className="relative group">
+                  <Textarea
+                    id="prompt"
+                    placeholder='e.g., "We are a high-end Italian restaurant in South Mumbai known for our wood-fired pizzas and homemade pasta. Please focus on the quality of our ingredients, the romantic candlelight ambiance, and our extensive wine list curated by our in-house sommelier."'
+                    rows={6}
+                    value={formData.aiPrompt}
+                    onChange={(e) =>
+                      updateFormData({ aiPrompt: e.target.value })
+                    }
+                    className={cn(
+                      "resize-none bg-slate-50/50 focus:bg-white transition-all duration-300 pb-12",
+                      formErrors.aiPrompt ? "border-destructive" : "",
+                    )}
+                  />
+                  <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                    {formData.aiPrompt.trim().split(/\s+/).filter(Boolean)
+                      .length < 10 &&
+                      formData.aiPrompt.length > 0 && (
+                        <span className="text-[9px] text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-full animate-pulse">
+                          Tell us more to enable AI{" "}
+                          {10 -
+                            formData.aiPrompt
+                              .trim()
+                              .split(/\s+/)
+                              .filter(Boolean).length}
+                        </span>
+                      )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleGeneratePrompt}
+                      disabled={
+                        isGeneratingPrompt ||
+                        formData.aiPrompt.trim().split(/\s+/).filter(Boolean)
+                          .length < 5
+                      }
+                      className={cn(
+                        "h-8 text-[10px] gap-1.5 rounded-lg transition-all duration-500",
+                        formData.aiPrompt.trim().split(/\s+/).filter(Boolean)
+                          .length >= 10
+                          ? "bg-indigo-600 hover:bg-slate-900 text-white shadow-lg shadow-indigo-200"
+                          : "bg-slate-100 text-slate-400 border-slate-200",
+                      )}
+                    >
+                      {isGeneratingPrompt ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3 h-3" />
+                      )}
+                      Refine with AI
+                    </Button>
+                  </div>
+                </div>
                 {formErrors.aiPrompt && (
                   <p className="text-[10px] text-destructive font-medium">
                     {formErrors.aiPrompt}
@@ -732,22 +802,45 @@ export default function OnboardingPage() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="style">AI Voice Style</Label>
-                <select
-                  id="style"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all"
-                  value={formData.commentStyle}
-                  onChange={(e) =>
-                    updateFormData({ commentStyle: e.target.value })
-                  }
-                >
-                  {COMMENT_STYLES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-4 pt-2">
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="style" className="font-bold">
+                    AI Voice Style
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground font-medium">
+                    Choose the personality that best matches your brand voice.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {COMMENT_STYLES.map((style) => {
+                    const isSelected = formData.commentStyle === style.label;
+                    return (
+                      <button
+                        key={style.label}
+                        type="button"
+                        onClick={() =>
+                          updateFormData({ commentStyle: style.label })
+                        }
+                        className={cn(
+                          "relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-200 text-left",
+                          isSelected
+                            ? "border-primary bg-primary/5 ring-2 ring-primary/10 shadow-md"
+                            : "border-border bg-card/50 hover:border-primary/30 hover:bg-slate-50",
+                        )}
+                      >
+                        <span className="text-xl">{style.icon}</span>
+                        <span className="text-xs font-bold text-slate-700">
+                          {style.label}
+                        </span>
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center text-white scale-110 shadow-sm">
+                            <CheckCircle2 className="w-2.5 h-2.5" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </motion.div>

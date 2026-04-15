@@ -12,6 +12,8 @@ const COMMENT_STYLE_MAP: Record<string, string> = {
   "Friendly & Casual": "FRIENDLY_CASUAL",
   "Concise & Direct": "CONCISE_DIRECT",
   "Enthusiastic & Warm": "ENTHUSIASTIC_WARM",
+  "Witty & Fun": "WITTY_FUN",
+  "Hinglish (Hindi + English)": "HINGLISH",
 };
 
 const onboardingSchema = z.object({
@@ -19,11 +21,7 @@ const onboardingSchema = z.object({
   industry: z.string().min(1, "Industry is required"),
   location: z.string().min(1, "Location is required"),
   ownerName: z.string().min(1, "Owner name is required"),
-  acceptedStarsThreshold: z.coerce
-    .number()
-    .min(1)
-    .max(5)
-    .default(4),
+  acceptedStarsThreshold: z.coerce.number().min(1).max(5).default(4),
   defaultGoogleMapsLink: z.string().url("Invalid Google Maps URL"),
   defaultAiPrompt: z.string().min(1, "AI prompt is required"),
   defaultCommentStyle: z
@@ -32,6 +30,8 @@ const onboardingSchema = z.object({
       "FRIENDLY_CASUAL",
       "CONCISE_DIRECT",
       "ENTHUSIASTIC_WARM",
+      "WITTY_FUN",
+      "HINGLISH",
     ])
     .default("PROFESSIONAL_POLITE"),
 });
