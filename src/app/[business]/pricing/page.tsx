@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Building2, LineChart } from "lucide-react";
+import { ArrowRight, Sparkles, Building2, LineChart, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useBusiness } from "@/hooks/use-business";
 import { PricingPlans } from "@/components/shared/pricing/pricing-plans";
@@ -61,8 +62,14 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/30 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        <Link href={`/${businessSlug}/dashboard`}>
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground mb-8 -ml-2 group transition-all">
+            <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            Back to Dashboard
+          </Button>
+        </Link>
         <div className="text-center mb-16 space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 10 }}

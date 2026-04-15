@@ -38,31 +38,33 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8 pb-12 pt-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-        <BusinessProfileSection
-          business={business}
-          updateBusinessMutation={updateBusinessMutation}
-        />
-        <UserProfileSection
-          user={user}
-          business={business}
-          updateProfileMutation={updateProfileMutation}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-        <div className="lg:col-span-1">
-          <AdvancedBrandingSection
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+          <BusinessProfileSection
             business={business}
             updateBusinessMutation={updateBusinessMutation}
+          />
+          <UserProfileSection
+            user={user}
+            business={business}
+            updateProfileMutation={updateProfileMutation}
           />
         </div>
-        <div className="lg:col-span-2 text-slate-800">
-          <RoutingSettingsSection
-            business={business}
-            updateBusinessMutation={updateBusinessMutation}
-          />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+          <div className="lg:col-span-1">
+            <AdvancedBrandingSection
+              business={business}
+              updateBusinessMutation={updateBusinessMutation}
+            />
+          </div>
+          <div className="lg:col-span-2 text-slate-800">
+            <RoutingSettingsSection
+              business={business}
+              updateBusinessMutation={updateBusinessMutation}
+            />
+          </div>
         </div>
       </div>
     </div>

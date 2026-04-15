@@ -52,9 +52,20 @@ export default function ScansPage() {
   if (!business) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50/30">
-      {/* Header */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="min-h-screen bg-white">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12 space-y-6">
+        {/* Page Heading */}
+        <section className="animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="mb-2">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+              Scan Tracking & Insights
+            </h1>
+            <p className="text-muted-foreground font-medium mt-1">
+              Detailed logs of every customer interaction with your physical
+              touchpoints.
+            </p>
+          </div>
+        </section>
         {/* Search & Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-2 relative">

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { Signal, TrendingUp, ArrowUpRight, Calendar, Loader2 } from "lucide-react";
+import { Signal, TrendingUp, ArrowUpRight, Calendar, Loader2, ChevronLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 import { useQRCodeDetail } from "@/hooks/use-qr-codes";
 import { useReviews } from "@/hooks/use-reviews";
@@ -73,8 +75,14 @@ export default function IndividualQRDashboard() {
   const filteredScans = scansData?.data || [];
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="min-h-screen bg-white">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12 space-y-6">
+        <Link href={`/${businessSlug}/dashboard/qr-codes`}>
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground mb-4 -ml-2 group transition-all">
+            <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            Back to QR Code Management
+          </Button>
+        </Link>
         {/* Header */}
         <div>
           <h1 className="text-3xl font-black text-slate-900">{qrCode.name}</h1>

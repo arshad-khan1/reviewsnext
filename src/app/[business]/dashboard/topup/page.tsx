@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Zap, CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
+import { Zap, CheckCircle2, ArrowRight, Loader2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useBusiness } from "@/hooks/use-business";
@@ -103,42 +104,61 @@ export default function TopupPage() {
     );
   }
 
-  const availableCredits =
-    (business.aiCredits?.monthlyAllocation || 0) +
-    (business.aiCredits?.topupAllocation || 0) -
-    (business.aiCredits?.monthlyUsed || 0) -
-    (business.aiCredits?.topupUsed || 0);
+  const monthlyRemaining = Math.max(0, (business.aiCredits?.monthlyAllocation || 0) - (business.aiCredits?.monthlyUsed || 0));
+  const topupRemaining = Math.max(0, (business.aiCredits?.topupAllocation || 0) - (business.aiCredits?.topupUsed || 0));
 
   return (
-    <div className="min-h-screen bg-slate-50/30 pb-20">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-12">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-              Recharge AI Credits
-            </h1>
-            <p className="text-slate-500 font-medium">
-              Top up your balance instantly and never miss a review.
-            </p>
-          </div>
+    <div className="min-h-screen bg-white pb-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12 space-y-8">
+        <Link href={`/${businessSlug}/dashboard`}>
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground mb-4 -ml-2 group transition-all">
+            <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            Back to Dashboard
+          </Button>
+        </Link>
 
-          <div className="flex items-center gap-5 bg-slate-50 p-4 pl-6 rounded-3xl border border-slate-200">
-            <div className="space-y-1">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                Available Balance
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <section className="animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="mb-2">
+              <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+                Recharge AI Credits
+              </h1>
+              <p className="text-muted-foreground font-medium mt-1">
+                Top up your balance instantly and never miss a customer review.
+              </p>
+            </div>
+          </section>
+
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Monthly Credits Card */}
+            <div className="bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-1 min-w-[160px]">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                Monthly Balance
               </span>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-slate-900">
-                  {availableCredits}
+                <span className="text-2xl font-black text-slate-900">
+                  {monthlyRemaining}
                 </span>
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">
                   Credits
                 </span>
               </div>
             </div>
-            <div className="w-14 h-14 bg-white border border-slate-200 text-indigo-600 rounded-2xl flex items-center justify-center shadow-sm">
-              <Zap className="w-7 h-7 fill-current" />
+
+            {/* Topup Credits Card */}
+            <div className="bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-1 min-w-[160px]">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                One-time Credits
+              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-slate-900">
+                  {topupRemaining}
+                </span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">
+                  Remaining
+                </span>
+              </div>
             </div>
           </div>
         </div>

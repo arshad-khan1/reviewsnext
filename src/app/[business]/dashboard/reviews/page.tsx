@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/shared/Pagination";
 import ReviewsTable from "../components/ReviewsTable";
 import QRScansTable from "../components/QRScansTable";
@@ -25,11 +24,17 @@ export default function ReviewsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [typeFilter, setTypeFilter] = useState<ReviewType | null>(null);
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date } | undefined>();
+  const [dateRange, setDateRange] = useState<
+    { from?: Date; to?: Date } | undefined
+  >();
 
   const [scansSearchQuery, setScansSearchQuery] = useState("");
-  const [scansResultFilter, setScansResultFilter] = useState<boolean | null>(null);
-  const [scansDateRange, setScansDateRange] = useState<{ from?: Date; to?: Date } | undefined>();
+  const [scansResultFilter, setScansResultFilter] = useState<boolean | null>(
+    null,
+  );
+  const [scansDateRange, setScansDateRange] = useState<
+    { from?: Date; to?: Date } | undefined
+  >();
 
   // Pagination State
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
@@ -74,8 +79,20 @@ export default function ReviewsPage() {
   const totalScansPages = scansData?.pagination.totalPages || 1;
 
   return (
-    <div className="min-h-screen bg-background pb-12">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="min-h-screen bg-white pb-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12 space-y-6">
+        {/* Page Heading */}
+        <section className="animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="mb-2">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+              Reviews & Customer Feedback
+            </h1>
+            <p className="text-muted-foreground font-medium mt-1">
+              Monitor and manage what your customers are saying about your
+              business.
+            </p>
+          </div>
+        </section>
         <DashboardTabSwitcher
           activeTab={activeTab}
           setActiveTab={setActiveTab}

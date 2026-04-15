@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowLeft,
   MapPin,
   Signal,
   TrendingUp,
@@ -10,6 +9,7 @@ import {
   Trash2,
   Loader2,
   ArrowUpRight,
+  ChevronLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -33,7 +33,7 @@ import { useScans } from "@/hooks/use-scans";
 import { useParams, useRouter } from "next/navigation";
 import { PlanType } from "@prisma/client";
 import { UpgradePrompt } from "@/components/shared/UpgradePrompt";
-import { hasFeature, getLimit } from "@/config/plan-limits";
+import { getLimit } from "@/config/plan-limits";
 import DashboardFilters from "../../../components/DashboardFilters";
 import DashboardTabSwitcher from "../../../components/DashboardTabSwitcher";
 import ReviewsTable from "../../../components/ReviewsTable";
@@ -172,8 +172,18 @@ export default function LocationDetailPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+    <div className="min-h-screen bg-white pb-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12 space-y-6">
+        <Link href={`/${businessSlug}/dashboard/qr-codes`}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2 text-muted-foreground hover:text-foreground mb-4 -ml-2 group transition-all"
+          >
+            <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            Back to QR Code Management
+          </Button>
+        </Link>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-900">

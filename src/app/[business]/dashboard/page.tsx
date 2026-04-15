@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   QrCode,
   ArrowUpRight,
-  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth-store";
@@ -128,8 +127,20 @@ const BusinessDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-10">
+        {/* Page Heading */}
+        <section className="animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="mb-2">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+              Dashboard & Analytics
+            </h1>
+            <p className="text-muted-foreground font-medium mt-1">
+              Real-time overview of your business performance and customer
+              engagement.
+            </p>
+          </div>
+        </section>
         {/* Stat Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
