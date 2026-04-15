@@ -229,6 +229,7 @@ export async function getDashboardData(
       type: r.type,
       rating: r.rating,
       reviewText: r.reviewText,
+      whatWentWrong: r.whatWentWrong,
       submittedToGoogle: r.submittedToGoogle,
       submittedAt: r.submittedAt,
       formattedAt: formatDate(r.submittedAt),

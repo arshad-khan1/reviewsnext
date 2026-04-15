@@ -16,6 +16,7 @@ import {
 import { AdminRoute } from "@/components/auth/protected-route";
 import { UserNav } from "@/components/layout/UserNav";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/shared/Pagination";
 import BusinessCard from "./components/BusinessCard";
 import { mockBusinesses } from "@/data/mockBusinesses";
 import StatCard from "../../[business]/dashboard/components/StatCard";
@@ -214,39 +215,12 @@ export default function AdminDashboardPage() {
             )}
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-8">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="rounded-lg"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-
-                <div className="flex items-center gap-1.5 px-4 font-medium text-sm">
-                  <span className="text-foreground">{currentPage}</span>
-                  <span className="text-muted-foreground">/</span>
-                  <span className="text-muted-foreground">{totalPages}</span>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="rounded-lg"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              className="pt-8"
+            />
           </div>
 
           {/* Footer note */}

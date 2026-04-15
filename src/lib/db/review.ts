@@ -29,7 +29,8 @@ export async function createReview(data: {
         return await tx.review.update({
           where: { id: existing.id },
           data: {
-            submittedToGoogle: data.submittedToGoogle ?? existing.submittedToGoogle,
+            submittedToGoogle:
+              data.submittedToGoogle ?? existing.submittedToGoogle,
             // If new feedback text is provided, we can update it too
             reviewText: data.reviewText ?? existing.reviewText,
             whatWentWrong: data.whatWentWrong ?? existing.whatWentWrong,
@@ -92,6 +93,7 @@ export async function getReviews(
   limit: number = 8,
   filters: {
     type?: ReviewType;
+    rating?: number;
     qrCodeId?: string;
     search?: string;
     submittedToGoogle?: boolean;
@@ -216,9 +218,11 @@ export async function getReviewDetails(id: string, businessSlug: string) {
   return {
     ...review,
     formattedAt: formatDate(review.submittedAt),
-    scan: review.scan ? {
-      ...review.scan,
-      formattedAt: formatDate(review.scan.scannedAt),
-    } : null,
+    scan: review.scan
+      ? {
+          ...review.scan,
+          formattedAt: formatDate(review.scan.scannedAt),
+        }
+      : null,
   };
 }

@@ -35,6 +35,7 @@ export interface DashboardReview {
   type: "POSITIVE" | "NEGATIVE";
   rating: number;
   reviewText: string | null;
+  whatWentWrong?: string | null;
   submittedToGoogle: boolean;
   submittedAt: string;
   formattedAt: string;

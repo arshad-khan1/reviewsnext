@@ -17,9 +17,9 @@ export default function DashboardTabSwitcher({
 }: DashboardTabSwitcherProps) {
   return (
     <div className="flex justify-start">
-      <div className="p-1 bg-card border border-border rounded-xl flex items-center gap-0.5 shadow-sm relative">
+      <div className="p-1 bg-card border border-border rounded-md flex items-center gap-0.5 shadow-sm relative">
         <div
-          className={`absolute top-1 bottom-1 transition-all duration-300 ease-in-out bg-primary rounded-lg shadow-lg shadow-primary/20 ${
+          className={`absolute top-1 bottom-1 transition-all duration-300 ease-in-out bg-primary rounded-md shadow-lg shadow-primary/20 ${
             activeTab === "reviews"
               ? "left-1 w-[calc(50%-0.375rem)]"
               : "left-[50%] w-[calc(50%-0.375rem)]"
@@ -27,7 +27,7 @@ export default function DashboardTabSwitcher({
         />
         <button
           onClick={() => setActiveTab("reviews")}
-          className={`relative cursor-pointer z-10 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 ${
+          className={`relative cursor-pointer z-10 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors duration-300 ${
             activeTab === "reviews"
               ? "text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
@@ -38,7 +38,7 @@ export default function DashboardTabSwitcher({
         </button>
         <button
           onClick={() => setActiveTab("scans")}
-          className={`relative cursor-pointer z-10 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 ${
+          className={`relative cursor-pointer z-10 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors duration-300 ${
             activeTab === "scans"
               ? "text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"

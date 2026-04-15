@@ -76,7 +76,7 @@ export async function createScan(data: {
   // 3. Prepare merged branding and config
   const { effective: effectiveBranding, showWatermark } = mergeBranding(
     business.brandingConfig,
-    qrCode.brandingOverride
+    qrCode.brandingOverride,
   );
 
   return {
@@ -84,10 +84,18 @@ export async function createScan(data: {
     qrCodeId: qrCode.id,
     businessName: business.name,
     logoUrl: business.logoUrl,
-    acceptedStarsThreshold: qrCode.useDefaultConfig ? business.acceptedStarsThreshold : (qrCode.acceptedStarsThreshold || business.acceptedStarsThreshold),
-    googleMapsLink: qrCode.useDefaultConfig ? business.defaultGoogleMapsLink : (qrCode.googleMapsLink || business.defaultGoogleMapsLink),
-    aiGuidingPrompt: qrCode.useDefaultConfig ? business.defaultAiPrompt : (qrCode.aiGuidingPrompt || business.defaultAiPrompt),
-    commentStyle: qrCode.useDefaultConfig ? business.defaultCommentStyle : (qrCode.commentStyle || business.defaultCommentStyle),
+    acceptedStarsThreshold: qrCode.useDefaultConfig
+      ? business.acceptedStarsThreshold
+      : qrCode.acceptedStarsThreshold || business.acceptedStarsThreshold,
+    googleMapsLink: qrCode.useDefaultConfig
+      ? business.defaultGoogleMapsLink
+      : qrCode.googleMapsLink || business.defaultGoogleMapsLink,
+    aiGuidingPrompt: qrCode.useDefaultConfig
+      ? business.defaultAiPrompt
+      : qrCode.aiGuidingPrompt || business.defaultAiPrompt,
+    commentStyle: qrCode.useDefaultConfig
+      ? business.defaultCommentStyle
+      : qrCode.commentStyle || business.defaultCommentStyle,
     effectiveBranding,
     showWatermark,
   };
@@ -107,7 +115,7 @@ export async function getScans(
     from?: Date;
     to?: Date;
     locationId?: string;
-  } = {}
+  } = {},
 ) {
   const skip = (page - 1) * limit;
 
@@ -123,7 +131,9 @@ export async function getScans(
         locationId: filters.locationId,
       },
     }),
-    ...(filters.resultedInReview !== undefined && { resultedInReview: filters.resultedInReview }),
+    ...(filters.resultedInReview !== undefined && {
+      resultedInReview: filters.resultedInReview,
+    }),
     ...(filters.search && {
       OR: [
         { device: { contains: filters.search, mode: "insensitive" } },
@@ -134,7 +144,7 @@ export async function getScans(
         { country: { contains: filters.search, mode: "insensitive" } },
       ],
     }),
-    ...( (filters.from || filters.to) && {
+    ...((filters.from || filters.to) && {
       scannedAt: {
         ...(filters.from && { gte: filters.from }),
         ...(filters.to && { lte: filters.to }),
@@ -161,6 +171,8 @@ export async function getScans(
             id: true,
             rating: true,
             type: true,
+            submittedAt: true,
+            submittedToGoogle: true,
           },
         },
       },
@@ -172,10 +184,14 @@ export async function getScans(
     data: scans.map((s) => ({
       ...s,
       formattedAt: formatDate(s.scannedAt),
-      review: s.review ? {
-        ...s.review,
-        formattedAt: s.review.submittedAt ? formatDate(s.review.submittedAt) : null,
-      } : null,
+      review: s.review
+        ? {
+            ...s.review,
+            formattedAt: s.review.submittedAt
+              ? formatDate(s.review.submittedAt)
+              : null,
+          }
+        : null,
     })),
     pagination: {
       page,
@@ -228,9 +244,11 @@ export async function getScanDetails(id: string, businessSlug: string) {
   return {
     ...scan,
     formattedAt: formatDate(scan.scannedAt),
-    review: scan.review ? {
-      ...scan.review,
-      formattedAt: formatDate(scan.review.submittedAt),
-    } : null,
+    review: scan.review
+      ? {
+          ...scan.review,
+          formattedAt: formatDate(scan.review.submittedAt),
+        }
+      : null,
   };
 }

@@ -496,7 +496,7 @@ export default function QRCodeManager() {
                         size="sm"
                         className="h-8 gap-2 border-slate-200 text-indigo-600 bg-white hover:bg-indigo-50 font-bold shrink-0"
                       >
-                        View Dashboard
+                        View Location Analytics
                       </Button>
                     </Link>
                   </div>

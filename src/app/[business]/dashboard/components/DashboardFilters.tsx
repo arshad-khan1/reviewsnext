@@ -65,7 +65,7 @@ export default function DashboardFilters({
                 ? "Search reviews (content, name...)"
                 : "Search scans (IP, device, city...)"
             }
-            className="pl-11 h-11 bg-card/50 border-border/50 rounded-2xl font-medium focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 transition-all placeholder:text-muted-foreground/50"
+            className="pl-11 h-11 bg-card/50 border-border rounded-md font-medium focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 transition-all placeholder:text-muted-foreground/70"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -79,7 +79,7 @@ export default function DashboardFilters({
           variant="ghost"
           size="sm"
           onClick={onClearAll}
-          className="h-11 px-4 rounded-2xl font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all gap-2 cursor-pointer focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-11 px-4 rounded-md font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all gap-2 cursor-pointer focus-visible:ring-0 focus-visible:ring-offset-0"
         >
           <FilterX className="w-4 h-4" />
           <span className="hidden sm:inline">Clear Filters</span>
@@ -96,23 +96,23 @@ export default function DashboardFilters({
                 setTypeFilter?.(val === "ALL" ? null : (val as ReviewType))
               }
             >
-              <SelectTrigger className="h-11 w-[180px] rounded-2xl focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+              <SelectTrigger className="h-11 w-[180px] rounded-md focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
                 <SelectValue placeholder="Feedback Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">
-                  <span className="text-muted-foreground/70 font-bold">
+                  <span className="text-muted-foreground/80 font-medium">
                     All Types
                   </span>
                 </SelectItem>
                 <SelectItem value="POSITIVE">
-                  <div className="flex items-center gap-2 text-success font-bold">
+                  <div className="flex items-center gap-2 text-success font-medium">
                     <ThumbsUp className="w-3.5 h-3.5" />
                     Positive
                   </div>
                 </SelectItem>
                 <SelectItem value="NEGATIVE">
-                  <div className="flex items-center gap-2 text-destructive font-bold">
+                  <div className="flex items-center gap-2 text-destructive font-medium">
                     <ThumbsDown className="w-3.5 h-3.5" />
                     Negative
                   </div>
@@ -127,18 +127,18 @@ export default function DashboardFilters({
                 setRatingFilter?.(val === "ALL" ? null : parseInt(val))
               }
             >
-              <SelectTrigger className="h-11 w-[150px] rounded-2xl focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+              <SelectTrigger className="h-11 w-[150px] rounded-md focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
                 <SelectValue placeholder="Rating" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">
-                  <span className="text-muted-foreground/70 font-bold">
+                  <span className="text-muted-foreground/80 font-medium">
                     All Ratings
                   </span>
                 </SelectItem>
                 {[5, 4, 3, 2, 1].map((r) => (
                   <SelectItem key={r} value={r.toString()}>
-                    <div className="flex items-center gap-2 font-bold text-foreground">
+                    <div className="flex items-center gap-2 font-medium text-foreground">
                       <Star className="w-3.5 h-3.5 fill-star text-star" />
                       {r} Stars
                     </div>
@@ -156,23 +156,23 @@ export default function DashboardFilters({
                 setResultFilter?.(val === "ALL" ? null : val === "true")
               }
             >
-              <SelectTrigger className="h-11 w-[200px] rounded-2xl focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+              <SelectTrigger className="h-11 w-[200px] rounded-md focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
                 <SelectValue placeholder="Scan Result" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">
-                  <span className="text-muted-foreground/70 font-bold">
+                  <span className="text-muted-foreground/80 font-medium">
                     All Scans
                   </span>
                 </SelectItem>
                 <SelectItem value="true">
-                  <div className="flex items-center gap-1.5 text-success font-bold">
+                  <div className="flex items-center gap-1.5 text-success font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     Successful
                   </div>
                 </SelectItem>
                 <SelectItem value="false">
-                  <div className="flex items-center gap-1.5 text-destructive font-bold">
+                  <div className="flex items-center gap-1.5 text-destructive font-medium">
                     <XCircle className="w-3.5 h-3.5" />
                     Failed
                   </div>

@@ -41,6 +41,7 @@ import QRScansTable from "../../../components/QRScansTable";
 import ReviewDetailDialog from "../../../components/ReviewDetailDialog";
 import ScanDetailDialog from "../../../components/ScanDetailDialog";
 import { useAuthStore } from "@/store/auth-store";
+import { Pagination } from "@/components/shared/Pagination";
 
 const DEFAULT_LIMIT = 10;
 
@@ -404,40 +405,12 @@ export default function LocationDetailPage() {
               </div>
 
               {/* Pagination */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/10">
-                <div className="flex flex-col sm:flex-row items-center gap-4 text-xs font-medium text-muted-foreground uppercase tracking-widest">
-                  Showing {(currentPage - 1) * limit + 1} to{" "}
-                  {Math.min(
-                    currentPage * limit,
-                    reviewsData?.pagination.total || 0,
-                  )}{" "}
-                  of {reviewsData?.pagination.total || 0} entries
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
-                    disabled={currentPage === 1}
-                    className="h-9 px-4 rounded-xl font-bold"
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="h-9 px-4 rounded-xl font-bold"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                className="pt-4"
+              />
             </div>
           ) : (
             <div className="space-y-6">
@@ -489,42 +462,12 @@ export default function LocationDetailPage() {
               </div>
 
               {/* Pagination */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/10">
-                <div className="flex flex-col sm:flex-row items-center gap-4 text-xs font-medium text-muted-foreground uppercase tracking-widest">
-                  Showing {(scansPage - 1) * scansLimit + 1} to{" "}
-                  {Math.min(
-                    scansPage * scansLimit,
-                    scansData?.pagination.total || 0,
-                  )}{" "}
-                  of {scansData?.pagination.total || 0} scans
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setScansPage((prev) => Math.max(prev - 1, 1))
-                    }
-                    disabled={scansPage === 1}
-                    className="h-9 px-4 rounded-xl font-bold"
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setScansPage((prev) =>
-                        Math.min(prev + 1, totalScansPages),
-                      )
-                    }
-                    disabled={scansPage === totalScansPages}
-                    className="h-9 px-4 rounded-xl font-bold"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
+              <Pagination
+                currentPage={scansPage}
+                totalPages={totalScansPages}
+                onPageChange={setScansPage}
+                className="pt-4"
+              />
             </div>
           )}
         </section>

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/shared/Pagination";
 import ReviewsTable from "../components/ReviewsTable";
 import QRScansTable from "../components/QRScansTable";
 import DashboardTabSwitcher from "../components/DashboardTabSwitcher";
@@ -117,28 +117,11 @@ export default function ReviewsPage() {
             />
 
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-foreground/5 relative">
-              {isLoadingReviews && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3">
-                  <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                  <p className="text-xs font-bold text-primary animate-pulse tracking-widest uppercase">
-                    Fetching Reviews...
-                  </p>
-                </div>
-              )}
-              {reviewsData && reviewsData.data.length > 0 ? (
-                <ReviewsTable
-                  onViewReview={(r) => setSelectedReviewId(r.id)}
-                  reviews={reviewsData.data}
-                />
-              ) : (
-                !isLoadingReviews && (
-                  <div className="py-12 text-center bg-muted/5 animate-in fade-in duration-500">
-                    <p className="text-sm font-bold text-muted-foreground/60 tracking-wide">
-                      No reviews found matching your filters.
-                    </p>
-                  </div>
-                )
-              )}
+              <ReviewsTable
+                onViewReview={(r) => setSelectedReviewId(r.id)}
+                reviews={reviewsData?.data || []}
+                isLoading={isLoadingReviews}
+              />
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/10">
@@ -173,7 +156,7 @@ export default function ReviewsPage() {
                           setLimit(opt);
                           setCurrentPage(1);
                         }}
-                        className={`px-3 py-1 rounded-md text-[10px] font-black transition-all ${limit === opt ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                        className={`px-3 py-1 rounded-md text-[10px] font-black transition-all cursor-pointer ${limit === opt ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                       >
                         {opt}
                       </button>
@@ -182,43 +165,11 @@ export default function ReviewsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="h-10 px-4 rounded-xl font-bold bg-card border-border/50 shadow-sm transition-all active:scale-95"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Previous
-                </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`w-10 h-10 rounded-xl text-xs font-bold transition-all ${currentPage === i + 1 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105" : "text-muted-foreground hover:bg-muted/50"}`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="h-10 px-4 rounded-xl font-bold bg-card border-border/50 shadow-sm transition-all active:scale-95"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
             </div>
           </div>
         ) : (
@@ -249,28 +200,11 @@ export default function ReviewsPage() {
             />
 
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-foreground/5 relative">
-              {isLoadingScans && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3">
-                  <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
-                  <p className="text-xs font-bold text-orange-600 animate-pulse tracking-widest uppercase">
-                    Scanning Activity...
-                  </p>
-                </div>
-              )}
-              {scansData && scansData.data.length > 0 ? (
-                <QRScansTable
-                  onViewScan={(s) => setSelectedScanId(s.id)}
-                  scans={scansData.data}
-                />
-              ) : (
-                !isLoadingScans && (
-                  <div className="py-12 text-center bg-muted/5 animate-in fade-in duration-500">
-                    <p className="text-sm font-bold text-muted-foreground/60 tracking-wide">
-                      No scan events recorded yet.
-                    </p>
-                  </div>
-                )
-              )}
+              <QRScansTable
+                onViewScan={(s) => setSelectedScanId(s.id)}
+                scans={scansData?.data || []}
+                isLoading={isLoadingScans}
+              />
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border/10">
@@ -305,7 +239,7 @@ export default function ReviewsPage() {
                           setScansLimit(opt);
                           setScansPage(1);
                         }}
-                        className={`px-3 py-1 rounded-md text-[10px] font-black transition-all ${scansLimit === opt ? "bg-white text-orange-600 shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                        className={`px-3 py-1 rounded-md text-[10px] font-black transition-all cursor-pointer ${scansLimit === opt ? "bg-white text-orange-600 shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                       >
                         {opt}
                       </button>
@@ -313,41 +247,11 @@ export default function ReviewsPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setScansPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={scansPage === 1}
-                  className="h-10 px-4 rounded-xl font-bold bg-card border-border/50 shadow-sm transition-all active:scale-95"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Previous
-                </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalScansPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setScansPage(i + 1)}
-                      className={`w-10 h-10 rounded-xl text-xs font-bold transition-all ${scansPage === i + 1 ? "bg-orange-600 text-white shadow-lg shadow-orange-600/20 scale-105" : "text-muted-foreground hover:bg-muted/50"}`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setScansPage((prev) => Math.min(prev + 1, totalScansPages))
-                  }
-                  disabled={scansPage === totalScansPages}
-                  className="h-10 px-4 rounded-xl font-bold bg-card border-border/50 shadow-sm transition-all active:scale-95"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
+              <Pagination
+                currentPage={scansPage}
+                totalPages={totalScansPages}
+                onPageChange={setScansPage}
+              />
             </div>
           </div>
         )}
