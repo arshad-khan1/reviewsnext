@@ -37,7 +37,7 @@ export const POST = withAuth(async (req, user, { params }) => {
 
     // 1. Create Order in Razorpay
     const amountInPaise = pkg.price * 100;
-    const order = await createRazorpayOrder(amountInPaise);
+    const order = await createRazorpayOrder(amountInPaise, `TOPUP_${packageId.toUpperCase()}_${Date.now()}`);
 
     // 2. Store Order in Database (Pending Payment)
     await createTopupOrderInDb({

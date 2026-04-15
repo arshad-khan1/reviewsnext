@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth/guard";
+import { openai, OPENAI_MODEL } from "@/lib/openai";
 
+/**
+ * POST /api/public/ai/generate-system-prompt
+ * Generates a business-specific AI guiding prompt from owner-supplied keywords.
+ *
+ * Body:
+ *   keywords  string  — free-form description of the business (≥ 10 words)
+ */
 export async function POST(req: Request) {
   try {
     const { keywords } = await req.json();
@@ -13,11 +21,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Try to get user for logging
+    // 1. Attempt to identify the logged-in user (for logging — non-blocking)
     const { user: payload } = await getAuthUser(req as any);
 
     if (payload) {
-      // Ensure User has AiCredits (Onboarding trial)
+      // Ensure user has an AiCredits row (onboarding trial credits)
       const credits = await prisma.aiCredits.upsert({
         where: { userId: payload.sub },
         create: {
@@ -30,7 +38,7 @@ export async function POST(req: Request) {
         update: {},
       });
 
-      // Log Usage
+      // Log the usage
       await prisma.aiUsageLog.create({
         data: {
           aiCreditsId: credits.id,
@@ -41,16 +49,44 @@ export async function POST(req: Request) {
       });
     }
 
-    // 3. Return Static High-Quality Prompt
-    // In the future, this will call an LLM with the provided keywords.
-    const staticPrompt = `We are committed to delivering an exceptional experience characterized by professional service, meticulous attention to detail, and a warm, inviting atmosphere. Our mission is to exceed customer expectations through quality products and personalized care. Please highlight our unique blend of expertise and hospitality to inspire authentic and positive feedback from our valued guests.`;
+    // 2. Generate a guiding prompt via OpenAI
+    const systemMessage = [
+      `You are a brand strategist helping business owners craft a short, focused AI guiding prompt.`,
+      `The prompt will be shown to an AI later to help it write authentic Google reviews for their customers.`,
+      ``,
+      `Rules for the output:`,
+      `- Write in third person, describing the business and its values.`,
+      `- Highlight what makes the business special based on the keywords.`,
+      `- Keep it between 40 and 80 words.`,
+      `- Output only the final prompt text. No preamble, no labels, no quotation marks.`,
+    ].join("\n");
 
-    return NextResponse.json({ prompt: staticPrompt }, { status: 200 });
+    const userMessage = `Here are the business owner's keywords describing their business:\n\n"${keywords}"\n\nWrite the AI guiding prompt now.`;
+
+    const completion = await openai.chat.completions.create({
+      model: OPENAI_MODEL,
+      messages: [
+        { role: "system", content: systemMessage },
+        { role: "user", content: userMessage },
+      ],
+      temperature: 0.7,
+      max_tokens: 120,
+    });
+
+    const prompt = completion.choices[0]?.message?.content?.trim();
+
+    if (!prompt) {
+      throw new Error("EMPTY_RESPONSE");
+    }
+
+    return NextResponse.json({ prompt }, { status: 200 });
   } catch (error: any) {
     console.error("[GENERATE_SYSTEM_PROMPT_ERROR]", error);
-    return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Failed to generate prompt" },
-      { status: 500 },
-    );
+
+    // Graceful fallback — return a solid generic prompt rather than a 500
+    const fallbackPrompt =
+      "We are committed to delivering an exceptional experience characterised by professional service, meticulous attention to detail, and a warm, inviting atmosphere. Our mission is to exceed customer expectations through quality offerings and personalised care.";
+
+    return NextResponse.json({ prompt: fallbackPrompt }, { status: 200 });
   }
 }

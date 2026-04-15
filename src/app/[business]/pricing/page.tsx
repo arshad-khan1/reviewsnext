@@ -57,6 +57,7 @@ export default function PricingPage() {
       credits: dbPlan.credits,
       planTier: dbPlan.planTier!,
       billingInterval: dbPlan.billingInterval,
+      type: "SUBSCRIPTION",
     });
     setCheckoutOpen(true);
   };

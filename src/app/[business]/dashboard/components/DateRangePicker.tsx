@@ -165,7 +165,6 @@ export function DateRangePicker({
             selected={date}
             onSelect={handleSelect}
             numberOfMonths={1}
-            translate="no"
           />
         </PopoverContent>
       </Popover>

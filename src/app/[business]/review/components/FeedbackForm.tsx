@@ -49,6 +49,11 @@ const FeedbackForm = ({
     }
   });
 
+  // Helper to count words
+  const getWordCount = (str: string) => {
+    return str.trim().split(/\s+/).filter(Boolean).length;
+  };
+
   const handleEnhance = async (field: "wrong" | "improve") => {
     if (creditsLeft <= 0) {
       toast.error("AI limit reached for this session.");
@@ -56,6 +61,12 @@ const FeedbackForm = ({
     }
 
     const currentText = field === "wrong" ? whatWentWrong : howToImprove;
+    
+    // Check if word count is at least 7
+    if (getWordCount(currentText) < 7) {
+      toast.error("Please write at least 7 words to allow the AI to enhance it.");
+      return;
+    }
 
     setIsEnhancing(field);
     try {
@@ -69,9 +80,7 @@ const FeedbackForm = ({
           businessName,
           commentStyle,
           operation: "REVIEW_ENHANCE",
-          // We could send the current text to AI to enhance it,
-          // but for now the API just gives a static draft based on style.
-          // Let's assume the API handles it or just use it as is.
+          userInput: currentText,
         }),
       });
 
@@ -256,16 +265,16 @@ const FeedbackForm = ({
                 <motion.button
                   type="button"
                   whileHover={
-                    creditsLeft > 0 && !isEnhancing ? { scale: 1.02 } : {}
+                    creditsLeft > 0 && !isEnhancing && getWordCount(whatWentWrong) >= 7 ? { scale: 1.02 } : {}
                   }
                   whileTap={
-                    creditsLeft > 0 && !isEnhancing ? { scale: 0.98 } : {}
+                    creditsLeft > 0 && !isEnhancing && getWordCount(whatWentWrong) >= 7 ? { scale: 0.98 } : {}
                   }
                   onClick={() => handleEnhance("wrong")}
-                  disabled={creditsLeft <= 0 || !!isEnhancing}
+                  disabled={creditsLeft <= 0 || !!isEnhancing || getWordCount(whatWentWrong) < 7}
                   className={cn(
                     "absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-[calc(var(--brand-radius)*0.75)] px-2.5 py-1.5 flex items-center gap-1.5 text-[9px] font-bold text-(--brand-primary) transition-all cursor-pointer",
-                    (creditsLeft <= 0 || !!isEnhancing) &&
+                    (creditsLeft <= 0 || !!isEnhancing || getWordCount(whatWentWrong) < 7) &&
                       "opacity-50 grayscale cursor-not-allowed",
                   )}
                 >
@@ -278,6 +287,12 @@ const FeedbackForm = ({
                     ? "Enhancing..."
                     : `AI Enhance (${creditsLeft})`}
                 </motion.button>
+                {/* Word Count Indicator */}
+                {whatWentWrong.length > 0 && getWordCount(whatWentWrong) < 7 && (
+                  <p className="absolute -bottom-5 left-1 text-[9px] text-muted-foreground/60 transition-all">
+                    Write {7 - getWordCount(whatWentWrong)} more words to enhance with AI
+                  </p>
+                )}
               </div>
             </div>
 
@@ -297,16 +312,16 @@ const FeedbackForm = ({
                 <motion.button
                   type="button"
                   whileHover={
-                    creditsLeft > 0 && !isEnhancing ? { scale: 1.02 } : {}
+                    creditsLeft > 0 && !isEnhancing && getWordCount(howToImprove) >= 7 ? { scale: 1.02 } : {}
                   }
                   whileTap={
-                    creditsLeft > 0 && !isEnhancing ? { scale: 0.98 } : {}
+                    creditsLeft > 0 && !isEnhancing && getWordCount(howToImprove) >= 7 ? { scale: 0.98 } : {}
                   }
                   onClick={() => handleEnhance("improve")}
-                  disabled={creditsLeft <= 0 || !!isEnhancing}
+                  disabled={creditsLeft <= 0 || !!isEnhancing || getWordCount(howToImprove) < 7}
                   className={cn(
                     "absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-[calc(var(--brand-radius)*0.75)] px-2.5 py-1.5 flex items-center gap-1.5 text-[9px] font-bold text-(--brand-primary) transition-all cursor-pointer",
-                    (creditsLeft <= 0 || !!isEnhancing) &&
+                    (creditsLeft <= 0 || !!isEnhancing || getWordCount(howToImprove) < 7) &&
                       "opacity-50 grayscale cursor-not-allowed",
                   )}
                 >
@@ -319,6 +334,12 @@ const FeedbackForm = ({
                     ? "Enhancing..."
                     : `AI Enhance (${creditsLeft})`}
                 </motion.button>
+                {/* Word Count Indicator */}
+                {howToImprove.length > 0 && getWordCount(howToImprove) < 7 && (
+                  <p className="absolute -bottom-5 left-1 text-[9px] text-muted-foreground/60 transition-all">
+                    Write {7 - getWordCount(howToImprove)} more words to enhance with AI
+                  </p>
+                )}
               </div>
             </div>
           </div>

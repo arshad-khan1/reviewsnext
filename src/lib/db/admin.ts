@@ -132,6 +132,87 @@ export async function getAdminRecentActivity() {
 }
 
 /**
+ * Full detail view of a single business for the admin panel.
+ */
+export async function getAdminBusinessDetail(slug: string) {
+  const business = await prisma.business.findFirst({
+    where: { slug, isDeleted: false },
+    include: {
+      owner: {
+        include: {
+          activeSubscription: { include: { planDetails: true } },
+          aiCredits: {
+            include: {
+              usageLogs: {
+                take: 20,
+                orderBy: { usedAt: "desc" },
+              },
+            },
+          },
+        },
+      },
+      qrCodes: {
+        where: { isDeleted: false },
+        orderBy: { createdAt: "desc" },
+        include: {
+          _count: { select: { scans: true, reviews: true } },
+        },
+      },
+      locations: { where: { isDeleted: false } },
+      payments: {
+        where: { status: "SUCCESS" },
+        orderBy: { completedAt: "desc" },
+        take: 10,
+      },
+    },
+  });
+
+  if (!business) throw new Error("BUSINESS_NOT_FOUND");
+
+  const aiCredits = business.owner.aiCredits;
+  const used = (aiCredits?.monthlyUsed ?? 0) + (aiCredits?.topupUsed ?? 0);
+  const total = (aiCredits?.monthlyAllocation ?? 0) + (aiCredits?.topupAllocation ?? 0);
+
+  return {
+    id: business.id,
+    slug: business.slug,
+    name: business.name,
+    industry: business.industry,
+    city: business.city,
+    status: business.status,
+    createdAt: business.createdAt,
+    owner: {
+      id: business.owner.id,
+      name: business.owner.name,
+      phone: business.owner.phone,
+      email: business.owner.email,
+    },
+    subscription: {
+      plan: business.owner.activeSubscription?.plan ?? "STARTER",
+      status: business.owner.activeSubscription?.status ?? "TRIALING",
+      currentPeriodEnd: business.owner.activeSubscription?.currentPeriodEnd,
+      planName: business.owner.activeSubscription?.planDetails?.name,
+    },
+    aiCredits: {
+      used,
+      total,
+      remaining: Math.max(0, total - used),
+      recentUsage: aiCredits?.usageLogs ?? [],
+    },
+    qrCodes: business.qrCodes.map((q) => ({
+      id: q.id,
+      name: q.name,
+      sourceTag: q.sourceTag,
+      isActive: q.isActive,
+      scans: q._count.scans,
+      reviews: q._count.reviews,
+    })),
+    locations: business.locations,
+    recentPayments: business.payments,
+  };
+}
+
+/**
  * Paginated list of all businesses.
  */
 export async function getAllBusinesses(options: {

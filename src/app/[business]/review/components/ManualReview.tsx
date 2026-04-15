@@ -58,9 +58,19 @@ const ManualReview = ({
     }
   });
 
+  // Helper to count words
+  const getWordCount = (str: string) => {
+    return str.trim().split(/\s+/).filter(Boolean).length;
+  };
+
   const handleGenerate = async () => {
     if (creditsLeft <= 0) {
       toast.error("AI limit reached for this session.");
+      return;
+    }
+
+    if (getWordCount(text) < 7) {
+      toast.error("Please write at least 7 words to allow the AI to enhance it.");
       return;
     }
 
@@ -77,6 +87,7 @@ const ManualReview = ({
           aiGuidingPrompt,
           commentStyle,
           operation: "REVIEW_ENHANCE",
+          userInput: text,
         }),
       });
 
@@ -168,13 +179,13 @@ const ManualReview = ({
           className="min-h-[140px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-(--brand-radius) p-5 text-sm italic leading-relaxed"
         />
         <motion.button
-          whileHover={creditsLeft > 0 && !isLoading ? { scale: 1.02 } : {}}
-          whileTap={creditsLeft > 0 && !isLoading ? { scale: 0.98 } : {}}
+          whileHover={creditsLeft > 0 && !isLoading && getWordCount(text) >= 7 ? { scale: 1.02 } : {}}
+          whileTap={creditsLeft > 0 && !isLoading && getWordCount(text) >= 7 ? { scale: 0.98 } : {}}
           onClick={handleGenerate}
-          disabled={creditsLeft <= 0 || isLoading}
+          disabled={creditsLeft <= 0 || isLoading || getWordCount(text) < 7}
           className={cn(
             "absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-[10px] font-bold text-(--brand-primary) transition-all cursor-pointer",
-            (creditsLeft <= 0 || isLoading) && "opacity-50 grayscale cursor-not-allowed"
+            (creditsLeft <= 0 || isLoading || getWordCount(text) < 7) && "opacity-50 grayscale cursor-not-allowed"
           )}
         >
           {isLoading ? (
@@ -184,6 +195,12 @@ const ManualReview = ({
           )}
           {isLoading ? "Enhancing..." : `AI Enhance (${creditsLeft})`}
         </motion.button>
+        {/* Word Count Indicator */}
+        {text.length > 0 && getWordCount(text) < 7 && (
+          <p className="absolute -bottom-5 left-1 text-[9px] text-muted-foreground/60 transition-all">
+            Write {7 - getWordCount(text)} more words to enhance with AI
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-3">
