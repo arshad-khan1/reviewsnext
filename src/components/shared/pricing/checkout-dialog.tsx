@@ -20,9 +20,11 @@ import {
   Loader2,
   ArrowRight,
   PartyPopper,
+  Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { loadRazorpayScript } from "@/lib/razorpay-client";
+import { CouponInput, CouponResult } from "@/components/payments/CouponInput";
 
 export interface CheckoutPlan {
   id: string; // DB Plan CUID
@@ -86,6 +88,7 @@ export function CheckoutDialog({
     upgradeCredit: number;
     originalPrice: number;
   } | null>(null);
+  const [coupon, setCoupon] = useState<CouponResult | null>(null);
   const isSuccessRef = useRef(false);
 
   useEffect(() => {
@@ -162,7 +165,8 @@ export function CheckoutDialog({
     if (open) {
       setIsSuccess(false);
       setIsLoading(false);
-      setEstimate(null); // Clear previous estimates
+      setEstimate(null);
+      setCoupon(null);
     }
   }
 
@@ -205,6 +209,7 @@ export function CheckoutDialog({
       const orderRes = await apiClient.post("/api/payments/create-order", {
         planId: plan.id,
         businessId,
+        ...(coupon ? { couponCode: coupon.code } : {}),
       });
 
       const orderData = await orderRes.json();
@@ -240,7 +245,7 @@ export function CheckoutDialog({
             // Only set loading false if we haven't already succeeded
             setIsLoading((prev) => (isSuccessRef.current ? prev : false));
             if (!isSuccessRef.current) {
-              toast.info("Payment window closed.");
+              toast.info("Payment cancelled.");
               // Ping cancel endpoint to update status in DB
               apiClient
                 .post("/api/payments/cancel", {
@@ -302,7 +307,7 @@ export function CheckoutDialog({
       toast.error("Something went wrong. Please try again.");
       setIsLoading(false);
     }
-  }, [plan, businessId, businessName]);
+  }, [plan, businessId, businessName, coupon]);
 
   if (!plan) return null;
 
@@ -317,6 +322,13 @@ export function CheckoutDialog({
       ? "bg-slate-50 border-slate-200"
       : PLAN_BG[plan.planTier] || "bg-slate-50 border-slate-200";
   const priceInRupees = plan.price / 100;
+  // The price the user will actually pay after proration + coupon
+  const proratedPrice = estimate
+    ? estimate.originalPrice - estimate.upgradeCredit
+    : plan.price;
+  const couponDiscount = coupon ? coupon.discountPaise : 0;
+  const finalDue = Math.max(proratedPrice - couponDiscount, 0);
+  const finalDueRupees = finalDue / 100;
 
   return (
     <Dialog
@@ -337,6 +349,7 @@ export function CheckoutDialog({
       </AnimatePresence>
       <DialogContent
         className="sm:max-w-md p-0 overflow-hidden gap-0 bg-white border border-slate-100 rounded-[2.5rem] shadow-3xl z-50"
+        onOpenAutoFocus={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => {
           if (isLoading || isSuccess) e.preventDefault();
         }}
@@ -506,6 +519,22 @@ export function CheckoutDialog({
                     </span>
                   </div>
                 )}
+                {/* Coupon saving row */}
+                {coupon && (
+                  <div className="flex justify-between items-center text-xs text-emerald-600">
+                    <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                      <Tag className="w-3 h-3" />
+                      Coupon ({coupon.code})
+                    </span>
+                    <span className="font-black">
+                      -₹
+                      {(coupon.discountPaise / 100).toLocaleString("en-IN", {
+                        maximumFractionDigits: 0,
+                      })}
+                    </span>
+                  </div>
+                )}
+                {/* Total Due */}
                 <div className="flex justify-between items-center border-t border-slate-200 pt-4">
                   <span className="text-slate-900 font-black uppercase tracking-widest text-[11px]">
                     Total Due Today
@@ -516,17 +545,28 @@ export function CheckoutDialog({
                     ) : (
                       <>
                         ₹
-                        {estimate
-                          ? (
-                              (estimate.originalPrice -
-                                estimate.upgradeCredit) /
-                              100
-                            ).toLocaleString("en-IN")
-                          : priceInRupees.toLocaleString("en-IN")}
+                        {finalDueRupees.toLocaleString("en-IN", {
+                          maximumFractionDigits: 0,
+                        })}
                       </>
                     )}
                   </span>
                 </div>
+              </div>
+
+              {/* Coupon code input */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Tag className="w-3 h-3" />
+                  Have a coupon?
+                </p>
+                <CouponInput
+                  planId={plan.id}
+                  businessId={businessId}
+                  originalPaise={plan.price}
+                  onApply={setCoupon}
+                  disabled={isLoading}
+                />
               </div>
 
               {/* Trust badges */}

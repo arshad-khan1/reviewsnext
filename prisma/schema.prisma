@@ -101,6 +101,61 @@ model Business {
   @@index([ownerId])
 }
 
+model Coupon {
+  id                 String           @id @default(cuid())
+  /// Human-readable code users type at checkout, e.g. "SUMMER25" or "GEN-abc123xy"
+  code               String           @unique
+  /// Internal admin-facing note describing this coupon
+  description        String?
+  discountType       DiscountType
+  /// For PERCENT: 1–100. For FLAT: amount in paise.
+  discountValue      Int
+  /// PERCENT type only: caps the rupee discount (in paise). e.g. 50000 = max ₹500 off
+  maxDiscountPaise   Int?
+  /// Minimum plan/order price required to activate this coupon (paise)
+  minOrderPaise      Int?
+  codeStyle          CouponCodeStyle  @default(STATIC)
+  /// null = unlimited total redemptions
+  maxUses            Int?
+  /// null = unlimited per-user. 1 = single-use per account.
+  maxUsesPerUser     Int?
+  /// Incremented atomically on each successful redemption
+  usedCount          Int              @default(0)
+  startsAt           DateTime?
+  /// null = never expires
+  expiresAt          DateTime?
+  isActive           Boolean          @default(true)
+  isDeleted          Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  /// JSON array of Plan IDs this coupon is restricted to. null = all plans.
+  applicablePlanIds  Json?
+  redemptions        CouponRedemption[]
+
+  @@index([code])
+  @@index([isActive, isDeleted])
+  @@index([expiresAt])
+}
+
+model CouponRedemption {
+  id              String   @id @default(cuid())
+  couponId        String
+  /// The user who applied the coupon
+  userId          String
+  /// Stamped after Razorpay payment is confirmed (null while pending)
+  paymentId       String?  @unique
+  /// Actual paise deducted from this user's order
+  discountApplied Int
+  /// Set to true if the underlying payment failed and redemption was voided
+  isVoid          Boolean  @default(false)
+  redeemedAt      DateTime @default(now())
+  coupon          Coupon   @relation(fields: [couponId], references: [id])
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([couponId, userId])
+}
+
 model Location {
   id         String   @id @default(cuid())
   /// URL-safe identifier for the location
@@ -326,6 +381,8 @@ model Payment {
   isDeleted           Boolean              @default(false)
   intent              PaymentIntent        @default(SUBSCRIBE)
   packageId           String?
+  /// Links to the pending CouponRedemption so it can be voided on cancel/failure
+  couponRedemptionId  String?
   business            Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
   plan                Plan?                @relation(fields: [planId], references: [id])
   subscriptionHistory SubscriptionHistory?
@@ -444,4 +501,14 @@ enum PaymentIntent {
   UPGRADE
   RENEWAL
   TOPUP
+}
+
+enum DiscountType {
+  PERCENT
+  FLAT
+}
+
+enum CouponCodeStyle {
+  STATIC
+  AUTO_GENERATED
 }
