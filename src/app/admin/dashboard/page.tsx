@@ -8,6 +8,10 @@ import {
   QrCode,
   MessageSquare,
   TrendingUp,
+  AlertCircle,
+  Calendar,
+  ArrowRight,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StatCard from "../../[business]/dashboard/components/StatCard";
@@ -35,6 +39,7 @@ interface PlatformStats {
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<PlatformStats | null>(null);
+  const [expiringSubscriptions, setExpiringSubscriptions] = useState<any[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   const fetchStats = async () => {
@@ -44,6 +49,7 @@ export default function AdminDashboardPage() {
       const data = await res.json();
       if (res.ok && data) {
         setStats(data.stats);
+        setExpiringSubscriptions(data.expiringSubscriptions || []);
       } else {
         toast.error(data?.message || "Failed to fetch platform statistics");
       }
@@ -106,6 +112,104 @@ export default function AdminDashboardPage() {
             />
           </>
         )}
+      </div>
+      
+      {/* Expiring Subscriptions */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <AlertCircle className="w-4 h-4 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">Subscriptions Ending Soon</h3>
+              <p className="text-xs text-muted-foreground">Top 10 businesses needing resubscription (30 days)</p>
+            </div>
+          </div>
+          <Link href="/admin/businesses?sortBy=subscriptionEnd&sortOrder=asc">
+            <Button variant="ghost" size="sm" className="text-xs">
+              View All <ArrowRight className="w-3 h-3 ml-1" />
+            </Button>
+          </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-wider">
+              <tr>
+                <th className="px-6 py-3">Business / Owner</th>
+                <th className="px-6 py-3">Plan</th>
+                <th className="px-6 py-3">Expiry Date</th>
+                <th className="px-6 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {isLoadingStats ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={4} className="px-6 py-4">
+                      <Skeleton className="h-12 w-full" />
+                    </td>
+                  </tr>
+                ))
+              ) : expiringSubscriptions.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">
+                    No subscriptions ending in the next 30 days
+                  </td>
+                </tr>
+              ) : (
+                expiringSubscriptions.map((sub: any) => (
+                  <tr key={sub.userId} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-foreground">
+                          {sub.businessName || "No Business Name"}
+                        </span>
+                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <User className="w-2.5 h-2.5" />
+                          <span>{sub.userName}</span>
+                          <span className="mx-1">•</span>
+                          <span>{sub.owner.phone}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                        sub.subscription.plan === 'PRO' ? 'bg-purple-100 text-purple-700' :
+                        sub.subscription.plan === 'GROWTH' ? 'bg-blue-100 text-blue-700' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {sub.subscription.plan}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span>{sub.subscription.currentPeriodEnd ? new Date(sub.subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                        <span className={`text-[10px] ${
+                          sub.subscription.daysUntilExpiry <= 3 ? 'text-rose-500 font-bold' : 
+                          sub.subscription.daysUntilExpiry <= 7 ? 'text-amber-500' : 
+                          'text-muted-foreground'
+                        }`}>
+                          Ends in {sub.subscription.daysUntilExpiry} days
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Link href={`/admin/users/${sub.userId}`}>
+                        <Button variant="outline" size="sm" className="h-8 text-[11px]">
+                          Manage
+                        </Button>
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Call to Actions / Next Steps */}

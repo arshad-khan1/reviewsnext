@@ -302,7 +302,16 @@ export async function getAllBusinesses(options: {
       where,
       skip,
       take: options.limit,
-      orderBy: { [options.sortBy || "createdAt"]: options.sortOrder || "desc" },
+      orderBy:
+        options.sortBy === "subscriptionEnd"
+          ? {
+              owner: {
+                activeSubscription: {
+                  currentPeriodEnd: options.sortOrder || "asc",
+                },
+              },
+            }
+          : { [options.sortBy || "createdAt"]: options.sortOrder || "desc" },
       include: {
         owner: {
           include: {

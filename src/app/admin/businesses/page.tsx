@@ -170,6 +170,9 @@ export default function AdminBusinessesPage() {
                 <SelectItem value="createdAt">Latest First</SelectItem>
                 <SelectItem value="name">Name (A-Z)</SelectItem>
                 <SelectItem value="status">Status</SelectItem>
+                <SelectItem value="subscriptionEnd">
+                  Subscription End
+                </SelectItem>
               </SelectContent>
             </Select>
             <Button

@@ -1,21 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { withAdminAuth } from "@/lib/auth/guard";
-import { getAdminDashboardStats, getAdminRecentActivity } from "@/lib/db/admin";
+import {
+  getAdminDashboardStats,
+  getAdminRecentActivity,
+  getExpiringSubscriptions,
+} from "@/lib/db/admin";
 
 /**
  * GET /api/admin/dashboard
  * Platform-wide aggregated stats for the admin overview screen.
  */
-export const GET = withAdminAuth(async (req, user) => {
+export const GET = withAdminAuth(async () => {
   try {
-    const [stats, recentActivity] = await Promise.all([
+    const [stats, recentActivity, expiringHistory] = await Promise.all([
       getAdminDashboardStats(),
       getAdminRecentActivity(),
+      getExpiringSubscriptions({ withinDays: 30, page: 1, limit: 10 }),
     ]);
 
     return NextResponse.json({
       ...stats,
       recentActivity,
+      expiringSubscriptions: expiringHistory.data,
       chartData: {
         // Mocking chart data for now as it requires complex temporal aggregation
         newSignupsOverTime: [
@@ -25,18 +31,21 @@ export const GET = withAdminAuth(async (req, user) => {
           { date: "2026-04-08", count: 11 },
           { date: "2026-04-09", count: 7 },
           { date: "2026-04-10", count: 18 },
-          { date: "2026-04-11", count: 15 }
+          { date: "2026-04-11", count: 15 },
         ],
         revenueOverTime: [
           { month: "2026-01", amountINR: 312000 },
           { month: "2026-02", amountINR: 389000 },
           { month: "2026-03", amountINR: 402000 },
-          { month: "2026-04", amountINR: 412000 }
-        ]
-      }
+          { month: "2026-04", amountINR: 412000 },
+        ],
+      },
     });
   } catch (error: any) {
     console.error("[ADMIN_DASHBOARD_GET]", error);
-    return NextResponse.json({ code: "INTERNAL_ERROR", message: "Failed to fetch admin dashboard" }, { status: 500 });
+    return NextResponse.json(
+      { code: "INTERNAL_ERROR", message: "Failed to fetch admin dashboard" },
+      { status: 500 },
+    );
   }
 });
