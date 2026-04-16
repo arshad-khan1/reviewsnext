@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { deductAiCredit, hasRemainingCredits, generateReviewDraft } from "@/lib/db/ai-generation";
+import {
+  deductAiCredit,
+  hasRemainingCredits,
+  generateReviewDraft,
+} from "@/lib/db/ai-generation";
 
 /**
  * POST /api/public/ai/generate-review
@@ -32,7 +36,13 @@ export async function POST(req: NextRequest) {
     const scanId = reqScanId || "anonymous-scan";
 
     // 1. Basic Validation
-    if (!qrCodeId || rating === undefined || !businessName || !commentStyle || !operation) {
+    if (
+      !qrCodeId ||
+      rating === undefined ||
+      !businessName ||
+      !commentStyle ||
+      !operation
+    ) {
       return NextResponse.json(
         { code: "MISSING_FIELDS", message: "Missing required fields" },
         { status: 400 },
@@ -71,7 +81,8 @@ export async function POST(req: NextRequest) {
       businessName,
       rating,
       commentStyle,
-      aiGuidingPrompt: aiGuidingPrompt || qrCode.business.defaultAiPrompt || undefined,
+      aiGuidingPrompt:
+        aiGuidingPrompt || qrCode.business.defaultAiPrompt || undefined,
       userInput,
     });
 
@@ -91,7 +102,10 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     if (error.message === "INSUFFICIENT_CREDITS") {
       return NextResponse.json(
-        { code: "INSUFFICIENT_CREDITS", message: "Business has insufficient AI credits" },
+        {
+          code: "INSUFFICIENT_CREDITS",
+          message: "Business has insufficient AI credits",
+        },
         { status: 402 },
       );
     }

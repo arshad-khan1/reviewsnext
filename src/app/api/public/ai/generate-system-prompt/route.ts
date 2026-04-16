@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth/guard";
-import { openai, OPENAI_MODEL } from "@/lib/openai";
+import { generateWithProvider } from "@/lib/ai-service";
 
 /**
  * POST /api/public/ai/generate-system-prompt
@@ -63,17 +63,12 @@ export async function POST(req: Request) {
 
     const userMessage = `Here are the business owner's keywords describing their business:\n\n"${keywords}"\n\nWrite the AI guiding prompt now.`;
 
-    const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
-      messages: [
-        { role: "system", content: systemMessage },
-        { role: "user", content: userMessage },
-      ],
+    const prompt = await generateWithProvider({
+      systemMessage,
+      userMessage,
       temperature: 0.7,
-      max_tokens: 120,
+      maxTokens: 120,
     });
-
-    const prompt = completion.choices[0]?.message?.content?.trim();
 
     if (!prompt) {
       throw new Error("EMPTY_RESPONSE");

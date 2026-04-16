@@ -1,5 +1,5 @@
 import { prisma } from "../prisma";
-import { openai, OPENAI_MODEL } from "../openai";
+import { generateWithProvider } from "../ai-service";
 
 /**
  * Checks if a business has credits remaining.
@@ -37,65 +37,69 @@ export async function deductAiCredit(options: {
 }) {
   const { businessId, qrCodeId, scanId, operation } = options;
 
-  return await prisma.$transaction(async (tx) => {
-    try {
-      const business = await tx.business.findUnique({
-        where: { id: businessId },
-      });
+  return await prisma.$transaction(
+    async (tx) => {
+      try {
+        const business = await tx.business.findUnique({
+          where: { id: businessId },
+        });
 
-      if (!business) throw new Error("BUSINESS_NOT_FOUND");
+        if (!business) throw new Error("BUSINESS_NOT_FOUND");
 
-      // Row-level lock for safety during credit deduction
-      await tx.$executeRaw`SELECT id FROM "AiCredits" WHERE "userId" = ${business.ownerId} FOR UPDATE`;
+        // Row-level lock for safety during credit deduction
+        await tx.$executeRaw`SELECT id FROM "AiCredits" WHERE "userId" = ${business.ownerId} FOR UPDATE`;
 
-      const credits = await tx.aiCredits.findUnique({
-        where: { userId: business.ownerId },
-      });
+        const credits = await tx.aiCredits.findUnique({
+          where: { userId: business.ownerId },
+        });
 
-      if (!credits) throw new Error("CREDITS_NOT_FOUND");
+        if (!credits) throw new Error("CREDITS_NOT_FOUND");
 
-      const monthlyRemaining = credits.monthlyAllocation - credits.monthlyUsed;
-      const topupRemaining = credits.topupAllocation - credits.topupUsed;
+        const monthlyRemaining =
+          credits.monthlyAllocation - credits.monthlyUsed;
+        const topupRemaining = credits.topupAllocation - credits.topupUsed;
 
-      const updateData: any = {};
-      if (monthlyRemaining > 0) {
-        updateData.monthlyUsed = { increment: 1 };
-      } else if (topupRemaining > 0) {
-        updateData.topupUsed = { increment: 1 };
-      } else {
-        throw new Error("INSUFFICIENT_CREDITS");
+        const updateData: any = {};
+        if (monthlyRemaining > 0) {
+          updateData.monthlyUsed = { increment: 1 };
+        } else if (topupRemaining > 0) {
+          updateData.topupUsed = { increment: 1 };
+        } else {
+          throw new Error("INSUFFICIENT_CREDITS");
+        }
+
+        // 1. Update Balance
+        const updatedCredits = await tx.aiCredits.update({
+          where: { id: credits.id },
+          data: updateData,
+        });
+
+        // 2. Log Usage
+        await tx.aiUsageLog.create({
+          data: {
+            aiCreditsId: credits.id,
+            businessId: businessId,
+            creditsUsed: 1,
+            operation,
+            metadata: { qrCodeId, scanId } as any,
+          },
+        });
+
+        return {
+          creditsRemaining:
+            updatedCredits.monthlyAllocation +
+            updatedCredits.topupAllocation -
+            (updatedCredits.monthlyUsed + updatedCredits.topupUsed),
+        };
+      } catch (error) {
+        console.error("[DEDUCT_AI_CREDIT_ERROR]", error);
+        throw error;
       }
-
-      // 1. Update Balance
-      const updatedCredits = await tx.aiCredits.update({
-        where: { id: credits.id },
-        data: updateData,
-      });
-
-      // 2. Log Usage
-      await tx.aiUsageLog.create({
-        data: {
-          aiCreditsId: credits.id,
-          businessId: businessId,
-          creditsUsed: 1,
-          operation,
-          metadata: { qrCodeId, scanId } as any,
-        },
-      });
-
-      return {
-        creditsRemaining:
-          updatedCredits.monthlyAllocation +
-          updatedCredits.topupAllocation -
-          (updatedCredits.monthlyUsed + updatedCredits.topupUsed),
-      };
-    } catch (error) {
-      console.error("[DEDUCT_AI_CREDIT_ERROR]", error);
-      throw error;
-    }
-  }, {
-    timeout: 10000,
-  });
+    },
+    {
+      timeout: 10000,
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -110,8 +114,7 @@ const STYLE_TONE_MAP: Record<string, string> = {
     "brief, factual, and straight to the point — no fluff or filler",
   ENTHUSIASTIC_WARM:
     "very enthusiastic, full of positive energy, with relevant emoji sprinkled naturally",
-  WITTY_FUN:
-    "clever, playful, and lightly humorous — without being sarcastic",
+  WITTY_FUN: "clever, playful, and lightly humorous — without being sarcastic",
   HINGLISH:
     "a natural mix of Hindi and English (Hinglish) as spoken in Indian urban areas",
 };
@@ -120,8 +123,10 @@ const STYLE_TONE_MAP: Record<string, string> = {
 // Rating → sentiment guidance so the AI knows how glowing to be
 // ---------------------------------------------------------------------------
 function ratingGuidance(rating: number): string {
-  if (rating === 5) return "The customer gave 5 stars — the review must feel genuinely thrilled and highly positive.";
-  if (rating === 4) return "The customer gave 4 stars — the review should be very positive with a subtle mention that things were great, nearing perfection.";
+  if (rating === 5)
+    return "The customer gave 5 stars — the review must feel genuinely thrilled and highly positive.";
+  if (rating === 4)
+    return "The customer gave 4 stars — the review should be very positive with a subtle mention that things were great, nearing perfection.";
   return "The customer gave 3 stars — the review should be overall positive but may hint at small room for improvement in a polite way.";
 }
 
@@ -162,7 +167,7 @@ function getFallbackDraft(businessName: string, style: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Core function: generate a Google review draft via OpenAI
+// Core function: generate a Google review draft
 // ---------------------------------------------------------------------------
 /**
  * Generates an authentic-sounding Google review draft using OpenAI.
@@ -181,14 +186,15 @@ export async function generateReviewDraft(options: {
   aiGuidingPrompt?: string;
   userInput?: string;
 }): Promise<string> {
-  const { businessName, rating, commentStyle, aiGuidingPrompt, userInput } = options;
+  const { businessName, rating, commentStyle, aiGuidingPrompt, userInput } =
+    options;
 
   const tone = STYLE_TONE_MAP[commentStyle] ?? STYLE_TONE_MAP.FRIENDLY_CASUAL;
 
   // Build the system message
   const systemMessage = [
     `You are an expert copywriter helping customers write authentic Google reviews.`,
-    userInput 
+    userInput
       ? `Your goal is to professionally ENHANCE the customer's rough feedback notes into a polished review.`
       : `Your goal is to write a high-quality review from scratch based on the customer's rating.`,
     `Your writing style must be: ${tone}.`,
@@ -199,15 +205,18 @@ export async function generateReviewDraft(options: {
     `Rules:`,
     `- Write the review AS the customer (first person).`,
     `- Do NOT mention the star rating or any numbers.`,
-    `- Keep it between 40 and 90 words.`,
+    `- Keep it between 20 and 50 words.`,
     `- Sound natural and human — avoid generic filler phrases.`,
+    `- Keep the review in broken english like human writes. Humans are not perfect with grammar and all`,
     `- Output only the enhanced review text. No preamble, no quotation marks, no sign-off.`,
-    userInput ? `- MUST include the core sentiment and details mentioned in the customer's notes.` : null,
+    userInput
+      ? `- MUST include the core sentiment and details mentioned in the customer's notes.`
+      : null,
   ]
     .filter(Boolean)
     .join("\n");
 
-  const userMessage = userInput 
+  const userMessage = userInput
     ? `Customer's rough feedback for "${businessName}":\n\n"${userInput}"\n\nPlease enhance this into a professional review.`
     : [
         `Write a Google review for a business called "${businessName}".`,
@@ -215,22 +224,15 @@ export async function generateReviewDraft(options: {
       ].join(" ");
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
-      messages: [
-        { role: "system", content: systemMessage },
-        { role: "user", content: userMessage },
-      ],
+    return await generateWithProvider({
+      systemMessage,
+      userMessage,
       temperature: 0.85,
-      max_tokens: 200, // Slightly more tokens for enhancements
+      maxTokens: 200,
     });
-
-    const text = completion.choices[0]?.message?.content?.trim();
-    if (!text) throw new Error("EMPTY_RESPONSE");
-
-    return text;
   } catch (error) {
-    console.error("[GENERATE_REVIEW_DRAFT_ERROR]", error);
+    const provider = process.env.AI_PROVIDER?.toLowerCase() ?? "gemini";
+    console.error(`[GENERATE_REVIEW_DRAFT_ERROR][${provider}]`, error);
     // Graceful fallback — never hard-fail the review page
     return getFallbackDraft(businessName, commentStyle);
   }
