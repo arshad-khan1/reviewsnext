@@ -14,6 +14,8 @@ export async function getAdminDashboardStats() {
     activeSubscriptions,
     totalScansAllTime,
     totalReviewsAllTime,
+    totalScansThisMonth,
+    totalReviewsThisMonth,
     totalAiCreditsConsumedAggregation,
     revenueAllTime,
     revenueThisMonth,
@@ -25,6 +27,12 @@ export async function getAdminDashboardStats() {
     prisma.userSubscription.count({ where: { status: "ACTIVE" } }),
     prisma.scan.count({ where: { isDeleted: false } }),
     prisma.review.count({ where: { isDeleted: false } }),
+    prisma.scan.count({
+      where: { isDeleted: false, scannedAt: { gte: startOfMonth } },
+    }),
+    prisma.review.count({
+      where: { isDeleted: false, submittedAt: { gte: startOfMonth } },
+    }),
     prisma.aiCredits.aggregate({
       _sum: { monthlyUsed: true, topupUsed: true },
     }),
@@ -57,10 +65,18 @@ export async function getAdminDashboardStats() {
       activeSubscriptions,
       totalScansAllTime,
       totalReviewsAllTime,
+      totalScansThisMonth,
+      totalReviewsThisMonth,
       platformConversionRate:
         totalScansAllTime > 0
           ? parseFloat(
               ((totalReviewsAllTime / totalScansAllTime) * 100).toFixed(1),
+            )
+          : 0,
+      platformConversionRateThisMonth:
+        totalScansThisMonth > 0
+          ? parseFloat(
+              ((totalReviewsThisMonth / totalScansThisMonth) * 100).toFixed(1),
             )
           : 0,
       totalAiCreditsConsumed: totalCredits,
@@ -78,6 +94,32 @@ export async function getAdminDashboardStats() {
       status: s.status,
       count: s._count._all,
     })),
+  };
+}
+
+/**
+ * Get unique filter options for the admin dashboard.
+ */
+export async function getFilterOptions() {
+  const [cities, industries] = await Promise.all([
+    prisma.business.findMany({
+      where: { isDeleted: false },
+      select: { city: true },
+      distinct: ["city"],
+    }),
+    prisma.business.findMany({
+      where: { isDeleted: false },
+      select: { industry: true },
+      distinct: ["industry"],
+    }),
+  ]);
+
+  return {
+    cities: cities.map((c) => c.city).filter(Boolean),
+    industries: industries.map((i) => i.industry).filter(Boolean),
+    plans: ["FREE", "STARTER", "GROWTH", "PRO"],
+    subscriptionStatuses: ["TRIALING", "ACTIVE", "PAST_DUE", "CANCELED", "EXPIRED"],
+    businessStatuses: ["ACTIVE", "INACTIVE", "SUSPENDED"],
   };
 }
 
@@ -122,10 +164,10 @@ export async function getAdminRecentActivity() {
       package: p.packageId,
       amountINR: p.amountInPaise / 100,
       creditsAdded: p.creditsAdded,
-      timestamp: p.completedAt,
+      timestamp: p.completedAt || p.initiatedAt,
     })),
   ]
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0))
     .slice(0, 10);
 
   return activity;
@@ -221,6 +263,9 @@ export async function getAllBusinesses(options: {
   search?: string;
   plan?: string;
   status?: string;
+  businessStatus?: string;
+  city?: string;
+  industry?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }) {
@@ -240,6 +285,15 @@ export async function getAllBusinesses(options: {
     }),
     ...(options.status && {
       owner: { activeSubscription: { status: options.status as any } },
+    }),
+    ...(options.businessStatus && {
+      status: options.businessStatus as any,
+    }),
+    ...(options.city && {
+      city: options.city,
+    }),
+    ...(options.industry && {
+      industry: options.industry,
     }),
   };
 
@@ -264,19 +318,50 @@ export async function getAllBusinesses(options: {
     prisma.business.count({ where }),
   ]);
 
-  const data = businesses.map((b) => {
+  const data = await Promise.all(businesses.map(async (b) => {
+    // Aggregate scans and reviews across all QR codes for this business
+    const [scansCount, reviewsCount, ratingsAgg, highRatings, lowRatings] = await Promise.all([
+      prisma.scan.count({
+        where: { qrCode: { businessId: b.id }, isDeleted: false }
+      }),
+      prisma.review.count({
+        where: { qrCode: { businessId: b.id }, isDeleted: false }
+      }),
+      prisma.review.aggregate({
+        where: { qrCode: { businessId: b.id }, isDeleted: false },
+        _avg: { rating: true }
+      }),
+      prisma.review.count({
+        where: { qrCode: { businessId: b.id }, rating: { gte: 4 }, isDeleted: false }
+      }),
+      prisma.review.count({
+        where: { qrCode: { businessId: b.id }, rating: { lte: 3 }, isDeleted: false }
+      })
+    ]);
+
+    const conversionRate = scansCount > 0 
+      ? parseFloat(((reviewsCount / scansCount) * 100).toFixed(1))
+      : 0;
+    
+    const avgRating = ratingsAgg._avg.rating || 0;
+
     return {
       id: b.id,
       slug: b.slug,
       name: b.name,
       logoUrl: (b.brandingConfig as any)?.logoUrl,
       industry: b.industry,
+      city: b.city,
       createdAt: b.createdAt,
+      avgRating,
+      highRatings,
+      lowRatings,
       owner: {
         id: b.owner.id,
         phone: b.owner.phone,
         name: b.owner.name,
         email: b.owner.email,
+        avatarUrl: b.owner.avatarUrl,
       },
       subscription: {
         plan: b.owner.activeSubscription?.plan || "STARTER",
@@ -284,9 +369,9 @@ export async function getAllBusinesses(options: {
         currentPeriodEnd: b.owner.activeSubscription?.currentPeriodEnd,
       },
       usage: {
-        totalScans: 0,
-        totalReviews: 0,
-        conversionRate: 0,
+        totalScans: scansCount,
+        totalReviews: reviewsCount,
+        conversionRate,
         aiCreditsUsed:
           (b.owner.aiCredits?.monthlyUsed || 0) +
           (b.owner.aiCredits?.topupUsed || 0),
@@ -295,8 +380,9 @@ export async function getAllBusinesses(options: {
           (b.owner.aiCredits?.topupAllocation || 0),
       },
       qrCodeCount: b._count.qrCodes,
+      lastActive: b.updatedAt, // Using updatedAt as a proxy for last active
     };
-  });
+  }));
 
   return {
     data,

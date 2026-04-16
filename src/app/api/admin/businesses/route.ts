@@ -14,6 +14,9 @@ export const GET = withAdminAuth(async (req, user) => {
   const search = searchParams.get("search") || undefined;
   const plan = searchParams.get("plan") || undefined;
   const status = searchParams.get("status") || undefined;
+  const businessStatus = searchParams.get("businessStatus") || undefined;
+  const city = searchParams.get("city") || undefined;
+  const industry = searchParams.get("industry") || undefined;
   const sortBy = searchParams.get("sortBy") || "createdAt";
   const sortOrder = (searchParams.get("sortOrder") || "desc") as "asc" | "desc";
 
@@ -24,6 +27,9 @@ export const GET = withAdminAuth(async (req, user) => {
       search,
       plan,
       status,
+      businessStatus,
+      city,
+      industry,
       sortBy,
       sortOrder,
     });

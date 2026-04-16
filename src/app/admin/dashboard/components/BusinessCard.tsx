@@ -7,34 +7,38 @@ import {
   Activity,
   ThumbsDown,
   ThumbsUp,
+  Building,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
-import { Business } from "@/data/mockBusinesses";
 
 interface BusinessCardProps {
-  business: Business;
+  business: any; // Using any for now to handle the API structure
 }
 
 export default function BusinessCard({ business }: BusinessCardProps) {
   const {
     slug,
     name,
-    logo,
-    totalScans,
-    totalReviews,
-    conversionRate,
-    avgRating,
-    lowRatings,
-    highRatings,
+    logoUrl,
     industry,
-    location,
+    city,
     lastActive,
+    usage,
+    subscription,
+    avgRating = 0,
+    highRatings = 0,
+    lowRatings = 0,
   } = business;
 
+  const plan = subscription?.plan || "FREE";
+
+  const { totalScans = 0, totalReviews = 0, conversionRate = 0 } = usage || {};
+
   const formatDate = (dateString: string) => {
+    if (!dateString) return "Recently";
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       month: "short",
@@ -44,6 +48,19 @@ export default function BusinessCard({ business }: BusinessCardProps) {
     });
   };
 
+  const getPlanColor = (p: string) => {
+    switch (p) {
+      case "PRO":
+        return "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300 border-purple-200 dark:border-purple-800";
+      case "GROWTH":
+        return "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 border-blue-200 dark:border-blue-800";
+      case "STARTER":
+        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
+      default:
+        return "bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-300 border-gray-200 dark:border-gray-800";
+    }
+  };
+
   return (
     <Card className="group relative overflow-hidden flex flex-col hover:shadow-md transition-all duration-300 border-border">
       <CardContent className="flex-1 flex flex-col">
@@ -51,31 +68,44 @@ export default function BusinessCard({ business }: BusinessCardProps) {
         <div className="flex items-start justify-between border-b pb-4 border-border/50">
           <div className="flex items-center gap-3 w-full">
             <div className="shrink-0 w-12 h-12 rounded-xl bg-background border shadow-sm flex items-center justify-center overflow-hidden">
-              <Image
-                src={logo}
-                alt={`${name} logo`}
-                width={48}
-                height={48}
-                className="object-contain p-1.5"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                  const parent = (e.target as HTMLImageElement).parentElement;
-                  if (parent) {
-                    parent.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-muted-foreground"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>`;
-                  }
-                }}
-              />
+              {logoUrl ? (
+                <Image
+                  src={logoUrl}
+                  alt={`${name} logo`}
+                  width={48}
+                  height={48}
+                  className="object-contain p-1.5"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                    const parent = (e.target as HTMLImageElement).parentElement;
+                    if (parent) {
+                      parent.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-muted-foreground"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>`;
+                    }
+                  }}
+                />
+              ) : (
+                <Building className="w-6 h-6 text-muted-foreground" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-base text-foreground truncate">
-                {name}
-              </h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-semibold text-base text-foreground truncate">
+                  {name}
+                </h3>
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border ${getPlanColor(
+                    plan,
+                  )}`}
+                >
+                  {plan}
+                </span>
+              </div>
               <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground truncate">
                 <span className="truncate">{industry}</span>
                 <span>•</span>
                 <span className="flex items-center truncate">
                   <MapPin className="w-3 h-3 mr-1 shrink-0" />
-                  {location}
+                  {city || "Unknown City"}
                 </span>
               </div>
             </div>
