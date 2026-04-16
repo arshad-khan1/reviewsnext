@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, CheckCircle2 } from "lucide-react";
+import { Building2 } from "lucide-react";
 
 export function PublicFooter() {
   return (
@@ -12,7 +12,7 @@ export function PublicFooter() {
             <Building2 className="w-5 h-5" />
           </div>
           <span className="font-bold tracking-tight text-xl">
-            ReviewFunnel
+            Reviews Next AI
           </span>
         </div>
         <div className="flex flex-wrap justify-center gap-8 text-sm text-muted-foreground font-medium">
@@ -22,7 +22,16 @@ export function PublicFooter() {
           >
             Pricing
           </Link>
-          <Link href="/" className="hover:text-primary transition-colors">
+          <Link
+            href="/contact"
+            className="hover:text-primary transition-colors"
+          >
+            Contact
+          </Link>
+          <Link
+            href="/features"
+            className="hover:text-primary transition-colors"
+          >
             Features
           </Link>
           <Link href="/" className="hover:text-primary transition-colors">
@@ -33,8 +42,7 @@ export function PublicFooter() {
           </Link>
         </div>
         <p className="text-xs text-muted-foreground pt-8 flex items-center justify-center gap-1">
-          <CheckCircle2 className="w-3 h-3 text-primary" />
-          © 2026 ReviewFunnel SaaS. All rights reserved.
+          © 2026 Reviews Next AI SaaS. All rights reserved.
         </p>
       </div>
     </footer>

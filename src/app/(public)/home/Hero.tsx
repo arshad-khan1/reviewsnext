@@ -32,7 +32,7 @@ export default function Hero() {
         transition={{ duration: 0.5, delay: 0.2 }}
         className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
       >
-        ReviewFunnel helps multi-location businesses capture feedback at the
+        Reviews Next AI helps multi-location businesses capture feedback at the
         point of scan, route high ratings to Google, and use AI to grow their
         online reputation automatically.
       </motion.p>

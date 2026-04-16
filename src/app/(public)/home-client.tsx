@@ -1,6 +1,6 @@
 "use client";
 import Hero from "./home/Hero";
-import Stats from "./home/Stats";
+import CustomerExperience from "./home/CustomerExperience";
 import Features from "./home/Features";
 import CTA from "./home/CTA";
 
@@ -13,7 +13,8 @@ export default function LandingPageClient() {
       </div>
 
       <Hero />
-      <Stats />
+      {/* <Stats /> */}
+      <CustomerExperience />
       <Features />
       <CTA />
     </div>

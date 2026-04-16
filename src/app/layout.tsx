@@ -46,11 +46,18 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | ReviewFunnel",
-    default: "ReviewFunnel - Premium Review Management & Reputation Growth",
+    template: "%s | Reviews Next AI",
+    default: "Reviews Next AI - Premium Review Management & Reputation Growth",
   },
-  description: "Maximize your business reputation with ReviewFunnel. Automate review collection, manage customer feedback, and grow your Google ratings with ease.",
-  keywords: ["review management", "reputation management", "google reviews", "business growth", "customer feedback"],
+  description:
+    "Maximize your business reputation with Reviews Next AI. Automate review collection, manage customer feedback, and grow your Google ratings with ease.",
+  keywords: [
+    "review management",
+    "reputation management",
+    "google reviews",
+    "business growth",
+    "customer feedback",
+  ],
 };
 
 import { AppProvider } from "@/components/providers/app-provider";
@@ -62,9 +69,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${urbanist.variable} font-sans antialiased`}
-      >
+      <body className={`${urbanist.variable} font-sans antialiased`}>
         <AppProvider>{children}</AppProvider>
       </body>
     </html>
