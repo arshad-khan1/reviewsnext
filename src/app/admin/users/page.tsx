@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -49,6 +50,7 @@ export default function AdminUsersPage() {
   const [isAdminFilter, setIsAdminFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const router = useRouter();
 
   const fetchUsers = async () => {
     try {
@@ -188,13 +190,14 @@ export default function AdminUsersPage() {
               <TableHead>Assets</TableHead>
               <TableHead>Subscription</TableHead>
               <TableHead>Joined</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 6 }).map((_, j) => (
+                  {Array.from({ length: 7 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -203,7 +206,7 @@ export default function AdminUsersPage() {
               ))
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-64 text-center">
+                <TableCell colSpan={7} className="h-64 text-center">
                   <div className="flex flex-col items-center justify-center text-muted-foreground">
                     <User className="w-10 h-10 mb-2 opacity-20" />
                     <p>No users found matching your criteria</p>
@@ -221,7 +224,8 @@ export default function AdminUsersPage() {
               users.map((user) => (
                 <TableRow
                   key={user.id}
-                  className="hover:bg-muted/30 transition-colors"
+                  className="hover:bg-muted/30 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/admin/users/${user.id}`)}
                 >
                   <TableCell>
                     <div className="flex flex-col">
@@ -295,6 +299,15 @@ export default function AdminUsersPage() {
                       <Calendar className="w-3.5 h-3.5 mr-1.5 opacity-70" />
                       {format(new Date(user.createdAt), "MMM d, yyyy")}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 group-hover:bg-primary/10 group-hover:text-primary"
+                    >
+                      View
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))

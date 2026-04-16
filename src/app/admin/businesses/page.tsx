@@ -163,7 +163,7 @@ export default function AdminBusinessesPage() {
               Sort by:
             </span>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[140px] h-10 text-xs">
+              <SelectTrigger className="w-[140px] font-medium h-10 text-xs">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
               <SelectContent>

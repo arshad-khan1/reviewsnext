@@ -691,6 +691,148 @@ export async function getAdminUserDetail(userId: string) {
       creditsAdded: h.creditsAdded,
       createdAt: h.createdAt,
       paymentId: h.paymentId,
+      method: h.method,
     })),
   };
+}
+
+/**
+ * Returns all active plans for admin selection.
+ */
+export async function getAdminPlans() {
+  return await prisma.plan.findMany({
+    where: { isDeleted: false, isActive: true },
+    orderBy: { price: "asc" },
+  });
+}
+
+/**
+ * Manually upgrade/push a subscription for a user (Offline Sales).
+ */
+export async function manuallyPushSubscription(data: {
+  userId: string;
+  planId: string;
+  paymentMethod: "UPI" | "CASH" | "OTHER";
+  amountPaid: number; // in rupees
+  businessId?: string;
+}) {
+  const { userId, planId, paymentMethod, amountPaid, businessId } = data;
+
+  // 1. Fetch Plan
+  const plan = await prisma.plan.findUnique({
+    where: { id: planId, isDeleted: false },
+  });
+
+  if (!plan) throw new Error("PLAN_NOT_FOUND");
+
+  // 2. Resolve or Create Business (since Payment/History require businessId in schema)
+  let targetBusinessId = businessId;
+  if (!targetBusinessId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { businesses: { where: { isDeleted: false }, take: 1 } },
+    });
+
+    if (user?.businesses && user.businesses.length > 0) {
+      targetBusinessId = user.businesses[0].id;
+    } else {
+      // Create a default business if none exists, to satisfy schema requirements
+      const newBusiness = await prisma.business.create({
+        data: {
+          name: `${user?.name || "User"}'s Business`,
+          slug: `business-${userId.slice(-6)}-${Math.floor(Math.random() * 1000)}`,
+          city: "Unknown",
+          industry: "General",
+          ownerId: userId,
+        },
+      });
+      targetBusinessId = newBusiness.id;
+    }
+  }
+
+  const amountInPaise = Math.round(amountPaid * 100);
+
+  return await prisma.$transaction(async (tx) => {
+    // 3. Update UserSubscription
+    const subscription = await tx.userSubscription.upsert({
+      where: { userId },
+      update: {
+        planId: plan.id,
+        plan: plan.planTier || "STARTER",
+        status: "ACTIVE",
+        billingInterval: plan.billingInterval || "YEARLY",
+        monthlyAiCredits: plan.credits,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd:
+          plan.billingInterval === "YEARLY"
+            ? new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+            : new Date(new Date().setMonth(new Date().getMonth() + 1)),
+      },
+      create: {
+        userId,
+        planId: plan.id,
+        plan: plan.planTier || "STARTER",
+        status: "ACTIVE",
+        billingInterval: plan.billingInterval || "YEARLY",
+        monthlyAiCredits: plan.credits,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd:
+          plan.billingInterval === "YEARLY"
+            ? new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+            : new Date(new Date().setMonth(new Date().getMonth() + 1)),
+      },
+    });
+
+    // 4. Update AiCredits
+    await tx.aiCredits.upsert({
+      where: { userId },
+      create: {
+        userId,
+        monthlyAllocation: plan.credits,
+        monthlyUsed: 0,
+      },
+      update: {
+        monthlyAllocation: plan.credits,
+        monthlyUsed: 0,
+      },
+    });
+
+    // 5. Create Payment entry (SUCCESS)
+    const payment = await tx.payment.create({
+      data: {
+        businessId: targetBusinessId,
+        planId: plan.id,
+        amountInPaise,
+        status: "SUCCESS",
+        type: "SUBSCRIPTION",
+        intent: "SUBSCRIBE",
+        completedAt: new Date(),
+        metadata: {
+          method: paymentMethod,
+          manual: true,
+          pushedBy: "ADMIN",
+        },
+      },
+    });
+
+    // 6. Create SubscriptionHistory entry
+    await tx.subscriptionHistory.create({
+      data: {
+        userId,
+        businessId: targetBusinessId,
+        type: "SUBSCRIPTION",
+        intent: "SUBSCRIBE",
+        amountPaid: amountInPaise,
+        method: paymentMethod,
+        planId: plan.id,
+        planName: plan.name,
+        paymentId: payment.id,
+        creditsAdded: plan.credits,
+        startDate: new Date(),
+        endDate: subscription.currentPeriodEnd,
+      },
+    });
+
+    return subscription;
+  });
 }
