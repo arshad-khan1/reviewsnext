@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CommentStyle } from "@prisma/client";
+import { MagicLoading } from "@/components/ui/magic-loading";
 
 interface ManualReviewProps {
   onBack: () => void;
@@ -30,8 +31,8 @@ interface ManualReviewProps {
   aiGuidingPrompt: string;
 }
 
-const ManualReview = ({ 
-  onBack, 
+const ManualReview = ({
+  onBack,
   onComplete,
   qrCodeId,
   scanId,
@@ -45,7 +46,8 @@ const ManualReview = ({
   const [hasCopied, setHasCopied] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [wasCopiedBeforeSubmission, setWasCopiedBeforeSubmission] = useState(false);
+  const [wasCopiedBeforeSubmission, setWasCopiedBeforeSubmission] =
+    useState(false);
 
   // Local AI credits (4 total per session)
   const [creditsLeft, setCreditsLeft] = useState<number>(4);
@@ -70,7 +72,9 @@ const ManualReview = ({
     }
 
     if (getWordCount(text) < 7) {
-      toast.error("Please write at least 7 words to allow the AI to enhance it.");
+      toast.error(
+        "Please write at least 7 words to allow the AI to enhance it.",
+      );
       return;
     }
 
@@ -101,11 +105,10 @@ const ManualReview = ({
       setCreditsLeft(newCredits);
       localStorage.setItem("aiCreditUsage", newCredits.toString());
       toast.success("Enhanced with AI!");
-
-    } catch (error) {
+    } catch {
       toast.error("AI Enhance failed.");
     } finally {
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), 400);
     }
   };
 
@@ -145,7 +148,7 @@ const ManualReview = ({
     }
 
     toast.success("Step 2 completed! Opening Google Review...");
-    
+
     setTimeout(() => {
       window.open(googleMapsLink, "_blank");
       setTimeout(() => setIsCompleted(false), 2000);
@@ -168,7 +171,8 @@ const ManualReview = ({
         </p>
       </div>
 
-      <div className="relative">
+      <div className="relative overflow-hidden">
+        <MagicLoading isVisible={isLoading} />
         <Textarea
           value={text}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -176,16 +180,28 @@ const ManualReview = ({
             setHasCopied(false);
           }}
           placeholder="I had an amazing time because..."
-          className="min-h-[140px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-(--brand-radius) p-5 text-sm italic leading-relaxed"
+          className={cn(
+            "min-h-[140px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-(--brand-radius) p-5 text-sm italic leading-relaxed duration-300",
+            isLoading && "opacity-0",
+          )}
         />
         <motion.button
-          whileHover={creditsLeft > 0 && !isLoading && getWordCount(text) >= 7 ? { scale: 1.02 } : {}}
-          whileTap={creditsLeft > 0 && !isLoading && getWordCount(text) >= 7 ? { scale: 0.98 } : {}}
+          whileHover={
+            creditsLeft > 0 && !isLoading && getWordCount(text) >= 7
+              ? { scale: 1.02 }
+              : {}
+          }
+          whileTap={
+            creditsLeft > 0 && !isLoading && getWordCount(text) >= 7
+              ? { scale: 0.98 }
+              : {}
+          }
           onClick={handleGenerate}
           disabled={creditsLeft <= 0 || isLoading || getWordCount(text) < 7}
           className={cn(
             "absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-[10px] font-bold text-(--brand-primary) transition-all cursor-pointer",
-            (creditsLeft <= 0 || isLoading || getWordCount(text) < 7) && "opacity-50 grayscale cursor-not-allowed"
+            (creditsLeft <= 0 || isLoading || getWordCount(text) < 7) &&
+              "opacity-50 grayscale cursor-not-allowed",
           )}
         >
           {isLoading ? (

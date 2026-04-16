@@ -7,7 +7,6 @@ import {
   Copy,
   Check,
   ExternalLink,
-  RotateCcw,
   CheckCircle2,
   PenLine,
   Lock,
@@ -20,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useEffect, useCallback } from "react";
 import { CommentStyle } from "@prisma/client";
+import { MagicLoading } from "@/components/ui/magic-loading";
 
 interface GeneratedReviewProps {
   onComplete: () => void;
@@ -32,12 +32,12 @@ interface GeneratedReviewProps {
   aiGuidingPrompt: string;
 }
 
-const GeneratedReview = ({ 
-  onComplete, 
-  qrCodeId, 
-  scanId, 
-  rating, 
-  businessName, 
+const GeneratedReview = ({
+  onComplete,
+  qrCodeId,
+  scanId,
+  rating,
+  businessName,
   googleMapsLink,
   commentStyle,
   aiGuidingPrompt,
@@ -47,58 +47,70 @@ const GeneratedReview = ({
   const [isCompleted, setIsCompleted] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [wasCopiedBeforeSubmission, setWasCopiedBeforeSubmission] = useState(false);
-  
+  const [wasCopiedBeforeSubmission, setWasCopiedBeforeSubmission] =
+    useState(false);
+
   // Local AI credits (4 total per session)
   const [creditsLeft, setCreditsLeft] = useState<number>(4);
 
-  const generateReview = useCallback(async (isRegeneration = false) => {
-    if (creditsLeft <= 0) {
-      toast.error("AI generation limit reached for this session.");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/public/ai/generate-review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          qrCodeId,
-          scanId,
-          rating,
-          businessName,
-          aiGuidingPrompt,
-          commentStyle,
-          operation: isRegeneration ? "REVIEW_REGENERATE" : "REVIEW_DRAFT",
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        if (error.code === "INSUFFICIENT_CREDITS") {
-          toast.error("Monthly AI limit reached for this business.");
-        } else {
-          toast.error("Failed to generate review. Please try again.");
-        }
+  const generateReview = useCallback(
+    async (isRegeneration = false) => {
+      if (creditsLeft <= 0) {
+        toast.error("AI generation limit reached for this session.");
         return;
       }
 
-      const data = await response.json();
-      setReviewText(data.reviewText);
-      setHasCopied(false);
-      
-      const newCredits = creditsLeft - 1;
-      setCreditsLeft(newCredits);
-      localStorage.setItem("aiCreditUsage", newCredits.toString());
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/public/ai/generate-review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            qrCodeId,
+            scanId,
+            rating,
+            businessName,
+            aiGuidingPrompt,
+            commentStyle,
+            operation: isRegeneration ? "REVIEW_REGENERATE" : "REVIEW_DRAFT",
+          }),
+        });
 
-    } catch (error) {
-      console.error("AI Generation Error:", error);
-      toast.error("Something went wrong. Please check your connection.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [qrCodeId, scanId, rating, businessName, aiGuidingPrompt, commentStyle, creditsLeft]);
+        if (!response.ok) {
+          const error = await response.json();
+          if (error.code === "INSUFFICIENT_CREDITS") {
+            toast.error("Monthly AI limit reached for this business.");
+          } else {
+            toast.error("Failed to generate review. Please try again.");
+          }
+          return;
+        }
+
+        const data = await response.json();
+        setReviewText(data.reviewText);
+        setHasCopied(false);
+
+        const newCredits = creditsLeft - 1;
+        setCreditsLeft(newCredits);
+        localStorage.setItem("aiCreditUsage", newCredits.toString());
+      } catch (error) {
+        console.error("AI Generation Error:", error);
+        toast.error("Something went wrong. Please check your connection.");
+      } finally {
+        // Small delay to prevent "flash" of old text and let animation settle
+        setTimeout(() => setIsLoading(false), 400);
+      }
+    },
+    [
+      qrCodeId,
+      scanId,
+      rating,
+      businessName,
+      aiGuidingPrompt,
+      commentStyle,
+      creditsLeft,
+    ],
+  );
 
   // Initial generation
   useEffect(() => {
@@ -108,11 +120,11 @@ const GeneratedReview = ({
       setCreditsLeft(left);
       // If we already have credits left and review is empty, let's not auto-generate if we're out
     }
-    
+
     if (reviewText === "") {
       generateReview(false);
     }
-  }, []);
+  }, [generateReview, reviewText]);
 
   const handleCopy = async () => {
     if (!reviewText) return;
@@ -203,14 +215,18 @@ const GeneratedReview = ({
             hasCopied ? "bg-green-500 opacity-[0.08]" : "bg-(--brand-primary)",
           )}
         ></div>
-        <div className="relative bg-secondary/10 border border-border/30 rounded-[1.25rem] p-4 shadow-inner">
+        <div className="relative bg-secondary/10 border border-border/30 rounded-[1.25rem] p-4 shadow-inner overflow-hidden">
+          <MagicLoading isVisible={isLoading} />
           <Textarea
             value={reviewText}
             onChange={(e) => {
               setReviewText(e.target.value);
               setHasCopied(false);
             }}
-            className="bg-transparent border-none focus:ring-0 p-0 text-sm text-foreground/90 leading-relaxed italic resize-none min-h-[100px]"
+            className={cn(
+              "bg-transparent border-none focus:ring-0 p-0 text-sm text-foreground/90 leading-relaxed italic resize-none min-h-[100px] transition-opacity duration-300",
+              isLoading && "opacity-0",
+            )}
           />
           <div className="absolute bottom-2 right-2">
             <motion.button
@@ -220,7 +236,8 @@ const GeneratedReview = ({
               disabled={creditsLeft <= 0 || isLoading}
               className={cn(
                 "bg-background border border-border/60 shadow-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5 text-[10px] font-bold text-(--brand-primary) transition-all cursor-pointer",
-                (creditsLeft <= 0 || isLoading) && "opacity-50 cursor-not-allowed grayscale"
+                (creditsLeft <= 0 || isLoading) &&
+                  "opacity-50 cursor-not-allowed grayscale",
               )}
             >
               {isLoading ? (

@@ -8,6 +8,7 @@ import { CheckCircle2, Sparkles, X, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CommentStyle } from "@prisma/client";
+import { MagicLoading } from "@/components/ui/magic-loading";
 
 interface FeedbackFormProps {
   onComplete: () => void;
@@ -61,10 +62,12 @@ const FeedbackForm = ({
     }
 
     const currentText = field === "wrong" ? whatWentWrong : howToImprove;
-    
+
     // Check if word count is at least 7
     if (getWordCount(currentText) < 7) {
-      toast.error("Please write at least 7 words to allow the AI to enhance it.");
+      toast.error(
+        "Please write at least 7 words to allow the AI to enhance it.",
+      );
       return;
     }
 
@@ -94,10 +97,10 @@ const FeedbackForm = ({
       setCreditsLeft(newCredits);
       localStorage.setItem("aiCreditUsage", newCredits.toString());
       toast.success("Enhanced with AI!");
-    } catch (error) {
+    } catch {
       toast.error("AI Enhance failed.");
     } finally {
-      setIsEnhancing(null);
+      setTimeout(() => setIsEnhancing(null), 400);
     }
   };
 
@@ -187,7 +190,7 @@ const FeedbackForm = ({
             submittedToGoogle: true,
           }),
         });
-      } catch (e) {}
+      } catch {}
     }
 
     setTimeout(() => {
@@ -253,28 +256,46 @@ const FeedbackForm = ({
               <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground ml-1">
                 What went wrong?
               </label>
-              <div className="relative">
+              <div className="relative overflow-hidden rounded-(--brand-radius)">
+                <MagicLoading isVisible={isEnhancing === "wrong"} />
                 <Textarea
                   value={whatWentWrong}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     setWhatWentWrong(e.target.value)
                   }
                   placeholder="Share your thoughts..."
-                  className="min-h-[100px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-(--brand-radius) text-sm"
+                  className={cn(
+                    "min-h-[100px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-(--brand-radius) text-sm duration-300",
+                    isEnhancing === "wrong" && "opacity-0",
+                  )}
                 />
                 <motion.button
                   type="button"
                   whileHover={
-                    creditsLeft > 0 && !isEnhancing && getWordCount(whatWentWrong) >= 7 ? { scale: 1.02 } : {}
+                    creditsLeft > 0 &&
+                    !isEnhancing &&
+                    getWordCount(whatWentWrong) >= 7
+                      ? { scale: 1.02 }
+                      : {}
                   }
                   whileTap={
-                    creditsLeft > 0 && !isEnhancing && getWordCount(whatWentWrong) >= 7 ? { scale: 0.98 } : {}
+                    creditsLeft > 0 &&
+                    !isEnhancing &&
+                    getWordCount(whatWentWrong) >= 7
+                      ? { scale: 0.98 }
+                      : {}
                   }
                   onClick={() => handleEnhance("wrong")}
-                  disabled={creditsLeft <= 0 || !!isEnhancing || getWordCount(whatWentWrong) < 7}
+                  disabled={
+                    creditsLeft <= 0 ||
+                    !!isEnhancing ||
+                    getWordCount(whatWentWrong) < 7
+                  }
                   className={cn(
                     "absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-[calc(var(--brand-radius)*0.75)] px-2.5 py-1.5 flex items-center gap-1.5 text-[9px] font-bold text-(--brand-primary) transition-all cursor-pointer",
-                    (creditsLeft <= 0 || !!isEnhancing || getWordCount(whatWentWrong) < 7) &&
+                    (creditsLeft <= 0 ||
+                      !!isEnhancing ||
+                      getWordCount(whatWentWrong) < 7) &&
                       "opacity-50 grayscale cursor-not-allowed",
                   )}
                 >
@@ -288,11 +309,13 @@ const FeedbackForm = ({
                     : `AI Enhance (${creditsLeft})`}
                 </motion.button>
                 {/* Word Count Indicator */}
-                {whatWentWrong.length > 0 && getWordCount(whatWentWrong) < 7 && (
-                  <p className="absolute -bottom-5 left-1 text-[9px] text-muted-foreground/60 transition-all">
-                    Write {7 - getWordCount(whatWentWrong)} more words to enhance with AI
-                  </p>
-                )}
+                {whatWentWrong.length > 0 &&
+                  getWordCount(whatWentWrong) < 7 && (
+                    <p className="absolute -bottom-5 left-1 text-[9px] text-muted-foreground/60 transition-all">
+                      Write {7 - getWordCount(whatWentWrong)} more words to
+                      enhance with AI
+                    </p>
+                  )}
               </div>
             </div>
 
@@ -300,28 +323,46 @@ const FeedbackForm = ({
               <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground ml-1">
                 How can we improve?
               </label>
-              <div className="relative">
+              <div className="relative overflow-hidden rounded-xl">
+                <MagicLoading isVisible={isEnhancing === "improve"} />
                 <Textarea
                   value={howToImprove}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     setHowToImprove(e.target.value)
                   }
                   placeholder="We are listening..."
-                  className="min-h-[100px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-xl text-sm"
+                  className={cn(
+                    "min-h-[100px] bg-secondary/10 border-border/40 focus:border-(--brand-primary) focus:ring-0 transition-all rounded-xl text-sm duration-300",
+                    isEnhancing === "improve" && "opacity-0",
+                  )}
                 />
                 <motion.button
                   type="button"
                   whileHover={
-                    creditsLeft > 0 && !isEnhancing && getWordCount(howToImprove) >= 7 ? { scale: 1.02 } : {}
+                    creditsLeft > 0 &&
+                    !isEnhancing &&
+                    getWordCount(howToImprove) >= 7
+                      ? { scale: 1.02 }
+                      : {}
                   }
                   whileTap={
-                    creditsLeft > 0 && !isEnhancing && getWordCount(howToImprove) >= 7 ? { scale: 0.98 } : {}
+                    creditsLeft > 0 &&
+                    !isEnhancing &&
+                    getWordCount(howToImprove) >= 7
+                      ? { scale: 0.98 }
+                      : {}
                   }
                   onClick={() => handleEnhance("improve")}
-                  disabled={creditsLeft <= 0 || !!isEnhancing || getWordCount(howToImprove) < 7}
+                  disabled={
+                    creditsLeft <= 0 ||
+                    !!isEnhancing ||
+                    getWordCount(howToImprove) < 7
+                  }
                   className={cn(
                     "absolute bottom-3 right-3 bg-background border border-border/60 shadow-sm rounded-[calc(var(--brand-radius)*0.75)] px-2.5 py-1.5 flex items-center gap-1.5 text-[9px] font-bold text-(--brand-primary) transition-all cursor-pointer",
-                    (creditsLeft <= 0 || !!isEnhancing || getWordCount(howToImprove) < 7) &&
+                    (creditsLeft <= 0 ||
+                      !!isEnhancing ||
+                      getWordCount(howToImprove) < 7) &&
                       "opacity-50 grayscale cursor-not-allowed",
                   )}
                 >
@@ -337,7 +378,8 @@ const FeedbackForm = ({
                 {/* Word Count Indicator */}
                 {howToImprove.length > 0 && getWordCount(howToImprove) < 7 && (
                   <p className="absolute -bottom-5 left-1 text-[9px] text-muted-foreground/60 transition-all">
-                    Write {7 - getWordCount(howToImprove)} more words to enhance with AI
+                    Write {7 - getWordCount(howToImprove)} more words to enhance
+                    with AI
                   </p>
                 )}
               </div>
@@ -374,7 +416,7 @@ const FeedbackForm = ({
       {/* Redirect Popup */}
       <AnimatePresence>
         {showPopup && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
