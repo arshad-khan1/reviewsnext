@@ -235,7 +235,7 @@ const ReviewFlow = ({
             <div className="text-center space-y-3">
               <motion.div
                 layoutId="logo"
-                className="w-16 h-16 mx-auto rounded-2xl bg-secondary/30 flex items-center justify-center p-3 border border-border/50 overflow-hidden relative"
+                className="w-16 h-16 mx-auto rounded-full bg-secondary/30 flex items-center justify-center p-3 border border-border/50 overflow-hidden relative"
               >
                 {activeConfig.logoUrl ? (
                   <Image

@@ -1,10 +1,11 @@
+import { cache } from "react";
 import { prisma } from "../prisma";
 
 /**
  * Resolves the effective configuration for a review funnel.
  * Priority: Specific QR Code Overrides > Business Defaults > System Defaults.
  */
-export async function resolveReviewConfig(businessSlug: string, sourceTag?: string) {
+export const resolveReviewConfig = cache(async (businessSlug: string, sourceTag?: string) => {
   // 1. Fetch business and its defaults
   const business = await prisma.business.findUnique({
     where: { slug: businessSlug, isDeleted: false },
@@ -80,4 +81,4 @@ export async function resolveReviewConfig(businessSlug: string, sourceTag?: stri
     branding: (qrCode?.brandingOverride || business.brandingConfig || {}) as any,
     sourceTag: sourceTag || null,
   };
-}
+});

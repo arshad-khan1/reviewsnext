@@ -17,9 +17,16 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { business } = await params;
+  const config = await resolveReviewConfig(business);
+
+  const displayName = config?.businessName || business;
+
   return {
-    title: `Review ${business}`,
-    description: `Leave your feedback for ${business}`,
+    title: `${displayName} Review`,
+    description: `Leave your feedback for ${displayName}`,
+    icons: {
+      icon: config?.logoUrl || "/favicon.ico",
+    },
   };
 }
 
