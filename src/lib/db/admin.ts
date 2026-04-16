@@ -523,3 +523,174 @@ export async function adjustBusinessCredits(
     };
   });
 }
+
+/**
+ * Paginated list of all users.
+ */
+export async function getAllUsers(options: {
+  page: number;
+  limit: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  isAdmin?: boolean;
+}) {
+  const skip = (options.page - 1) * options.limit;
+
+  const where: Prisma.UserWhereInput = {
+    isDeleted: false,
+    ...(options.search && {
+      OR: [
+        { name: { contains: options.search, mode: "insensitive" } },
+        { phone: { contains: options.search } },
+        { email: { contains: options.search, mode: "insensitive" } },
+      ],
+    }),
+    ...(options.isAdmin !== undefined && {
+      isAdmin: options.isAdmin,
+    }),
+  };
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip,
+      take: options.limit,
+      orderBy: { [options.sortBy || "createdAt"]: options.sortOrder || "desc" },
+      include: {
+        activeSubscription: {
+          include: { planDetails: true },
+        },
+        aiCredits: true,
+        _count: {
+          select: { businesses: true },
+        },
+      },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  const data = users.map((u) => ({
+    id: u.id,
+    name: u.name,
+    phone: u.phone,
+    email: u.email,
+    isAdmin: u.isAdmin,
+    isVerified: u.isVerified,
+    createdAt: u.createdAt,
+    businessCount: u._count.businesses,
+    subscription: {
+      plan: u.activeSubscription?.plan || "FREE",
+      status: u.activeSubscription?.status || "ACTIVE",
+      planName: u.activeSubscription?.planDetails?.name,
+    },
+    credits: {
+      used: (u.aiCredits?.monthlyUsed || 0) + (u.aiCredits?.topupUsed || 0),
+      total:
+        (u.aiCredits?.monthlyAllocation || 0) +
+        (u.aiCredits?.topupAllocation || 0),
+    },
+  }));
+
+  return {
+    data,
+    pagination: {
+      page: options.page,
+      limit: options.limit,
+      total,
+      totalPages: Math.ceil(total / options.limit),
+    },
+  };
+}
+
+/**
+ * Detailed view of a single user for the admin portal.
+ */
+export async function getAdminUserDetail(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId, isDeleted: false },
+    include: {
+      activeSubscription: {
+        include: { planDetails: true },
+      },
+      aiCredits: true,
+      businesses: {
+        where: { isDeleted: false },
+        include: {
+          _count: { select: { qrCodes: true } },
+        },
+      },
+      subscriptionHistory: {
+        orderBy: { createdAt: "desc" },
+        take: 30,
+        include: { plan: true },
+      },
+    },
+  });
+
+  if (!user) throw new Error("USER_NOT_FOUND");
+
+  // Manual aggregation for business stats
+  const businesses = await Promise.all(
+    user.businesses.map(async (b) => {
+      const [scans, reviews] = await Promise.all([
+        prisma.scan.count({ where: { qrCode: { businessId: b.id }, isDeleted: false } }),
+        prisma.review.count({ where: { qrCode: { businessId: b.id }, isDeleted: false } }),
+      ]);
+      return {
+        id: b.id,
+        name: b.name,
+        slug: b.slug,
+        city: b.city,
+        industry: b.industry,
+        status: b.status,
+        createdAt: b.createdAt,
+        scans,
+        reviews,
+      };
+    })
+  );
+
+  return {
+    id: user.id,
+    name: user.name,
+    phone: user.phone,
+    email: user.email,
+    isAdmin: user.isAdmin,
+    isVerified: user.isVerified,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    subscription: {
+      plan: user.activeSubscription?.plan || "FREE",
+      status: user.activeSubscription?.status || "INACTIVE",
+      planName: user.activeSubscription?.planDetails?.name,
+      currentPeriodEnd: user.activeSubscription?.currentPeriodEnd,
+      billingInterval: user.activeSubscription?.billingInterval,
+    },
+    aiCredits: {
+      monthly: {
+        allocation: user.aiCredits?.monthlyAllocation || 0,
+        used: user.aiCredits?.monthlyUsed || 0,
+      },
+      topup: {
+        allocation: user.aiCredits?.topupAllocation || 0,
+        used: user.aiCredits?.topupUsed || 0,
+      },
+      total:
+        (user.aiCredits?.monthlyAllocation || 0) +
+        (user.aiCredits?.topupAllocation || 0),
+      used: (user.aiCredits?.monthlyUsed || 0) + (user.aiCredits?.topupUsed || 0),
+    },
+    businesses,
+    paymentHistory: user.subscriptionHistory.map((h) => ({
+      id: h.id,
+      amount: h.amountPaid / 100,
+      type: h.type,
+      intent: h.intent,
+      planName: h.planName || h.plan?.name,
+      creditsAdded: h.creditsAdded,
+      createdAt: h.createdAt,
+      paymentId: h.paymentId,
+    })),
+  };
+}

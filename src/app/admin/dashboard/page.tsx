@@ -61,6 +61,14 @@ export default function AdminDashboardPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Platform Overview</h2>
+          <p className="text-muted-foreground text-sm">
+            Real-time statistics and management controls for the entire platform
+          </p>
+        </div>
+      </div>
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {isLoadingStats ? (

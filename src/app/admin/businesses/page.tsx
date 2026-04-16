@@ -189,7 +189,7 @@ export default function AdminBusinessesPage() {
         <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border/50">
           <div className="flex items-center gap-2 mr-2">
             <Filter className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[11px] font-bold uppercase text-muted-foreground tracking-tight">
+            <span className="text-[11px] font-semibold uppercase text-muted-foreground tracking-tight">
               Quick Filters:
             </span>
           </div>
@@ -202,7 +202,7 @@ export default function AdminBusinessesPage() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="w-[130px] h-8 text-[11px]">
+            <SelectTrigger className="w-[130px] font-medium h-8 text-[11px]">
               <SelectValue placeholder="All Cities" />
             </SelectTrigger>
             <SelectContent>
@@ -223,7 +223,7 @@ export default function AdminBusinessesPage() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="w-[140px] h-8 text-[11px]">
+            <SelectTrigger className="w-[140px] font-medium h-8 text-[11px]">
               <SelectValue placeholder="All Industries" />
             </SelectTrigger>
             <SelectContent>
@@ -244,7 +244,7 @@ export default function AdminBusinessesPage() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="w-[120px] h-8 text-[11px]">
+            <SelectTrigger className="w-[120px] font-medium h-8 text-[11px]">
               <SelectValue placeholder="All Plans" />
             </SelectTrigger>
             <SelectContent>
@@ -265,7 +265,7 @@ export default function AdminBusinessesPage() {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="w-[130px] h-8 text-[11px]">
+            <SelectTrigger className="w-[130px] font-medium h-8 text-[11px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>

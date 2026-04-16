@@ -93,7 +93,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
                   {name}
                 </h3>
                 <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border ${getPlanColor(
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase border ${getPlanColor(
                     plan,
                   )}`}
                 >
@@ -120,7 +120,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
                 Reviews
               </span>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-xl font-bold">{totalReviews}</span>
+                <span className="text-xl font-semibold">{totalReviews}</span>
                 <div className="flex items-center text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded text-xs font-medium">
                   <Star className="w-3 h-3 fill-amber-500 text-amber-500 mr-0.5" />
                   {avgRating.toFixed(1)}
@@ -133,7 +133,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
                 Conversion
               </span>
               <div className="flex items-baseline gap-1.5 flex-wrap">
-                <span className="text-xl font-bold">
+                <span className="text-xl font-semibold">
                   {conversionRate.toFixed(1)}%
                 </span>
                 <div className="flex items-center text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider">
@@ -150,7 +150,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
                 <ThumbsUp className="w-4 h-4 text-emerald-600" />
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="font-bold text-foreground">{highRatings}</span>
+                <span className="font-semibold text-foreground">{highRatings}</span>
                 <span className="text-[10px] text-muted-foreground uppercase font-medium">
                   Positive
                 </span>
@@ -161,7 +161,7 @@ export default function BusinessCard({ business }: BusinessCardProps) {
                 <ThumbsDown className="w-4 h-4 text-rose-600" />
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="font-bold text-foreground">{lowRatings}</span>
+                <span className="font-semibold text-foreground">{lowRatings}</span>
                 <span className="text-[10px] text-muted-foreground uppercase font-medium">
                   Negative
                 </span>

@@ -5,9 +5,11 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   Database,
+  Users,
   Menu,
   ShieldCheck,
   Building2,
+  Ticket,
 } from "lucide-react";
 import { AdminRoute } from "@/components/auth/protected-route";
 import { UserNav } from "@/components/layout/UserNav";
@@ -53,6 +55,24 @@ export default function AdminLayout({
       activeStyle:
         "bg-indigo-50 text-indigo-700 border-l-4 border-l-indigo-600 lg:border-none",
       desktopActive: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100",
+    },
+    {
+      label: "Users",
+      href: "/admin/users",
+      icon: Users,
+      active: pathname.startsWith("/admin/users"),
+      activeStyle:
+        "bg-emerald-50 text-emerald-700 border-l-4 border-l-emerald-600 lg:border-none",
+      desktopActive: "bg-emerald-50 text-emerald-600 hover:bg-emerald-100",
+    },
+    {
+      label: "Coupons",
+      href: "/admin/coupons",
+      icon: Ticket,
+      active: pathname.startsWith("/admin/coupons"),
+      activeStyle:
+        "bg-amber-50 text-amber-700 border-l-4 border-l-amber-600 lg:border-none",
+      desktopActive: "bg-amber-50 text-amber-600 hover:bg-amber-100",
     },
   ];
 
