@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Building2, Menu, X, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 export function PublicNavbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
 
   const navLinks = [
     { name: "Features", href: "/features" },
@@ -27,17 +29,36 @@ export function PublicNavbar() {
         </Link>
 
         {/* Desktop Links */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-2">
           {navLinks.map((link) => (
             <Link key={link.name} href={link.href}>
-              <Button variant="ghost">{link.name}</Button>
+              <Button
+                variant="ghost"
+                className={
+                  pathname === link.href
+                    ? "text-primary bg-primary/10 hover:bg-primary/20 font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }
+              >
+                {link.name}
+              </Button>
             </Link>
           ))}
           <Link href="/login">
-            <Button variant="ghost">Business Login</Button>
+            <Button
+              variant="ghost"
+              className={
+                pathname === "/login"
+                  ? "text-primary bg-primary/10 hover:bg-primary/20 font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }
+            >
+              Business Login
+            </Button>
           </Link>
+          <div className="w-px h-4 bg-border/60 mx-1" />
           <Link href="/onboard">
-            <Button className="shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90">
+            <Button className="shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 font-bold ml-1">
               Get Started
             </Button>
           </Link>
@@ -76,19 +97,31 @@ export function PublicNavbar() {
                     key={link.name}
                     href={link.href}
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center justify-between p-4 rounded-2xl hover:bg-muted transition-colors group"
+                    className={`flex items-center justify-between p-4 rounded-2xl transition-all duration-200 group ${
+                      pathname === link.href
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
                   >
                     <span className="text-lg font-bold">{link.name}</span>
-                    <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ArrowRight
+                      className={`w-5 h-5 transition-transform group-hover:translate-x-1 ${pathname === link.href ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                    />
                   </Link>
                 ))}
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-between p-4 rounded-2xl hover:bg-muted transition-colors group"
+                  className={`flex items-center justify-between p-4 rounded-2xl transition-all duration-200 group ${
+                    pathname === "/login"
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   <span className="text-lg font-bold">Business Login</span>
-                  <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ArrowRight
+                    className={`w-5 h-5 transition-transform group-hover:translate-x-1 ${pathname === "/login" ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                  />
                 </Link>
               </div>
 

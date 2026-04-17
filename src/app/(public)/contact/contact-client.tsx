@@ -102,7 +102,7 @@ export default function ContactClient() {
     {
       icon: Phone,
       title: "Call Us",
-      description: "Mon-Fri, 9am-6pm",
+      description: "All days, 9am-9pm",
       value: "+91-8668721925",
       href: "tel:+918668721925",
     },
