@@ -12,10 +12,13 @@ export interface Business {
   industry: string;
   location: string;
   lastActive: string;
+  formattedLastActive: string;
   plan: "Starter" | "Growth" | "Pro";
   usage: {
-    used: number;
-    total: number;
+    monthlyAllocation: number;
+    monthlyUsed: number;
+    topupAllocation: number;
+    topupUsed: number;
   };
 }
 
@@ -36,8 +39,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T10:30:00",
     plan: "Growth",
     usage: {
-      used: 720,
-      total: 800,
+      monthlyAllocation: 800,
+      monthlyUsed: 720,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -56,8 +61,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T09:15:00",
     plan: "Pro",
     usage: {
-      used: 1250,
-      total: 5000,
+      monthlyAllocation: 5000,
+      monthlyUsed: 1250,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -76,8 +83,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-22T16:45:00",
     plan: "Starter",
     usage: {
-      used: 45,
-      total: 100,
+      monthlyAllocation: 100,
+      monthlyUsed: 45,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -96,8 +105,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T08:20:00",
     plan: "Growth",
     usage: {
-      used: 120,
-      total: 800,
+      monthlyAllocation: 800,
+      monthlyUsed: 120,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -116,8 +127,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-21T14:10:00",
     plan: "Starter",
     usage: {
-      used: 80,
-      total: 100,
+      monthlyAllocation: 100,
+      monthlyUsed: 80,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -136,8 +149,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T11:05:00",
     plan: "Starter",
     usage: {
-      used: 12,
-      total: 100,
+      monthlyAllocation: 100,
+      monthlyUsed: 12,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -156,8 +171,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-22T13:40:00",
     plan: "Growth",
     usage: {
-      used: 300,
-      total: 800,
+      monthlyAllocation: 800,
+      monthlyUsed: 300,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -176,8 +193,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T12:30:00",
     plan: "Pro",
     usage: {
-      used: 50,
-      total: 5000,
+      monthlyAllocation: 5000,
+      monthlyUsed: 50,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -196,8 +215,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T14:45:00",
     plan: "Pro",
     usage: {
-      used: 4500,
-      total: 5000,
+      monthlyAllocation: 5000,
+      monthlyUsed: 4500,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -216,8 +237,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T16:10:00",
     plan: "Growth",
     usage: {
-      used: 200,
-      total: 800,
+      monthlyAllocation: 800,
+      monthlyUsed: 200,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -236,8 +259,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T20:30:00",
     plan: "Pro",
     usage: {
-      used: 800,
-      total: 5000,
+      monthlyAllocation: 5000,
+      monthlyUsed: 800,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -256,8 +281,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-22T19:20:00",
     plan: "Growth",
     usage: {
-      used: 400,
-      total: 800,
+      monthlyAllocation: 800,
+      monthlyUsed: 400,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -276,8 +303,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-21T11:00:00",
     plan: "Starter",
     usage: {
-      used: 95,
-      total: 100,
+      monthlyAllocation: 100,
+      monthlyUsed: 95,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -296,8 +325,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T10:00:00",
     plan: "Pro",
     usage: {
-      used: 2300,
-      total: 5000,
+      monthlyAllocation: 5000,
+      monthlyUsed: 2300,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -316,8 +347,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T15:20:00",
     plan: "Starter",
     usage: {
-      used: 10,
-      total: 100,
+      monthlyAllocation: 100,
+      monthlyUsed: 10,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -336,8 +369,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T17:40:00",
     plan: "Growth",
     usage: {
-      used: 350,
-      total: 800,
+      monthlyAllocation: 800,
+      monthlyUsed: 350,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -356,8 +391,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-23T09:00:00",
     plan: "Starter",
     usage: {
-      used: 5,
-      total: 100,
+      monthlyAllocation: 100,
+      monthlyUsed: 5,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
   {
@@ -376,8 +413,10 @@ export const mockBusinesses: Business[] = [
     lastActive: "2026-03-22T22:15:00",
     plan: "Growth",
     usage: {
-      used: 600,
-      total: 800,
+      monthlyAllocation: 800,
+      monthlyUsed: 600,
+      topupAllocation: 0,
+      topupUsed: 0,
     },
   },
 ];

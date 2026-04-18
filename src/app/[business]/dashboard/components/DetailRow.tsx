@@ -1,8 +1,8 @@
-"use client";
+import React from "react";
 
 interface DetailRowProps {
   label: string;
-  value: string;
+  value: React.ReactNode;
 }
 
 const DetailRow = ({ label, value }: DetailRowProps) => (

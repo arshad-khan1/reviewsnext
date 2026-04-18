@@ -1,0 +1,290 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { withAuth } from "@/lib/auth/guard";
+import {
+  findBusinessBySlug,
+  updateBusiness,
+  deleteBusiness,
+  isBusinessOwner,
+} from "@/lib/db/business";
+import { uploadToCloudinary } from "@/lib/cloudinary";
+
+/**
+ * GET /api/businesses/:slug
+ * Fetches full details for a single business.
+ */
+export const GET = withAuth(
+  async (req, payload, context: { params: Promise<{ slug: string }> }) => {
+    try {
+      const { slug } = await context.params;
+
+      const owner = await isBusinessOwner(payload.sub, slug);
+      if (!owner) {
+        return NextResponse.json(
+          { code: "FORBIDDEN", message: "User does not own this business" },
+          { status: 403 },
+        );
+      }
+
+      const business = await findBusinessBySlug(slug);
+      if (!business) {
+        return NextResponse.json(
+          { code: "BUSINESS_NOT_FOUND", message: "Business not found" },
+          { status: 404 },
+        );
+      }
+
+      return NextResponse.json({
+        business: {
+          id: business.id,
+          slug: business.slug,
+          name: business.name,
+          logoUrl: business.logoUrl,
+          industry: business.industry,
+          location: business.city,
+          description: business.description,
+          contactEmail: business.contactEmail,
+          acceptedStarsThreshold: business.acceptedStarsThreshold,
+          defaultGoogleMapsLink: business.defaultGoogleMapsLink,
+          defaultAiPrompt: business.defaultAiPrompt,
+          defaultCommentStyle: business.defaultCommentStyle,
+          brandingConfig: business.brandingConfig,
+          createdAt: business.createdAt,
+          updatedAt: business.updatedAt,
+          subscription: business.owner.activeSubscription
+            ? {
+                plan:
+                  business.owner.activeSubscription.planDetails?.name ||
+                  business.owner.activeSubscription.plan,
+                status: business.owner.activeSubscription.status,
+                currentPeriodEnd:
+                  business.owner.activeSubscription.currentPeriodEnd,
+                // Full plan metadata for renewal/upgrade
+                planId: business.owner.activeSubscription.planId,
+                price: business.owner.activeSubscription.planDetails?.price || 0,
+                currency:
+                  business.owner.activeSubscription.planDetails?.currency ||
+                  "INR",
+                credits:
+                  business.owner.activeSubscription.planDetails?.credits || 0,
+                planTier:
+                  business.owner.activeSubscription.planDetails?.planTier ||
+                  business.owner.activeSubscription.plan,
+                type:
+                  business.owner.activeSubscription.planDetails?.type ||
+                  "SUBSCRIPTION",
+              }
+            : null,
+          aiCredits: business.owner.aiCredits
+            ? {
+                monthlyAllocation: business.owner.aiCredits.monthlyAllocation,
+                monthlyUsed: business.owner.aiCredits.monthlyUsed,
+                topupAllocation: business.owner.aiCredits.topupAllocation,
+                topupUsed: business.owner.aiCredits.topupUsed,
+              }
+            : null,
+        },
+      });
+    } catch (error) {
+      console.error("[GET_BUSINESS_SLUG_ERROR]", error);
+      return NextResponse.json(
+        { code: "INTERNAL_ERROR", message: "Failed to fetch business" },
+        { status: 500 },
+      );
+    }
+  },
+);
+
+const patchBusinessSchema = z.object({
+  name: z.string().min(1).optional(),
+  industry: z.string().min(1).optional(),
+  location: z.string().min(1).optional(),
+  logoUrl: z.string().url().nullable().optional(),
+  description: z.string().nullable().optional(),
+  contactEmail: z
+    .string()
+    .transform((v) => (v === "" ? null : v))
+    .pipe(z.string().email().nullable())
+    .optional(),
+  acceptedStarsThreshold: z.number().min(1).max(5).optional(),
+  defaultGoogleMapsLink: z.string().url().nullable().optional(),
+  defaultAiPrompt: z.string().nullable().optional(),
+  defaultCommentStyle: z
+    .enum([
+      "PROFESSIONAL_POLITE",
+      "FRIENDLY_CASUAL",
+      "CONCISE_DIRECT",
+      "ENTHUSIASTIC_WARM",
+    ])
+    .optional(),
+  brandingConfig: z.any().optional(),
+});
+
+/**
+ * PATCH /api/businesses/:slug
+ * Updates an existing business's settings.
+ */
+export const PATCH = withAuth(
+  async (req, payload, context: { params: Promise<{ slug: string }> }) => {
+    try {
+      const { slug } = await context.params;
+
+      const owner = await isBusinessOwner(payload.sub, slug);
+      if (!owner) {
+        const existing = await findBusinessBySlug(slug);
+        if (!existing) {
+          return NextResponse.json(
+            { code: "BUSINESS_NOT_FOUND", message: "Business not found" },
+            { status: 404 },
+          );
+        }
+        return NextResponse.json(
+          { code: "FORBIDDEN", message: "User does not own this business" },
+          { status: 403 },
+        );
+      }
+
+      const contentType = req.headers.get("content-type") || "";
+      let updateData: any = {};
+
+      if (contentType.includes("multipart/form-data")) {
+        const formData = await req.formData();
+        for (const [key, value] of formData.entries()) {
+          if (key !== "logo") {
+            // Handle numeric fields
+            if (key === "acceptedStarsThreshold") {
+              updateData[key] = Number(value);
+            } else {
+              updateData[key] = value;
+            }
+          }
+        }
+
+        // Handle logo upload
+        const logoFile = formData.get("logo");
+        if (logoFile && typeof logoFile === "object" && "size" in logoFile) {
+          const file = logoFile as unknown as {
+            size: number;
+            type: string;
+            arrayBuffer: () => Promise<ArrayBuffer>;
+          };
+
+          // Enforce 3MB limit
+          const MAX_SIZE = 3 * 1024 * 1024; // 3MB
+          if (file.size > MAX_SIZE) {
+            return NextResponse.json(
+              {
+                code: "FILE_TOO_LARGE",
+                message: "Logo file size must be less than 3MB",
+              },
+              { status: 400 },
+            );
+          }
+
+          if (file.size > 0) {
+            try {
+              const arrayBuffer = await file.arrayBuffer();
+              const buffer = Buffer.from(arrayBuffer);
+              const mimeType = file.type || "image/png";
+
+              const base64Data = `data:${mimeType};base64,${buffer.toString(
+                "base64",
+              )}`;
+
+              const uploadResult = await uploadToCloudinary(
+                base64Data,
+                "business_logo",
+                slug,
+              );
+              updateData.logoUrl = uploadResult.secure_url;
+            } catch (uploadError: any) {
+              console.error("[LOGO_UPLOAD_ERROR]", uploadError);
+              return NextResponse.json(
+                {
+                  code: "UPLOAD_ERROR",
+                  message:
+                    "Failed to upload logo. Please try a different image or skip it.",
+                },
+                { status: 500 },
+              );
+            }
+          }
+        }
+      } else {
+        updateData = await req.json();
+      }
+
+      const result = patchBusinessSchema.safeParse(updateData);
+
+      if (!result.success) {
+        return NextResponse.json(
+          {
+            code: "VALIDATION_ERROR",
+            message: "Invalid field values",
+            errors: result.error.issues,
+          },
+          { status: 400 },
+        );
+      }
+
+      const updatedBusiness = await updateBusiness(slug, result.data as any);
+
+      return NextResponse.json({
+        business: {
+          id: updatedBusiness.id,
+          slug: updatedBusiness.slug,
+          name: updatedBusiness.name,
+          logoUrl: updatedBusiness.logoUrl,
+          brandingConfig: updatedBusiness.brandingConfig,
+          updatedAt: updatedBusiness.updatedAt,
+        },
+      });
+    } catch (error) {
+      console.error("[PATCH_BUSINESS_SLUG_ERROR]", error);
+      return NextResponse.json(
+        { code: "INTERNAL_ERROR", message: "Failed to update business" },
+        { status: 500 },
+      );
+    }
+  },
+);
+
+/**
+ * DELETE /api/businesses/:slug
+ * Permanently deletes a business and all associated data.
+ */
+export const DELETE = withAuth(
+  async (req, payload, context: { params: Promise<{ slug: string }> }) => {
+    try {
+      const { slug } = await context.params;
+
+      const owner = await isBusinessOwner(payload.sub, slug);
+      if (!owner) {
+        // Check if business exists to return 403 vs 404
+        const existing = await findBusinessBySlug(slug);
+        if (!existing) {
+          return NextResponse.json(
+            { code: "BUSINESS_NOT_FOUND", message: "Business not found" },
+            { status: 404 },
+          );
+        }
+        return NextResponse.json(
+          { code: "FORBIDDEN", message: "User does not own this business" },
+          { status: 403 },
+        );
+      }
+
+      await deleteBusiness(slug);
+
+      return NextResponse.json({
+        message: "Business deleted successfully.",
+      });
+    } catch (error) {
+      console.error("[DELETE_BUSINESS_SLUG_ERROR]", error);
+      return NextResponse.json(
+        { code: "INTERNAL_ERROR", message: "Failed to delete business" },
+        { status: 500 },
+      );
+    }
+  },
+);

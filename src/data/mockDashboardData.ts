@@ -2,6 +2,7 @@ export interface QRScan {
   id: string;
   qrId: string;
   timestamp: string;
+  formattedAt: string;
   device: string;
   browser: string;
   os: string;
@@ -20,6 +21,7 @@ export interface ReviewEntry {
   whatWentWrong?: string;
   howToImprove?: string;
   timestamp: string;
+  formattedAt: string;
   device: string;
   browser: string;
   os: string;

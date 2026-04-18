@@ -1,0 +1,1641 @@
+{
+  "info": {
+    "_postman_id": "c62a8b92-4211-477d-bb62-436f56c701fc",
+    "name": "ReviewFunnel API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/send-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "send-otp"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\",\n  \"deviceLabel\": \"Postman Local\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Me (Profile)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Sessions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sessions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout All Sessions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout-all"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Businesses",
+      "item": [
+        {
+          "name": "Get All Businesses",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Business",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"The Grand Bakery\",\n  \"industry\": \"Restaurants & Cafes\",\n  \"location\": \"Mumbai, Maharashtra\",\n  \"description\": \"Artisan breads since 2010\",\n  \"contactEmail\": \"hello@grandbakery.com\",\n  \"acceptedStarsThreshold\": 4,\n  \"defaultGoogleMapsLink\": \"https://search.google.com/local/writereview?placeid=ChIJ...\",\n  \"defaultAiPrompt\": \"Focus on the freshness of baked goods and warm staff.\",\n  \"defaultCommentStyle\": \"FRIENDLY_CASUAL\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Business Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "the-grand-bakery"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Business",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description.\",\n  \"defaultCommentStyle\": \"ENTHUSIASTIC_WARM\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "the-grand-bakery"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Business",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "the-grand-bakery"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Uploads",
+      "item": [
+        {
+          "name": "Sign Upload Preset",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/uploads/sign?type=business_logo&businessSlug=abc-cafe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "uploads",
+                "sign"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "business_logo"
+                },
+                {
+                  "key": "businessSlug",
+                  "value": "abc-cafe"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "QR Codes",
+      "item": [
+        {
+          "name": "List QR Codes",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes?search=&isActive=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "qr-codes"
+              ],
+              "query": [
+                { "key": "search", "value": "" },
+                { "key": "isActive", "value": "true" }
+              ],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Create QR Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Waitlist Counter\",\n  \"sourceTag\": \"waitlist-counter\",\n  \"commentStyle\": \"FRIENDLY_CASUAL\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "qr-codes"
+              ],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Get QR Code Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "qr-codes",
+                ":id"
+              ],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clqr001" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update QR Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Main Entrance (Updated)\",\n  \"isActive\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "qr-codes",
+                ":id"
+              ],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clqr001" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete QR Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "qr-codes",
+                ":id"
+              ],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clqr001" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Public: Submit Review",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qrCodeId\": \"clqr001\",\n  \"rating\": 5,\n  \"type\": \"POSITIVE\",\n  \"reviewText\": \"Amazing food!\",\n  \"submittedToGoogle\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "review"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Dashboard Reviews",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/reviews?page=1&limit=8&type=POSITIVE&rating=5&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "reviews"
+              ],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "8" },
+                { "key": "type", "value": "POSITIVE" },
+                { "key": "rating", "value": "5", "description": "Filter by rating (1-5)" },
+                { "key": "search", "value": "", "description": "Search in review text or feedback" }
+              ],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Get Review Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/reviews/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "reviews",
+                ":id"
+              ],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clrev001" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scans",
+      "item": [
+        {
+          "name": "Public: Log Scan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qrCodeId\": \"clqr001\",\n  \"userAgent\": \"Mozilla/5.0...\",\n  \"ip\": \"1.1.1.1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/scan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "scan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Scans",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/scans?page=1&limit=20&qrCodeId=&startDate=&endDate=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "scans"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "qrCodeId",
+                  "value": ""
+                },
+                {
+                  "key": "startDate",
+                  "value": ""
+                },
+                {
+                  "key": "endDate",
+                  "value": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "abc-cafe"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Scan Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/scans/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "scans",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "abc-cafe"
+                },
+                {
+                  "key": "id",
+                  "value": "clscan001"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard & Analytics",
+      "item": [
+        {
+          "name": "Get Business Analytics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/dashboard?period=30d",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "dashboard"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "30d",
+                  "description": "7d, 30d, 90d, 12m, all"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "abc-cafe"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Credits",
+      "item": [
+        {
+          "name": "Get Credit Balance",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/ai-credits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "ai-credits"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "abc-cafe"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Topup Order",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packageId\": \"BOOSTER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/ai-credits/topup/create-order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "ai-credits",
+                "topup",
+                "create-order"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "abc-cafe"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Topup Payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpayOrderId\": \"order_...\",\n  \"razorpayPaymentId\": \"pay_...\",\n  \"razorpaySignature\": \"...\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/ai-credits/topup/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "businesses",
+                ":slug",
+                "ai-credits",
+                "topup",
+                "verify"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "abc-cafe"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin (Platform)",
+      "item": [
+        {
+          "name": "Admin Dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "rf_admin_session={{adminSession}}",
+                "description": "Requires admin session cookie set via verify-otp"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List All Businesses",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "rf_admin_session={{adminSession}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/businesses?page=1&limit=20&search=&plan=&status=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "businesses"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "plan",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Expiring Subscriptions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "rf_admin_session={{adminSession}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/businesses/expiring-subscriptions?withinDays=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "businesses",
+                "expiring-subscriptions"
+              ],
+              "query": [
+                {
+                  "key": "withinDays",
+                  "value": "30"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Business Details (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "rf_admin_session={{adminSession}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/businesses/:slug",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "businesses", ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "abc-cafe"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Adjust Business Credits",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "rf_admin_session={{adminSession}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"adjustment\": 500,\n  \"reason\": \"Refund for downtime\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/businesses/:slug/credits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "businesses",
+                ":slug",
+                "credits"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "abc-cafe"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Locations",
+      "item": [
+        {
+          "name": "List Locations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/locations?includeStats=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "locations"],
+              "query": [{ "key": "includeStats", "value": "true" }],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Create Location",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bandra Branch\",\n  \"address\": \"Linking Road, Bandra West\",\n  \"city\": \"Mumbai\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/locations",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "locations"],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Get Location Detail",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/locations/:id?period=30d",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "locations", ":id"],
+              "query": [{ "key": "period", "value": "30d" }],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "cloc001" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Location",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bandra Main Outlet\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/locations/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "locations", ":id"],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "cloc001" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Location",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/locations/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "locations", ":id"],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "cloc001" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Assign QR to Location",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationId\": \"cloc001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes/:id/location",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "qr-codes", ":id", "location"],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clqr001" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Branding",
+      "item": [
+        {
+          "name": "Get Business Branding",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/branding",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "branding"],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Update Business Branding",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"primaryColor\": \"#0F172A\",\n  \"backgroundColor\": \"#F8FAFC\",\n  \"bannerUrl\": \"https://example.com/banner.jpg\",\n  \"headline\": \"How was your visit to ABC Cafe?\",\n  \"subheadline\": \"We value your feedback.\",\n  \"thankYouMessage\": \"Thanks for visiting!\",\n  \"buttonStyle\": \"pill\",\n  \"fontFamily\": \"Playfair Display\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/branding",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "branding"],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Reset Business Branding",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/branding",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "branding"],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "Get QR Branding Override",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes/:id/branding",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "qr-codes", ":id", "branding"],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clqr001" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update QR Branding Override",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"primaryColor\": \"#E11D48\",\n  \"headline\": \"Share the love ❤️\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes/:id/branding",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "qr-codes", ":id", "branding"],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clqr001" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reset QR Branding Override",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/qr-codes/:id/branding",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "qr-codes", ":id", "branding"],
+              "variable": [
+                { "key": "slug", "value": "abc-cafe" },
+                { "key": "id", "value": "clqr001" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Generation",
+      "item": [
+        {
+          "name": "Public: Generate AI Review",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qrCodeId\": \"clqr001\",\n  \"scanId\": \"clscan001\",\n  \"rating\": 5,\n  \"businessName\": \"ABC Cafe\",\n  \"commentStyle\": \"FRIENDLY_CASUAL\",\n  \"operation\": \"REVIEW_DRAFT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/ai/generate-review",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "ai", "generate-review"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments (Webhooks)",
+      "item": [
+        {
+          "name": "Webhook: Payment Captured (Topup)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-razorpay-signature", "value": "SIGNATURE_REPLACE_ME" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity\": \"event\",\n  \"event\": \"payment.captured\",\n  \"payload\": {\n    \"payment\": {\n      \"entity\": {\n        \"id\": \"pay_Def456UVW\",\n        \"order_id\": \"order_Abc123XYZ\",\n        \"amount\": 50000,\n        \"currency\": \"INR\",\n        \"status\": \"captured\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "webhook"]
+            }
+          }
+        },
+        {
+          "name": "Webhook: Subscription Charged",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-razorpay-signature", "value": "SIGNATURE_REPLACE_ME" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity\": \"event\",\n  \"event\": \"subscription.charged\",\n  \"payload\": {\n    \"subscription\": {\n      \"entity\": {\n        \"id\": \"sub_123\",\n        \"current_start\": 1744385280,\n        \"current_end\": 1747063680\n      }\n    },\n    \"payment\": {\n      \"entity\": {\n        \"id\": \"pay_X\",\n        \"amount\": 99900\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "webhook"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions & Payments",
+      "item": [
+        {
+          "name": "Initiate Subscription (Buy Plan)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"GROWTH\",\n  \"billingInterval\": \"MONTHLY\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/subscription/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "subscription", "create"],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        },
+        {
+          "name": "List Payment History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/businesses/:slug/payments?limit=10&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["businesses", ":slug", "payments"],
+              "query": [
+                { "key": "limit", "value": "10" },
+                { "key": "page", "value": "1" }
+              ],
+              "variable": [{ "key": "slug", "value": "abc-cafe" }]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": { "type": "text/javascript", "exec": [""] }
+    },
+    {
+      "listen": "test",
+      "script": { "type": "text/javascript", "exec": [""] }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "adminSession", "value": "", "type": "string" }
+  ]
+}

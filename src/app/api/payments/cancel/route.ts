@@ -1,0 +1,75 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { withAuth } from "@/lib/auth/guard";
+import { PaymentStatus } from "@prisma/client";
+import { z } from "zod";
+import { voidCouponRedemption } from "@/lib/db/coupon";
+
+const CancelSchema = z.object({
+  paymentRecordId: z.string().min(1),
+});
+
+/**
+ * POST /api/payments/cancel
+ * Marks a PENDING payment record as CANCELLED.
+ * Also voids any pending coupon redemption so usedCount is rolled back.
+ * Used when a user closes the Razorpay modal.
+ */
+export const POST = withAuth(async (req) => {
+  try {
+    const body = await req.json();
+    const parsed = CancelSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { code: "VALIDATION_ERROR", message: "Invalid payment record ID" },
+        { status: 400 },
+      );
+    }
+
+    const { paymentRecordId } = parsed.data;
+
+    // 1. Fetch the payment
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentRecordId },
+    });
+
+    if (!payment) {
+      return NextResponse.json(
+        { code: "NOT_FOUND", message: "Payment record not found" },
+        { status: 404 },
+      );
+    }
+
+    if (payment.status !== PaymentStatus.PENDING) {
+      return NextResponse.json(
+        {
+          code: "INVALID_STATE",
+          message: "Only pending payments can be cancelled",
+        },
+        { status: 400 },
+      );
+    }
+
+    // 2. Mark as CANCELLED + void coupon redemption atomically
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: PaymentStatus.CANCELLED },
+      });
+
+      // Roll back the coupon slot so the user can try again
+      if (payment.couponRedemptionId) {
+        await voidCouponRedemption(tx, payment.couponRedemptionId);
+      }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[PAYMENT_CANCEL_ERROR]", error);
+    return NextResponse.json(
+      { code: "SERVER_ERROR", message: "Internal server error" },
+      { status: 500 },
+    );
+  }
+});
