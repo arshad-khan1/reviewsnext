@@ -38,7 +38,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 
 const INDUSTRIES = [
   "Restaurants & Cafes",

@@ -5,7 +5,7 @@ import { Lock, Sparkles, TrendingUp, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth-store";
 import { PLAN_LIMITS } from "@/config/plan-limits";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 
 interface UpgradePromptProps {
   title?: string;

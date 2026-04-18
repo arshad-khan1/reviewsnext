@@ -31,7 +31,7 @@ import {
 import { useReviews } from "@/hooks/use-reviews";
 import { useScans } from "@/hooks/use-scans";
 import { useParams, useRouter } from "next/navigation";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 import { UpgradePrompt } from "@/components/shared/UpgradePrompt";
 import { getLimit } from "@/config/plan-limits";
 import DashboardFilters from "../../../components/DashboardFilters";

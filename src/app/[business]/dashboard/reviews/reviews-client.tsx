@@ -11,7 +11,7 @@ import ReviewDetailDialog from "../components/ReviewDetailDialog";
 import ScanDetailDialog from "../components/ScanDetailDialog";
 import { useReviews } from "@/hooks/use-reviews";
 import { useScans } from "@/hooks/use-scans";
-import { ReviewType } from "@prisma/client";
+import { ReviewType } from "@/types/prisma-enums";
 
 const DEFAULT_LIMIT = 10;
 const LIMIT_OPTIONS = [10, 20, 50];
