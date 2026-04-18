@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useBusiness } from "@/hooks/use-business";
 import PlanBadge from "@/app/[business]/dashboard/components/PlanBadge";
 import { FeatureGate } from "@/components/auth/FeatureGate";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 
 export default function DashboardHeader() {
   const params = useParams();

@@ -12,7 +12,7 @@ import {
   CheckoutDialog,
   type CheckoutPlan,
 } from "@/components/shared/pricing/checkout-dialog";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 
 interface DbPlan {
   id: string;

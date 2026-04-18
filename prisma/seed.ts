@@ -9,9 +9,12 @@ import {
   PaymentStatus,
   PaymentType,
   PaymentIntent,
+  DiscountType,
+  CouponCodeStyle,
 } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
+import bcrypt from "bcryptjs";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -57,6 +60,21 @@ const CITIES = [
 
 async function main() {
   console.log("🌱 Starting Comprehensive Multi-Tier Seed...");
+
+  // 0. Seed Admin user
+  console.log("  - Seeding admin user: +919999999999...");
+  const hashedPassword = await bcrypt.hash("admin123", 10);
+  await prisma.user.upsert({
+    where: { phone: "+919999999999" },
+    update: { isAdmin: true, password: hashedPassword, name: "Admin Dashboard" },
+    create: {
+      phone: "+919999999999",
+      name: "Admin Dashboard",
+      isAdmin: true,
+      password: hashedPassword,
+      isVerified: true,
+    },
+  });
 
   // 1. Seed Plans
   console.log("  - Seeding subscription and top-up plans...");
@@ -173,6 +191,42 @@ async function main() {
     where: { externalId: "plan_RS_pro_yearly" },
   }))!;
 
+  // 1.5. Seed Coupons
+  console.log("  - Seeding coupons...");
+  const couponsData = [
+    {
+      code: "WELCOME100",
+      description: "Flat ₹100 off on first subscription",
+      discountType: DiscountType.FLAT,
+      discountValue: 10000,
+      minOrderPaise: 50000,
+      isActive: true,
+    },
+    {
+      code: "FESTIVE20",
+      description: "20% off on all plans",
+      discountType: DiscountType.PERCENT,
+      discountValue: 20,
+      maxDiscountPaise: 100000,
+      isActive: true,
+    },
+    {
+      code: "ADMIN50",
+      description: "Admin special 50% discount",
+      discountType: DiscountType.PERCENT,
+      discountValue: 50,
+      isActive: true,
+    },
+  ];
+
+  for (const coupon of couponsData) {
+    await prisma.coupon.upsert({
+      where: { code: coupon.code },
+      update: coupon,
+      create: coupon,
+    });
+  }
+
   // ── USER 0: FREE TRIAL TIER ──────────────────────────────────
   console.log("  - Setting up Free Trial tier: +910000000000...");
   const trialUser = await setupUser(
@@ -189,7 +243,7 @@ async function main() {
     "Mumbai",
   );
   const cafeQR = await setupQRCode(trialCafe.id, "Entrance", "entrance", true);
-  await generateRealisticActivity(cafeQR.id, 8, 2);
+  await generateRealisticActivity(cafeQR.id, 5, 4);
 
   // ── USER 1: STARTER TIER ──────────────────────────────────────
   console.log("  - Setting up Starter tier: +911111111111...");
@@ -211,7 +265,7 @@ async function main() {
     "main-counter",
     true,
   );
-  await generateRealisticActivity(bakeryQR.id, 12, 4);
+  await generateRealisticActivity(bakeryQR.id, 8, 7);
 
   // ── USER 2: GROWTH TIER ───────────────────────────────────────
   console.log("  - Setting up Growth tier: +912222222222...");
@@ -243,8 +297,8 @@ async function main() {
     "Locker Room Exit",
     "locker-room",
   );
-  await generateRealisticActivity(receptionQR.id, 45, 18);
-  await generateRealisticActivity(lockerRoomQR.id, 20, 5);
+  await generateRealisticActivity(receptionQR.id, 15, 12);
+  await generateRealisticActivity(lockerRoomQR.id, 10, 8);
 
   // ── USER 3: PRO TIER (Multi-Business, Multi-Location) ─────────
   console.log("  - Setting up Pro tier: +913333333333...");
@@ -297,9 +351,9 @@ async function main() {
     locColaba.id,
   );
 
-  await generateRealisticActivity(qrBandraTable1.id, 120, 45);
-  await generateRealisticActivity(qrBandraCounter.id, 80, 20);
-  await generateRealisticActivity(qrColabaMain.id, 150, 65);
+  await generateRealisticActivity(qrBandraTable1.id, 20, 18);
+  await generateRealisticActivity(qrBandraCounter.id, 15, 12);
+  await generateRealisticActivity(qrColabaMain.id, 25, 22);
 
   // Business 2: Luxe Spa
   const luxeSpa = await setupBusiness(
@@ -322,7 +376,7 @@ async function main() {
     true,
     locBangalore.id,
   );
-  await generateRealisticActivity(qrLuxeMain.id, 60, 25);
+  await generateRealisticActivity(qrLuxeMain.id, 10, 9);
 
   // Override threshold for testing: Reception Desk at Urban Fitness
   await prisma.qRCode.update({

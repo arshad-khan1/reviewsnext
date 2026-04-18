@@ -1,4 +1,4 @@
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 import { ShieldCheck, Zap, Crown, Sparkles, LucideIcon } from "lucide-react";
 
 export interface PlanFeature {

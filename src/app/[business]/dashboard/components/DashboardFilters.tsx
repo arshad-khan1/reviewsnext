@@ -10,7 +10,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { ReviewType } from "@prisma/client";
+import { ReviewType } from "@/types/prisma-enums";
 import {
   Select,
   SelectContent,
