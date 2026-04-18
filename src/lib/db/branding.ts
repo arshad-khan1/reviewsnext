@@ -1,5 +1,5 @@
 import { prisma } from "../prisma";
-import { PlanType, SubscriptionStatus } from "@prisma/client";
+import { PlanType, SubscriptionStatus, Prisma } from "@prisma/client";
 import { hasFeature } from "../../config/plan-limits";
 
 const DEFAULT_BRANDING = {
@@ -76,7 +76,7 @@ export async function resetBranding(businessSlug: string) {
 
   await prisma.business.update({
     where: { id: business.id },
-    data: { brandingConfig: null },
+    data: { brandingConfig: Prisma.DbNull },
   });
 
   return { showWatermark: true };
@@ -165,7 +165,7 @@ export async function resetQrBranding(businessSlug: string, qrId: string) {
 
   await prisma.qRCode.update({
     where: { id: qrId },
-    data: { brandingOverride: null },
+    data: { brandingOverride: Prisma.DbNull },
   });
 
   return { message: "QR code branding override removed. Business branding will apply." };

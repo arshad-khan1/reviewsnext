@@ -141,7 +141,7 @@ export async function checkPlanLimit(
     const count = await prisma.qRCode.count({
       where: { business: { slug: businessSlug }, isDeleted: false },
     });
-    const allowed = count < limit;
+    const allowed = count < (limit as number);
     return {
       allowed,
       current: count,
@@ -154,7 +154,7 @@ export async function checkPlanLimit(
     const count = await prisma.location.count({
       where: { business: { slug: businessSlug }, isDeleted: false },
     });
-    const allowed = count < limit;
+    const allowed = count < (limit as number);
     return {
       allowed,
       current: count,
