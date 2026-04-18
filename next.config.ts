@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  transpilePackages: ["@prisma/client"],
+  experimental: {
+    serverComponentsExternalPackages: ["@prisma/client"],
+  },
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",

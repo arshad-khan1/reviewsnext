@@ -7,7 +7,7 @@ import ReviewStars from "./components/ReviewStars";
 import FeedbackForm from "./components/FeedbackForm";
 import GeneratedReview from "./components/GeneratedReview";
 import CompletionScreen from "./components/CompletionScreen";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 import { BrandingConfig } from "@/types/branding";
 import { resolveEffectiveBranding } from "@/lib/utils/branding";
 import confetti from "canvas-confetti";

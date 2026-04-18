@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as jose from "jose";
-import { PlanType, SubscriptionStatus } from "@prisma/client";
+import { PlanType, SubscriptionStatus } from "@/types/prisma-enums";
 
 export interface User {
   id: string;

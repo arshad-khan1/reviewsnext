@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 import Image from "next/image";
 import {
   LogOut,

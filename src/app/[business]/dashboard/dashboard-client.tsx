@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth-store";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 import { hasFeature } from "@/config/plan-limits";
 import {
   Dialog,

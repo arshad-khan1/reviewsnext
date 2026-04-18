@@ -1,4 +1,4 @@
-import { PlanType, SubscriptionStatus } from "@prisma/client";
+import { PlanType, SubscriptionStatus } from "@/types/prisma-enums";
 
 export interface PlanFeatures {
   displayName: string;
