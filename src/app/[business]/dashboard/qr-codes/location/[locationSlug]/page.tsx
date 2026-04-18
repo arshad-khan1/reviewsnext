@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { ReviewType } from "@prisma/client";
+import { ReviewType } from "@/types/prisma-enums";
 
 import { useBusiness } from "@/hooks/use-business";
 import { useLocationDetail, useDeleteLocation } from "@/hooks/use-locations";

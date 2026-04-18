@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useQRCodeDetail } from "@/hooks/use-qr-codes";
 import { useReviews } from "@/hooks/use-reviews";
 import { useScans } from "@/hooks/use-scans";
+import { ReviewType } from "@/types/prisma-enums";
 
 import DashboardTabSwitcher from "../../components/DashboardTabSwitcher";
 import DashboardFilters from "../../components/DashboardFilters";
@@ -25,7 +26,7 @@ export default function IndividualQRDashboard() {
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"POSITIVE" | "NEGATIVE" | null>(null);
+  const [typeFilter, setTypeFilter] = useState<ReviewType | null>(null);
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [resultFilter, setResultFilter] = useState<boolean | null>(null);
   const [dateRange, setDateRange] = useState<{from?: Date; to?: Date} | undefined>();
