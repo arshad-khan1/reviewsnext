@@ -38,14 +38,14 @@ export interface DashboardReview {
   whatWentWrong?: string | null;
   submittedToGoogle: boolean;
   submittedAt: string;
-  formattedAt: string;
+  formattedAt?: string;
 }
 
 export interface DashboardScan {
   review: any;
   id: string;
   scannedAt: string;
-  formattedAt: string;
+  formattedAt?: string;
   device: string | null;
   browser: string | null;
   os: string | null;

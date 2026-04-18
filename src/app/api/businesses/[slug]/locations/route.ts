@@ -32,12 +32,18 @@ export const POST = withAuth(async (req, user, { params }) => {
   try {
     const limitCheck = await checkPlanLimit(slug, "maxLocations");
     if (!limitCheck.allowed) {
+      if (limitCheck.error === "BUSINESS_NOT_FOUND") {
+        return NextResponse.json({ code: "BUSINESS_NOT_FOUND", message: "Business not found" }, { status: 404 });
+      }
+
+      const limit = Number(limitCheck.limit ?? 0);
+
       return NextResponse.json({
         code: "LIMIT_REACHED",
-        message: limitCheck.limit <= 1 
+        message: limit <= 1 
           ? "Location management is a premium feature. Upgrade your plan to add more locations."
-          : `Your plan limit of ${limitCheck.limit} locations has been reached. Please upgrade to add more.`,
-        requiredPlan: limitCheck.limit <= 1 ? "GROWTH" : "PRO"
+          : `Your plan limit of ${limit} locations has been reached. Please upgrade to add more.`,
+        requiredPlan: limit <= 1 ? "GROWTH" : "PRO"
       }, { status: 403 });
     }
 
