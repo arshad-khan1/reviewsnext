@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/guard";
 import { getBranding, updateBranding, resetBranding } from "@/lib/db/branding";
 import { checkBusinessPlan } from "@/lib/db/plan";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 import { z } from "zod";
 
 const brandingSchema = z.object({
@@ -14,8 +14,16 @@ const brandingSchema = z.object({
   thankYouMessage: z.string().max(200),
   buttonStyle: z.enum(["rounded", "sharp", "pill"]),
   fontFamily: z.enum([
-    "Inter", "Roboto", "Poppins", "Outfit", "Nunito",
-    "Lato", "Montserrat", "Playfair Display", "Merriweather", "DM Sans"
+    "Inter",
+    "Roboto",
+    "Poppins",
+    "Outfit",
+    "Nunito",
+    "Lato",
+    "Montserrat",
+    "Playfair Display",
+    "Merriweather",
+    "DM Sans",
   ]),
 });
 
@@ -31,10 +39,16 @@ export const GET = withAuth(async (req, user, { params }) => {
     return NextResponse.json(result);
   } catch (error: any) {
     if (error.message === "BUSINESS_NOT_FOUND") {
-      return NextResponse.json({ code: "BUSINESS_NOT_FOUND", message: "Business not found" }, { status: 404 });
+      return NextResponse.json(
+        { code: "BUSINESS_NOT_FOUND", message: "Business not found" },
+        { status: 404 },
+      );
     }
     console.error("[BRANDING_GET]", error);
-    return NextResponse.json({ code: "INTERNAL_ERROR", message: "Failed to fetch branding" }, { status: 500 });
+    return NextResponse.json(
+      { code: "INTERNAL_ERROR", message: "Failed to fetch branding" },
+      { status: 500 },
+    );
   }
 });
 
@@ -48,28 +62,45 @@ export const PUT = withAuth(async (req, user, { params }) => {
   try {
     const planCheck = await checkBusinessPlan(slug, PlanType.GROWTH);
     if (planCheck.error === "PLAN_REQUIRED") {
-      return NextResponse.json({
-        code: "PLAN_REQUIRED",
-        message: "Branding customization is available on GROWTH and PRO plans.",
-        requiredPlan: "GROWTH"
-      }, { status: 403 });
+      return NextResponse.json(
+        {
+          code: "PLAN_REQUIRED",
+          message:
+            "Branding customization is available on GROWTH and PRO plans.",
+          requiredPlan: "GROWTH",
+        },
+        { status: 403 },
+      );
     }
 
     const body = await req.json();
     const validated = brandingSchema.safeParse(body);
 
     if (!validated.success) {
-      return NextResponse.json({ code: "VALIDATION_ERROR", message: "Invalid branding configuration", details: validated.error.format() }, { status: 400 });
+      return NextResponse.json(
+        {
+          code: "VALIDATION_ERROR",
+          message: "Invalid branding configuration",
+          details: validated.error.format(),
+        },
+        { status: 400 },
+      );
     }
 
     const result = await updateBranding(slug, validated.data);
     return NextResponse.json(result);
   } catch (error: any) {
     if (error.message === "BUSINESS_NOT_FOUND") {
-      return NextResponse.json({ code: "BUSINESS_NOT_FOUND", message: "Business not found" }, { status: 404 });
+      return NextResponse.json(
+        { code: "BUSINESS_NOT_FOUND", message: "Business not found" },
+        { status: 404 },
+      );
     }
     console.error("[BRANDING_PUT]", error);
-    return NextResponse.json({ code: "INTERNAL_ERROR", message: "Failed to update branding" }, { status: 500 });
+    return NextResponse.json(
+      { code: "INTERNAL_ERROR", message: "Failed to update branding" },
+      { status: 500 },
+    );
   }
 });
 
@@ -84,13 +115,19 @@ export const DELETE = withAuth(async (req, user, { params }) => {
     const result = await resetBranding(slug);
     return NextResponse.json({
       message: "Branding reset to defaults.",
-      showWatermark: result.showWatermark
+      showWatermark: result.showWatermark,
     });
   } catch (error: any) {
     if (error.message === "BUSINESS_NOT_FOUND") {
-      return NextResponse.json({ code: "BUSINESS_NOT_FOUND", message: "Business not found" }, { status: 404 });
+      return NextResponse.json(
+        { code: "BUSINESS_NOT_FOUND", message: "Business not found" },
+        { status: 404 },
+      );
     }
     console.error("[BRANDING_DELETE]", error);
-    return NextResponse.json({ code: "INTERNAL_ERROR", message: "Failed to reset branding" }, { status: 500 });
+    return NextResponse.json(
+      { code: "INTERNAL_ERROR", message: "Failed to reset branding" },
+      { status: 500 },
+    );
   }
 });

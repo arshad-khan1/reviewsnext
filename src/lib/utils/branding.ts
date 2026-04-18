@@ -1,4 +1,4 @@
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 import { BrandingConfig, EffectiveBranding } from "@/types/branding";
 
 export const DEFAULT_BRANDING: EffectiveBranding = {

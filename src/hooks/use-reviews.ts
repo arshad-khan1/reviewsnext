@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ReviewType } from "@prisma/client";
+import { ReviewType } from "@/types/prisma-enums";
 import { apiClient } from "@/lib/api-client";
 import { DashboardReview } from "./use-dashboard-data";
 

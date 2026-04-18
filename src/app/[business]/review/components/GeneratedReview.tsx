@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useEffect, useCallback } from "react";
-import { CommentStyle } from "@prisma/client";
+import { CommentStyle } from "@/types/prisma-enums";
 import { MagicLoading } from "@/components/ui/magic-loading";
 
 interface GeneratedReviewProps {

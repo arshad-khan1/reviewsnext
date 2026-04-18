@@ -46,7 +46,7 @@ import {
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth-store";
 import { PLAN_LIMITS, hasFeature, getLimit } from "@/config/plan-limits";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 import { useBusiness } from "@/hooks/use-business";
 import {
   useQRCodes,

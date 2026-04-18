@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { PLAN_LIMITS, hasFeature, getLimit } from "@/config/plan-limits";
-import { PlanType } from "@prisma/client";
+import { PlanType } from "@/types/prisma-enums";
 import {
   SubscriptionGateOverlay,
   PlanBadge,
