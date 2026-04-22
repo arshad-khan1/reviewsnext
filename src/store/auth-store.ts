@@ -12,6 +12,8 @@ export interface User {
   isAdmin: boolean;
   planTier: PlanType;
   subscriptionStatus: SubscriptionStatus;
+  trialEndsAt: string | null;
+  currentPeriodEnd: string | null;
   createdAt: string;
   updatedAt: string;
   businesses: {
@@ -88,6 +90,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         planTier: payload.planTier || PlanType.FREE,
         subscriptionStatus:
           payload.subscriptionStatus || SubscriptionStatus.TRIALING,
+        trialEndsAt: payload.trialEndsAt || null,
+        currentPeriodEnd: payload.currentPeriodEnd || null,
         isVerified: true, // If they have a token, they passed OTP
         createdAt: payload.iat
           ? new Date(payload.iat * 1000).toISOString()

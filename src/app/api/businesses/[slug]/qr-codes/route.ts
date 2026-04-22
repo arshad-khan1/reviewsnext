@@ -106,6 +106,7 @@ export const POST = withAuth(async (req, payload, context: { params: Promise<{ s
         name: qrCode.name,
         sourceTag: qrCode.sourceTag,
         isActive: qrCode.isActive,
+        isDefault: qrCode.isDefault,
         googleMapsLink: qrCode.googleMapsLink,
         aiGuidingPrompt: qrCode.aiGuidingPrompt,
         commentStyle: qrCode.commentStyle,

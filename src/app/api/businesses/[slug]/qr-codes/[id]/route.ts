@@ -3,6 +3,7 @@ import { z } from "zod";
 import { withAuth } from "@/lib/auth/guard";
 import { isBusinessOwner } from "@/lib/db/business";
 import { getQRCodeDetails, updateQRCode, deleteQRCode } from "@/lib/db/qr-code";
+import { prisma } from "@/lib/prisma";
 
 const patchQRCodeSchema = z.object({
   name: z.string().min(1).optional(),
@@ -161,6 +162,18 @@ export const DELETE = withAuth(
       if (!owner) {
         return NextResponse.json(
           { code: "FORBIDDEN", message: "User does not own this business" },
+          { status: 403 },
+        );
+      }
+
+      // Prevent deletion of default QR code
+      const qr = await prisma.qRCode.findFirst({
+        where: { id, business: { slug }, isDeleted: false },
+        select: { isDefault: true },
+      });
+      if (qr?.isDefault) {
+        return NextResponse.json(
+          { code: "CANNOT_DELETE_DEFAULT", message: "The default QR code cannot be deleted" },
           { status: 403 },
         );
       }

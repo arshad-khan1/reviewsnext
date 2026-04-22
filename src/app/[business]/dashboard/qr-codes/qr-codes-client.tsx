@@ -23,6 +23,8 @@ import {
   MapPin,
   Loader2,
   FolderPlus,
+  Shield,
+  ExternalLink,
 } from "lucide-react";
 import {
   SubscriptionGateOverlay,
@@ -571,9 +573,17 @@ export default function QRCodesClient() {
                                   <div className="flex-1 p-6 flex flex-col min-w-0">
                                     <div className="flex justify-between items-start mb-4 gap-2">
                                       <div className="min-w-0 flex-1">
-                                        <h3 className="font-bold text-lg text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                                          {qr.name}
-                                        </h3>
+                                        <div className="flex items-center gap-2">
+                                          <h3 className="font-bold text-lg text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                                            {qr.name}
+                                          </h3>
+                                          {qr.isDefault && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0">
+                                              <Shield className="w-3 h-3" />
+                                              Default
+                                            </span>
+                                          )}
+                                        </div>
                                         <div className="flex flex-wrap items-center gap-3 mt-2">
                                           <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase">
                                             <MousePointerClick className="w-3 h-3" />{" "}
@@ -597,15 +607,29 @@ export default function QRCodesClient() {
                                         >
                                           <Settings className="w-4 h-4" />
                                         </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 -mr-2 -mt-1"
-                                          onClick={() => deleteQR(qr.id)}
-                                          disabled={deleteMutation.isPending}
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </Button>
+                                        {planTier === PlanType.PRO && (
+                                          <Link href={`/${businessSlug}/review?source=${qr.sourceTag}`} target="_blank">
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                                              title="View review page"
+                                            >
+                                              <ExternalLink className="w-4 h-4" />
+                                            </Button>
+                                          </Link>
+                                        )}
+                                        {!qr.isDefault && (
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 -mr-2 -mt-1"
+                                            onClick={() => deleteQR(qr.id)}
+                                            disabled={deleteMutation.isPending}
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                        )}
                                       </div>
                                     </div>
                                     <div className="mt-auto space-y-3">
@@ -835,9 +859,17 @@ export default function QRCodesClient() {
                                 <div className="flex-1 p-6 flex flex-col min-w-0">
                                   <div className="flex justify-between items-start mb-4 gap-2">
                                     <div className="min-w-0 flex-1">
-                                      <h3 className="font-bold text-lg text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                                        {qr.name}
-                                      </h3>
+                                      <div className="flex items-center gap-2">
+                                        <h3 className="font-bold text-lg text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                                          {qr.name}
+                                        </h3>
+                                        {qr.isDefault && (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0">
+                                            <Shield className="w-3 h-3" />
+                                            Default
+                                          </span>
+                                        )}
+                                      </div>
                                       <div className="flex flex-wrap items-center gap-3 mt-2">
                                         <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase">
                                           <MousePointerClick className="w-3 h-3" />{" "}
@@ -861,15 +893,29 @@ export default function QRCodesClient() {
                                       >
                                         <Settings className="w-4 h-4" />
                                       </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 -mr-2 -mt-1"
-                                        onClick={() => deleteQR(qr.id)}
-                                        disabled={deleteMutation.isPending}
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
+                                      {planTier === PlanType.PRO && (
+                                        <Link href={`/${businessSlug}/review?source=${qr.sourceTag}`} target="_blank">
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                                            title="View review page"
+                                          >
+                                            <ExternalLink className="w-4 h-4" />
+                                          </Button>
+                                        </Link>
+                                      )}
+                                      {!qr.isDefault && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 -mr-2 -mt-1"
+                                          onClick={() => deleteQR(qr.id)}
+                                          disabled={deleteMutation.isPending}
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="mt-auto space-y-3">

@@ -163,11 +163,58 @@ export async function getLocationDetail(businessSlug: string, locationSlug: stri
 
   const totalReviews = reviewStats._count._all;
 
-  // Mock charts for now (similar to dashboard)
-  const scansOverTime = [
-    { date: "2026-04-10", scans: Math.floor(scanCount / 7) },
-    { date: "2026-04-11", scans: scanCount % 7 },
-  ];
+  // Determine date range from period
+  let startDate: Date | undefined;
+  const now = new Date();
+  if (period === "7d") startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  else if (period === "30d") startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  else if (period === "90d") startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+  else if (period === "all") startDate = undefined;
+
+  const scanWhere: Prisma.ScanWhereInput = {
+    qrCodeId: { in: qrIds },
+    isDeleted: false,
+    ...(startDate && { scannedAt: { gte: startDate } }),
+  };
+
+  const reviewWhere: Prisma.ReviewWhereInput = {
+    qrCodeId: { in: qrIds },
+    isDeleted: false,
+    ...(startDate && { submittedAt: { gte: startDate } }),
+  };
+
+  // Real chart data
+  const [scansByDay, ratingCounts] = await Promise.all([
+    prisma.scan.findMany({
+      where: scanWhere,
+      select: { scannedAt: true },
+    }),
+    prisma.review.groupBy({
+      by: ["rating"],
+      where: reviewWhere,
+      _count: { _all: true },
+    }),
+  ]);
+
+  // Scans Over Time - group by day
+  const scansOverTimeMap: Record<string, number> = {};
+  scansByDay.forEach((s) => {
+    const day = s.scannedAt.toISOString().split("T")[0];
+    scansOverTimeMap[day] = (scansOverTimeMap[day] || 0) + 1;
+  });
+
+  const scansOverTime = Object.entries(scansOverTimeMap)
+    .map(([date, scans]) => ({ date, scans }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Rating Distribution - real counts per star
+  const ratingDistribution = [1, 2, 3, 4, 5].map((r) => {
+    const match = ratingCounts.find((c) => c.rating === r);
+    return {
+      rating: `${r} Star`,
+      count: match?._count._all || 0,
+    };
+  });
 
   return {
     id: location.id,
@@ -188,13 +235,7 @@ export async function getLocationDetail(businessSlug: string, locationSlug: stri
     },
     charts: {
       scansOverTime,
-      ratingDistribution: [
-        { rating: "1 Star", count: 0 },
-        { rating: "2 Star", count: 0 },
-        { rating: "3 Star", count: 0 },
-        { rating: "4 Star", count: positiveCount },
-        { rating: "5 Star", count: 0 }, // Simplified
-      ],
+      ratingDistribution,
     },
     qrCodes: location.qrCodes.map(q => {
       const scans = q._count.scans;

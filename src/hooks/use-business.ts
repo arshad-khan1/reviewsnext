@@ -30,6 +30,8 @@ export interface Business {
     credits: number;
     planTier: string;
     type: "SUBSCRIPTION" | "TOPUP";
+    trialStartsAt: string | null;
+    trialEndsAt: string | null;
   } | null;
   aiCredits: {
     monthlyAllocation: number;

@@ -34,6 +34,34 @@ export const GET = withAuth(
         );
       }
 
+      // For FREE trial users without a Plan subscription, return UserSubscription data
+      const subscription = business.owner.activeSubscription
+        ? {
+            plan:
+              business.owner.activeSubscription.planDetails?.name ||
+              business.owner.activeSubscription.plan,
+            status: business.owner.activeSubscription.status,
+            currentPeriodEnd:
+              business.owner.activeSubscription.currentPeriodEnd,
+            planId: business.owner.activeSubscription.planId,
+            price: business.owner.activeSubscription.planDetails?.price || 0,
+            currency:
+              business.owner.activeSubscription.planDetails?.currency ||
+              "INR",
+            credits:
+              business.owner.activeSubscription.planDetails?.credits ||
+              business.owner.activeSubscription.monthlyAiCredits,
+            planTier:
+              business.owner.activeSubscription.planDetails?.planTier ||
+              business.owner.activeSubscription.plan,
+            type:
+              business.owner.activeSubscription.planDetails?.type ||
+              "SUBSCRIPTION",
+            trialStartsAt: business.owner.activeSubscription.trialStartsAt,
+            trialEndsAt: business.owner.activeSubscription.trialEndsAt,
+          }
+        : null;
+
       return NextResponse.json({
         business: {
           id: business.id,
@@ -51,30 +79,7 @@ export const GET = withAuth(
           brandingConfig: business.brandingConfig,
           createdAt: business.createdAt,
           updatedAt: business.updatedAt,
-          subscription: business.owner.activeSubscription
-            ? {
-                plan:
-                  business.owner.activeSubscription.planDetails?.name ||
-                  business.owner.activeSubscription.plan,
-                status: business.owner.activeSubscription.status,
-                currentPeriodEnd:
-                  business.owner.activeSubscription.currentPeriodEnd,
-                // Full plan metadata for renewal/upgrade
-                planId: business.owner.activeSubscription.planId,
-                price: business.owner.activeSubscription.planDetails?.price || 0,
-                currency:
-                  business.owner.activeSubscription.planDetails?.currency ||
-                  "INR",
-                credits:
-                  business.owner.activeSubscription.planDetails?.credits || 0,
-                planTier:
-                  business.owner.activeSubscription.planDetails?.planTier ||
-                  business.owner.activeSubscription.plan,
-                type:
-                  business.owner.activeSubscription.planDetails?.type ||
-                  "SUBSCRIPTION",
-              }
-            : null,
+          subscription,
           aiCredits: business.owner.aiCredits
             ? {
                 monthlyAllocation: business.owner.aiCredits.monthlyAllocation,

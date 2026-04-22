@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createReview } from "@/lib/db/review";
 import { prisma } from "@/lib/prisma";
+import { PlanType, SubscriptionStatus } from "@/types/prisma-enums";
 
 const publicReviewSchema = z.object({
   qrCodeId: z.string().min(1),
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     // Verify QR code exists and is active
     const qrCode = await prisma.qRCode.findUnique({
       where: { id: qrCodeId, isDeleted: false },
-      select: { isActive: true },
+      select: { isActive: true, businessId: true },
     });
 
     if (!qrCode) {
@@ -52,6 +53,31 @@ export async function POST(req: NextRequest) {
 
     if (!qrCode.isActive) {
       return NextResponse.json({ code: "QR_CODE_INACTIVE", message: "This QR code is currently inactive" }, { status: 403 });
+    }
+
+    // Check trial expiry for FREE plan users
+    const business = await prisma.business.findUnique({
+      where: { id: qrCode.businessId },
+      select: { ownerId: true },
+    });
+
+    if (business) {
+      const subscription = await prisma.userSubscription.findUnique({
+        where: { userId: business.ownerId },
+        select: { plan: true, status: true, trialEndsAt: true },
+      });
+
+      if (
+        subscription?.plan === PlanType.FREE &&
+        subscription?.status === SubscriptionStatus.TRIALING &&
+        subscription?.trialEndsAt &&
+        new Date() > subscription.trialEndsAt
+      ) {
+        return NextResponse.json(
+          { code: "TRIAL_EXPIRED", message: "Your free trial has expired. Please upgrade to continue accepting reviews." },
+          { status: 403 }
+        );
+      }
     }
 
     const review = await createReview(validated.data as any);

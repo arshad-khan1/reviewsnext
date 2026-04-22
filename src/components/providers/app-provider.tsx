@@ -4,8 +4,9 @@ import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { ReactQueryProvider } from "./query-provider";
 import { useAuthStore } from "@/store/auth-store";
-import { apiClient, setAccessToken } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
+import { SubscriptionExpiryPopup } from "@/components/shared/SubscriptionExpiryPopup";
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   const setUser = useAuthStore((state) => state.setUser);
@@ -43,6 +44,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <ReactQueryProvider>
       <AuthInitializer>
         {children}
+        <SubscriptionExpiryPopup />
         <Toaster richColors position="top-right" />
       </AuthInitializer>
     </ReactQueryProvider>
