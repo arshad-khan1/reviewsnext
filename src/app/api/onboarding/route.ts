@@ -193,7 +193,7 @@ export const POST = withAuth(async (req, payload) => {
           plan: "FREE",
           status: "TRIALING",
           trialStartsAt: new Date(),
-          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         }
       });
       isNewSubscription = true;

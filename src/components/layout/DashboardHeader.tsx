@@ -11,6 +11,8 @@ import {
   Crown,
   Menu,
   LayoutDashboard,
+  Headphones,
+  Clock,
 } from "lucide-react";
 import {
   Sheet,
@@ -24,9 +26,11 @@ import {
 import { UserNav } from "./UserNav";
 import { Button } from "@/components/ui/button";
 import { useBusiness } from "@/hooks/use-business";
+import { useDefaultQR } from "@/hooks/use-default-qr";
 import PlanBadge from "@/app/[business]/dashboard/components/PlanBadge";
 import { FeatureGate } from "@/components/auth/FeatureGate";
 import { PlanType } from "@/types/prisma-enums";
+import { toast } from "sonner";
 
 export default function DashboardHeader() {
   const params = useParams();
@@ -34,6 +38,19 @@ export default function DashboardHeader() {
   const businessSlug = params.business as string;
 
   const { data: business, isLoading: isBizLoading } = useBusiness(businessSlug);
+  const { data: defaultQR } = useDefaultQR(businessSlug);
+
+  // Calculate days remaining for trial
+  const daysRemaining = business?.subscription?.trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(business.subscription.trialEndsAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+    : null;
+
+  const handleTrialClick = () => {
+    toast.warning("Trial Expiry Warning", {
+      description: "When your free trial expires, your QR codes will stop working. Upgrade to continue accepting reviews.",
+      duration: 5000,
+    });
+  };
 
   if (isBizLoading || !business)
     return (
@@ -45,6 +62,7 @@ export default function DashboardHeader() {
   const isReviewsPage = pathname.includes("/reviews");
   const isQRCodesPage = pathname.includes("/qr-codes");
   const isLocationHub = pathname.includes("/qr-codes/location/");
+  const isContactPage = pathname.includes("/contact");
 
   return (
     <header className="border-b border-border bg-card sticky top-0 z-50">
@@ -173,34 +191,67 @@ export default function DashboardHeader() {
                       </Link>
                     </SheetClose>
                   </FeatureGate>
+                  {business.subscription?.plan !== PlanType.FREE && (
+                    <SheetClose asChild>
+                      <Link href={`/${businessSlug}/dashboard/contact`}>
+                        <Button
+                          variant={isContactPage ? "secondary" : "ghost"}
+                          className={`w-full justify-start relative overflow-hidden h-12 ${
+                            isContactPage
+                              ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-l-4 border-l-emerald-600 rounded-l-none"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Headphones
+                            className={`mr-3 h-5 w-5 ${isContactPage ? "text-emerald-600" : ""}`}
+                          />
+                          <span className="font-semibold">Contact</span>
+                        </Button>
+                      </Link>
+                    </SheetClose>
+                  )}
                 </div>
 
                 <div className="h-px bg-border my-2" />
 
                 <div className="flex flex-col gap-2 mt-auto">
-                  <SheetClose asChild>
-                    <Link href={`/${businessSlug}/review`} target="_blank">
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-muted-foreground hover:text-foreground"
-                      >
-                        <Eye className="mr-3 h-5 w-5" />
-                        View Public Page
-                      </Button>
-                    </Link>
-                  </SheetClose>
-                  {business.subscription?.plan === PlanType.FREE && (
+                  {business.subscription?.plan !== PlanType.FREE && (
                     <SheetClose asChild>
-                      <Link href={`/${businessSlug}/pricing`}>
+                      <Link href={`/${businessSlug}/review?source=${defaultQR?.sourceTag || ''}`} target="_blank">
                         <Button
-                          variant="default"
-                          className="w-full justify-start bg-amber-100 text-amber-700 hover:bg-amber-200"
+                          variant="ghost"
+                          className="w-full justify-start text-muted-foreground hover:text-foreground"
                         >
-                          <Crown className="mr-3 h-5 w-5" />
-                          Upgrade to Pro
+                          <Eye className="mr-3 h-5 w-5" />
+                          View Public Page
                         </Button>
                       </Link>
                     </SheetClose>
+                  )}
+                  {business.subscription?.plan === PlanType.FREE && (
+                    <>
+                      {business.subscription.status === "TRIALING" && daysRemaining !== null && (
+                        <Button
+                          variant="outline"
+                          onClick={handleTrialClick}
+                          className="w-full justify-start gap-2 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                        >
+                          <Clock className="w-4 h-4" />
+                          <span>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left</span>
+                        </Button>
+                      )}
+                      <SheetClose asChild>
+                        <Link href={`/${businessSlug}/pricing`}>
+                          <Button
+                            variant="default"
+                            className="w-full justify-start bg-amber-100 text-amber-700 hover:bg-amber-200"
+                          >
+                            <Crown className="mr-3 h-5 w-5" />
+                            Upgrade to Pro
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                    </>
                   )}
                 </div>
               </SheetContent>
@@ -289,28 +340,56 @@ export default function DashboardHeader() {
             </Link>
           </FeatureGate>
 
-          <Link href={`/${businessSlug}/review`} target="_blank">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 hover:bg-indigo-600 hover:text-white transition-all font-medium border-slate-200"
-            >
-              <Eye className="w-4 h-4" />
-              <span>View Page</span>
-            </Button>
-          </Link>
-
-          {business.subscription?.plan === PlanType.FREE && (
-            <Link href={`/${businessSlug}/pricing`}>
+          {business.subscription?.plan !== PlanType.FREE && (
+            <Link href={`/${businessSlug}/dashboard/contact`}>
               <Button
-                variant="default"
+                variant={isContactPage ? "secondary" : "ghost"}
                 size="sm"
-                className="gap-2 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-none shadow-md shadow-amber-500/20 font-bold transition-all px-4 group animate-pulse hover:animate-none"
+                className={`gap-2 font-medium ${isContactPage ? "bg-emerald-50 text-emerald-600 border-none hover:bg-emerald-100" : ""}`}
               >
-                <Crown className="w-4 h-4 fill-white group-hover:rotate-12 transition-transform" />
-                <span>Upgrade Now</span>
+                <Headphones className="w-4 h-4" />
+                <span>Contact</span>
               </Button>
             </Link>
+          )}
+
+          {business.subscription?.plan !== PlanType.FREE && (
+            <Link href={`/${businessSlug}/review?source=${defaultQR?.sourceTag || ''}`} target="_blank">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 hover:bg-indigo-600 hover:text-white transition-all font-medium border-slate-200"
+              >
+                <Eye className="w-4 h-4" />
+                <span>View Page</span>
+              </Button>
+            </Link>
+          )}
+
+          {business.subscription?.plan === PlanType.FREE && (
+            <div className="flex items-center gap-2">
+              {business.subscription.status === "TRIALING" && daysRemaining !== null && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTrialClick}
+                  className="gap-1.5 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''} left</span>
+                </Button>
+              )}
+              <Link href={`/${businessSlug}/pricing`}>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="gap-2 bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-none shadow-md shadow-amber-500/20 font-bold transition-all px-4 group animate-pulse hover:animate-none"
+                >
+                  <Crown className="w-4 h-4 fill-white group-hover:rotate-12 transition-transform" />
+                  <span>Upgrade Now</span>
+                </Button>
+              </Link>
+            </div>
           )}
 
           <UserNav />

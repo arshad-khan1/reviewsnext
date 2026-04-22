@@ -18,6 +18,7 @@ export interface QRCode {
   name: string;
   sourceTag: string;
   isActive: boolean;
+  isDefault: boolean;
   googleMapsLink: string | null;
   aiGuidingPrompt: string | null;
   commentStyle: CommentStyle | null;

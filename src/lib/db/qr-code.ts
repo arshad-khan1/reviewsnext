@@ -57,6 +57,7 @@ export async function getQRCodesByBusiness(
       name: qr.name,
       sourceTag: qr.sourceTag,
       isActive: qr.isActive,
+      isDefault: qr.isDefault,
       googleMapsLink: qr.googleMapsLink,
       aiGuidingPrompt: qr.aiGuidingPrompt,
       commentStyle: qr.commentStyle,

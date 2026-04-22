@@ -9,10 +9,13 @@ import {
   PlusCircle,
   Check,
   Building2,
+  Eye,
+  Headphones,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth-store";
 import { useLogoutMutation } from "@/hooks/use-auth";
+import { useDefaultQR } from "@/hooks/use-default-qr";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,9 +44,11 @@ export function UserNav() {
   const logoutMutation = useLogoutMutation();
   const [showUpgradeGate, setShowUpgradeGate] = useState(false);
 
+  const currentSlug = params.business as string;
+  const { data: defaultQR } = useDefaultQR(currentSlug || "");
+
   if (!user) return null;
 
-  const currentSlug = params.business as string;
   const businesses = user.businesses || [];
   const currentBusiness = businesses.find((b) => b.slug === currentSlug);
 
@@ -153,6 +158,18 @@ export function UserNav() {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+              <Link href={`/${currentSlug}/review?source=${defaultQR?.sourceTag || ''}`} target="_blank">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Eye className="mr-2 h-4 w-4" />
+                  <span>View Review Page</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href={`/${currentSlug}/dashboard/contact`}>
+                <DropdownMenuItem className="cursor-pointer">
+                  <Headphones className="mr-2 h-4 w-4" />
+                  <span>Contact Support</span>
+                </DropdownMenuItem>
+              </Link>
               <Link href={`/${currentSlug}/settings`}>
                 <DropdownMenuItem className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />

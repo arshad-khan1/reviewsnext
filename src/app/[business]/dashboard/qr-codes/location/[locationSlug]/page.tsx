@@ -164,8 +164,8 @@ export default function LocationDetailPage() {
         <p className="text-slate-500 font-medium">
           Failed to load location details.
         </p>
-        <Link href={`/${businessSlug}/dashboard/locations`}>
-          <Button variant="outline">Back to Locations</Button>
+        <Link href={`/${businessSlug}/dashboard/qr-codes`}>
+          <Button variant="outline">Back to QR Codes</Button>
         </Link>
       </div>
     );

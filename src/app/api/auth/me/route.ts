@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth/guard";
 import { findUserById, updateUserProfile, isEmailTaken } from "@/lib/db/user";
@@ -31,6 +31,8 @@ export const GET = withAuth(async (req, payload) => {
       businesses: user.businesses,
       planTier: user.activeSubscription?.plan,
       subscriptionStatus: user.activeSubscription?.status,
+      trialEndsAt: user.activeSubscription?.trialEndsAt?.toISOString() || null,
+      currentPeriodEnd: user.activeSubscription?.currentPeriodEnd?.toISOString() || null,
     },
   });
 });
@@ -83,6 +85,8 @@ export const PATCH = withAuth(async (req, payload) => {
         businesses: updatedUser.businesses,
         planTier: updatedUser.activeSubscription?.plan,
         subscriptionStatus: updatedUser.activeSubscription?.status,
+        trialEndsAt: updatedUser.activeSubscription?.trialEndsAt?.toISOString() || null,
+        currentPeriodEnd: updatedUser.activeSubscription?.currentPeriodEnd?.toISOString() || null,
       },
     });
   } catch (error) {
